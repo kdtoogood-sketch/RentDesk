@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>RentDesk — KDC Infra</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #F5F6FA;
+  --white:    #FFFFFF;
+  --orange:   #F97316;
+  --orange2:  #EA6A0A;
+  --orange-dim: rgba(249,115,22,0.08);
+  --orange-mid: rgba(249,115,22,0.15);
+  --ink:      #1A1A1A;
+  --ink2:     #555555;
+  --muted:    #9CA3AF;
+  --border:   #E8ECF0;
+  --red:      #EF4444;
+  --red-dim:  rgba(239,68,68,0.1);
+  --green:    #10B981;
+  --green-dim:rgba(16,185,129,0.1);
+  --blue:     #3B82F6;
+  --blue-dim: rgba(59,130,246,0.1);
+  --amber:    #F59E0B;
+  --amber-dim:rgba(245,158,11,0.1);
+  --shadow:   0 2px 12px rgba(0,0,0,0.06);
+  --shadow-md:0 4px 24px rgba(0,0,0,0.1);
+  --r:        12px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);font-size:14px;-webkit-font-smoothing:antialiased;}
+button,input,select,textarea{font-family:'Inter',sans-serif;}
+button{cursor:pointer;}
+
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+
+/* ── LOGIN ── */
+#loginScreen{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:var(--bg);padding:20px;
+}
+.login-wrap{width:100%;max-width:380px;}
+.login-logo{margin-bottom:32px;text-align:center;}
+.login-brand-small{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;}
+.login-brand{font-family:'Space Grotesk';font-size:32px;font-weight:700;color:var(--ink);}
+.login-brand span{color:var(--orange);}
+.login-card{background:var(--white);border-radius:var(--r);box-shadow:var(--shadow-md);padding:32px;}
+.login-title{font-family:'Space Grotesk';font-size:18px;font-weight:700;margin-bottom:4px;}
+.login-desc{font-size:13px;color:var(--muted);margin-bottom:24px;}
+.fl{margin-bottom:16px;}
+.fl label{display:block;font-size:11px;font-weight:600;color:var(--ink2);letter-spacing:.8px;text-transform:uppercase;margin-bottom:6px;}
+.fi{width:100%;padding:11px 14px;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;color:var(--ink);font-size:14px;outline:none;transition:border-color .2s;}
+.fi:focus{border-color:var(--orange);}
+.fi::placeholder{color:var(--muted);}
+.login-btn{width:100%;padding:13px;background:var(--orange);border:none;border-radius:8px;font-family:'Space Grotesk';font-size:15px;font-weight:700;color:#fff;transition:all .2s;}
+.login-btn:hover{background:var(--orange2);}
+.login-err{color:var(--red);font-size:12px;margin-top:10px;display:none;padding:10px 12px;background:var(--red-dim);border-radius:6px;}
+.login-hint{margin-top:14px;font-size:12px;color:var(--muted);text-align:center;}
+.login-hint strong{color:var(--ink2);}
+
+/* ── SHELL ── */
+#app{display:none;height:100vh;flex-direction:column;}
+
+/* TOPBAR */
+.topbar{
+  height:56px;background:var(--white);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 20px;flex-shrink:0;box-shadow:0 1px 4px rgba(0,0,0,0.04);
+}
+.topbar-left{display:flex;align-items:center;gap:6px;}
+.tb-brand{font-family:'Space Grotesk';font-size:17px;font-weight:700;color:var(--ink);}
+.tb-brand span{color:var(--orange);}
+.tb-co{font-size:10px;color:var(--muted);letter-spacing:.5px;}
+.tb-sep{color:var(--border);font-size:16px;padding:0 4px;}
+.tb-crumb{font-size:12px;color:var(--muted);}
+.topbar-right{display:flex;align-items:center;gap:8px;}
+.tb-user{font-size:12px;color:var(--ink2);padding:5px 12px;background:var(--bg);border-radius:20px;border:1px solid var(--border);}
+.tb-role{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;padding:3px 8px;border-radius:4px;}
+.tb-role.admin{background:var(--orange-dim);color:var(--orange);}
+.tb-role.staff{background:var(--blue-dim);color:var(--blue);}
+.tb-logout{width:32px;height:32px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+.tb-logout:hover{border-color:var(--red);color:var(--red);}
+
+/* TABS */
+.tabs{background:var(--white);border-bottom:1px solid var(--border);display:flex;padding:0 16px;flex-shrink:0;overflow-x:auto;gap:2px;}
+.tabs::-webkit-scrollbar{height:0;}
+.tab{padding:13px 16px;font-size:12px;font-weight:600;color:var(--muted);border-bottom:2.5px solid transparent;cursor:pointer;white-space:nowrap;background:none;border-left:none;border-right:none;border-top:none;letter-spacing:.2px;transition:color .2s;display:flex;align-items:center;gap:6px;}
+.tab.active{color:var(--orange);border-bottom-color:var(--orange);}
+.tab:hover{color:var(--ink2);}
+
+/* CONTENT */
+.content{flex:1;overflow-y:auto;padding:18px;}
+
+/* CARD */
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;}
+.card-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.card-title{font-family:'Space Grotesk';font-weight:600;font-size:14px;color:var(--ink);}
+.card-body{padding:18px;}
+
+/* STATS */
+.stat{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;box-shadow:var(--shadow);}
+.stat-icon{font-size:20px;margin-bottom:6px;}
+.stat-label{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
+.stat-value{font-family:'Space Grotesk';font-size:26px;font-weight:700;line-height:1;}
+.stat-value.ora{color:var(--orange);}
+.stat-value.grn{color:var(--green);}
+.stat-value.red{color:var(--red);}
+.stat-value.blu{color:var(--blue);}
+.stat-sub{font-size:11px;color:var(--muted);margin-top:4px;}
+
+/* GRIDS */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;border:none;transition:all .2s;cursor:pointer;letter-spacing:.2px;white-space:nowrap;}
+.btn-orange{background:var(--orange);color:#fff;}
+.btn-orange:hover{background:var(--orange2);}
+.btn-ghost{background:var(--orange-dim);color:var(--orange);border:1px solid rgba(249,115,22,0.2);}
+.btn-ghost:hover{background:var(--orange-mid);}
+.btn-red{background:var(--red-dim);color:var(--red);}
+.btn-red:hover{background:rgba(239,68,68,0.18);}
+.btn-green{background:var(--green-dim);color:var(--green);}
+.btn-green:hover{background:rgba(16,185,129,0.18);}
+.btn-blue{background:var(--blue-dim);color:var(--blue);}
+.btn-blue:hover{background:rgba(59,130,246,0.18);}
+.btn-amber{background:var(--amber-dim);color:var(--amber);}
+.btn-amber:hover{background:rgba(245,158,11,0.18);}
+.btn-sm{padding:6px 12px;font-size:11px;}
+.btn-xs{padding:4px 9px;font-size:10px;border-radius:6px;}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.4px;}
+.badge-grn{background:var(--green-dim);color:var(--green);}
+.badge-red{background:var(--red-dim);color:var(--red);}
+.badge-ora{background:var(--orange-dim);color:var(--orange);}
+.badge-blu{background:var(--blue-dim);color:var(--blue);}
+.badge-grey{background:#F3F4F6;color:var(--muted);}
+.badge-amb{background:var(--amber-dim);color:var(--amber);}
+
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{padding:9px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);background:#F9FAFB;text-align:left;border-bottom:1px solid var(--border);}
+.tbl td{padding:11px 14px;font-size:13px;border-bottom:1px solid var(--border);vertical-align:middle;color:var(--ink2);}
+.tbl td strong{color:var(--ink);}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl tr:hover td{background:#FAFAFA;}
+
+/* FORMS */
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+.frow3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px;}
+.frow1{margin-bottom:12px;}
+.flabel{display:block;font-size:10px;font-weight:700;color:var(--ink2);letter-spacing:.8px;text-transform:uppercase;margin-bottom:5px;}
+.finput,.fselect,.ftextarea{width:100%;padding:10px 12px;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;color:var(--ink);font-size:13px;outline:none;transition:border-color .2s;}
+.finput:focus,.fselect:focus,.ftextarea:focus{border-color:var(--orange);background:var(--white);}
+.finput::placeholder{color:var(--muted);}
+.ftextarea{resize:vertical;min-height:70px;}
+.fhint{font-size:11px;color:var(--muted);margin-top:4px;}
+.fsec{font-family:'Space Grotesk';font-size:11px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:1.5px;padding:10px 0 8px;border-bottom:1px solid var(--border);margin-bottom:12px;}
+
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:200;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;opacity:0;pointer-events:none;transition:opacity .2s;backdrop-filter:blur(3px);}
+.overlay.open{opacity:1;pointer-events:all;}
+.modal{background:var(--white);border:1px solid var(--border);border-radius:var(--r);width:100%;max-width:580px;margin:auto;transform:translateY(16px);transition:transform .2s;box-shadow:0 20px 60px rgba(0,0,0,0.12);}
+.overlay.open .modal{transform:translateY(0);}
+.modal-head{padding:16px 20px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.modal-title{font-family:'Space Grotesk';font-weight:700;font-size:15px;color:var(--ink);}
+.modal-x{background:none;border:none;font-size:18px;color:var(--muted);cursor:pointer;padding:2px;line-height:1;transition:color .2s;}
+.modal-x:hover{color:var(--red);}
+.modal-body{padding:20px;max-height:72vh;overflow-y:auto;}
+.modal-foot{padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;}
+
+/* PROPERTY CARDS */
+.prop-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;cursor:pointer;transition:all .2s;box-shadow:var(--shadow);}
+.prop-card:hover{border-color:rgba(249,115,22,0.4);transform:translateY(-2px);box-shadow:var(--shadow-md);}
+.prop-card-head{background:linear-gradient(135deg,var(--orange),#FB923C);padding:16px 18px;}
+.prop-card-name{font-family:'Space Grotesk';font-weight:700;font-size:15px;color:#fff;}
+.prop-card-addr{font-size:11px;color:rgba(255,255,255,0.8);margin-top:3px;}
+.prop-card-body{padding:14px 18px;}
+.prop-stat{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);}
+.prop-stat:last-child{border-bottom:none;}
+.prop-stat-label{font-size:11px;color:var(--muted);}
+.prop-stat-value{font-size:13px;font-weight:600;color:var(--ink);}
+
+/* ROOM CARDS */
+.room-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;}
+.room-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r);padding:14px;cursor:pointer;transition:all .2s;box-shadow:var(--shadow);}
+.room-card:hover{border-color:var(--orange);box-shadow:0 4px 16px rgba(249,115,22,0.12);}
+.room-type{font-family:'Space Grotesk';font-weight:700;font-size:14px;color:var(--ink);margin-bottom:2px;}
+.room-rent{font-size:13px;color:var(--orange);font-weight:600;margin-bottom:6px;}
+.room-tenant{font-size:12px;color:var(--ink2);}
+
+/* ELEC CALC */
+.ecalc{background:#FFF7ED;border:1.5px solid var(--orange);border-radius:var(--r);padding:14px;margin:10px 0;display:none;}
+.ecalc.show{display:block;}
+.ecalc-title{font-family:'Space Grotesk';font-size:10px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:10px;}
+.ecalc-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(249,115,22,0.1);font-size:13px;}
+.ecalc-row:last-child{border-bottom:none;}
+.ecalc-row span:first-child{color:var(--muted);}
+.ecalc-row span:last-child{font-weight:600;color:var(--ink);}
+.ecalc-total{background:var(--orange);color:#fff;padding:10px 14px;border-radius:8px;display:flex;justify-content:space-between;font-weight:700;font-size:14px;margin-top:8px;}
+
+/* COVERAGE */
+.cov-bar{background:#F3F4F6;border-radius:20px;height:7px;overflow:hidden;margin-top:6px;}
+.cov-fill{height:100%;border-radius:20px;transition:width .6s ease;}
+.cov-fill.ok{background:var(--green);}
+.cov-fill.warn{background:var(--amber);}
+.cov-fill.bad{background:var(--red);}
+
+/* INFO ROWS */
+.irow{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.irow:last-child{border-bottom:none;}
+.irow-label{color:var(--muted);font-size:12px;}
+.irow-value{color:var(--ink);font-weight:500;}
+
+/* BACK BTN */
+.back{display:inline-flex;align-items:center;gap:5px;padding:7px 0;font-size:13px;font-weight:600;color:var(--orange);cursor:pointer;background:none;border:none;margin-bottom:14px;}
+.back:hover{opacity:.7;}
+
+/* STATUS BAR */
+.status-bar{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px;margin-bottom:14px;box-shadow:var(--shadow);}
+
+/* RECEIPT */
+.receipt{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:22px;}
+.rhead{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid var(--orange);padding-bottom:12px;margin-bottom:14px;}
+.rco{font-family:'Space Grotesk';font-weight:700;font-size:14px;color:var(--orange);}
+.rtitle{font-family:'Space Grotesk';font-size:17px;font-weight:700;text-align:center;color:var(--ink);letter-spacing:2px;margin-bottom:14px;}
+.rrow{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.rrow span:first-child{color:var(--muted);}
+.rrow span:last-child{font-weight:600;color:var(--ink);}
+.rtotal{background:var(--orange);color:#fff;padding:11px 14px;border-radius:8px;display:flex;justify-content:space-between;margin-top:10px;font-weight:700;font-size:14px;}
+.rfooter{text-align:center;margin-top:12px;font-size:11px;color:var(--muted);}
+
+/* MONTH NAV */
+.mnav{display:flex;align-items:center;gap:8px;}
+.mnav button{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:7px 12px;font-size:13px;color:var(--ink2);transition:all .2s;cursor:pointer;}
+.mnav button:hover{border-color:var(--orange);color:var(--orange);}
+.mnav span{font-family:'Space Grotesk';font-weight:600;font-size:13px;color:var(--ink);min-width:130px;text-align:center;}
+
+/* EMPTY */
+.empty{text-align:center;padding:48px 20px;}
+.empty-icon{font-size:40px;margin-bottom:10px;opacity:.3;}
+.empty-text{font-size:14px;color:var(--muted);margin-bottom:14px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--ink);color:#fff;padding:10px 22px;border-radius:8px;font-size:13px;font-weight:500;z-index:999;opacity:0;transition:all .25s;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,0.2);}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* PDF BILL (for print) */
+@media print{
+  body *{visibility:hidden;}
+  #printZone,#printZone *{visibility:visible;}
+  #printZone{position:fixed;left:0;top:0;width:100%;background:#fff;}
+}
+
+@media(max-width:600px){
+  .g2,.g3,.g4{grid-template-columns:1fr;}
+  .frow,.frow3{grid-template-columns:1fr;}
+  .content{padding:12px;}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-wrap">
+    <div class="login-logo">
+      <div class="login-brand-small">K.D Constructions</div>
+      <div class="login-brand">Rent<span>Desk</span></div>
+    </div>
+    <div class="login-card">
+      <div class="login-title">Welcome back 👋</div>
+      <div class="login-desc">Sign in to manage your rental properties</div>
+      <div class="fl"><label>Your Name</label><input class="fi" id="lName" placeholder="e.g. KD Taneja"/></div>
+      <div class="fl"><label>Access Code</label><input class="fi" id="lPass" type="password" placeholder="Enter code" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+      <div class="login-err" id="lErr">❌ Wrong access code. Try again.</div>
+      <button class="login-btn" onclick="doLogin()">Sign In →</button>
+      <div class="login-hint">Admin: <strong>kdc2002</strong> &nbsp;·&nbsp; Staff: <strong>kdc2025</strong></div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="tb-brand">Rent<span>Desk</span></div>
+      <span class="tb-sep">|</span>
+      <div class="tb-co">K.D Constructions</div>
+      <div class="tb-crumb" id="crumb"></div>
+    </div>
+    <div class="topbar-right">
+      <span class="tb-user" id="tbUser"></span>
+      <span class="tb-role" id="tbRole"></span>
+      <button class="tb-logout" onclick="doLogout()">⏏</button>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="goTab('dash')">📊 Dashboard</button>
+    <button class="tab" onclick="goTab('props')">🏢 Properties</button>
+    <button class="tab" onclick="goTab('billing')">⚡ Billing</button>
+    <button class="tab" onclick="goTab('expenses')">📋 Expenses</button>
+  </div>
+  <div class="content" id="mc"></div>
+</div>
+
+<!-- MODAL -->
+<div class="overlay" id="ov" onclick="ovClick(event)">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="mTitle"></div>
+      <button class="modal-x" onclick="closeM()">✕</button>
+    </div>
+    <div class="modal-body" id="mBody"></div>
+    <div class="modal-foot" id="mFoot"></div>
+  </div>
+</div>
+
+<!-- PRINT ZONE (hidden, for PDF) -->
+<div id="printZone" style="display:none;"></div>
+<!-- Hidden file input for doc upload -->
+<input type="file" id="docFileInput" accept=".pdf,image/*" style="display:none;position:absolute;"/>
+<div class="toast" id="toast"></div>
+
+<script>
+const FB_KEY='AIzaSyBiBmFAJHTxoZAddAON94u7FQ_d-RpX2io';
+const FB_URL=`https://firestore.googleapis.com/v1/projects/propdesk-f50e0/databases/(default)/documents/rentdesk/main?key=${FB_KEY}`;
+const ADMIN='kdc2002', STAFF='kdc2025';
+const DOC_TYPES=[
+  {key:'lease_deed',  label:'Lease Deed / Agreement', icon:'📋', required:true},
+  {key:'aadhaar',     label:'Aadhaar Card',            icon:'🪪', required:true},
+  {key:'pan',         label:'PAN Card',                icon:'💳', required:true},
+  {key:'office_id',   label:'Office / Employment ID',  icon:'🏢', required:false},
+  {key:'police_ver',  label:'Police Verification',     icon:'🚔', required:false},
+];
+const DOCS_BASE=`https://firestore.googleapis.com/v1/projects/propdesk-f50e0/databases/(default)/documents/rentdesk_docs`;
+
+async function saveDocToFS(roomId, docKey, base64Data, fileName, mimeType){
+  const docId=roomId+'_'+docKey;
+  const url=DOCS_BASE+'/'+docId+'?key='+FB_KEY;
+  const body={fields:{data:{stringValue:base64Data},name:{stringValue:fileName},mimeType:{stringValue:mimeType},uploadedAt:{stringValue:new Date().toISOString()}}};
+  try{const r=await fetch(url,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});return r.ok;}catch(e){return false;}
+}
+async function loadDocFromFS(roomId, docKey){
+  const url=DOCS_BASE+'/'+roomId+'_'+docKey+'?key='+FB_KEY;
+  try{const r=await fetch(url);if(!r.ok)return null;const d=await r.json();if(!d.fields)return null;return{data:d.fields.data?.stringValue,name:d.fields.name?.stringValue,mimeType:d.fields.mimeType?.stringValue,uploadedAt:d.fields.uploadedAt?.stringValue};}catch(e){return null;}
+}
+async function deleteDocFromFS(roomId, docKey){
+  const url=DOCS_BASE+'/'+roomId+'_'+docKey+'?key='+FB_KEY;
+  try{await fetch(url,{method:'DELETE'});}catch(e){}
+}
+function docCompleteness(r){
+  const docs=r.docs||{};
+  const required=DOC_TYPES.filter(d=>d.required);
+  const uploaded=DOC_TYPES.filter(d=>docs[d.key]);
+  const missingRequired=required.filter(d=>!docs[d.key]);
+  return{total:DOC_TYPES.length,uploaded:uploaded.length,missingRequired:missingRequired.length,missing:DOC_TYPES.filter(d=>!docs[d.key])};
+}
+
+let S={properties:[],expenses:[]};
+let user=null,isAdmin=false,curTab='dash',vProp=null,vRoom=null,saveT=null;
+let billMo=mk(),expMo=mk();
+
+// ── UTILS ──
+function uid(){return Date.now().toString(36)+Math.random().toString(36).substr(2,5);}
+function mk(d){const dt=d||new Date();return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');}
+function ml(k){if(!k)return'—';const[y,m]=k.split('-');return new Date(y,m-1).toLocaleString('en-IN',{month:'long',year:'numeric'});}
+function fd(s){if(!s)return'—';return new Date(s).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});}
+function fm(n){return'₹'+Number(n||0).toLocaleString('en-IN');}
+function today(){return new Date().toISOString().split('T')[0];}
+function dl(s){if(!s)return null;return Math.ceil((new Date(s)-new Date())/86400000);}
+
+function toast(msg,dur=2600){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),dur);}
+function openM(ti,bo,fo=''){document.getElementById('mTitle').textContent=ti;document.getElementById('mBody').innerHTML=bo;document.getElementById('mFoot').innerHTML=fo;document.getElementById('ov').classList.add('open');}
+function closeM(){document.getElementById('ov').classList.remove('open');}
+function ovClick(e){if(e.target.id==='ov')closeM();}
+
+// ── AUTH ──
+function doLogin(){
+  const name=document.getElementById('lName').value.trim();
+  const pass=document.getElementById('lPass').value.trim();
+  if(!name){toast('Enter your name');return;}
+  if(pass!==ADMIN&&pass!==STAFF){document.getElementById('lErr').style.display='block';return;}
+  user=name;isAdmin=(pass===ADMIN);
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('app').style.display='flex';
+  document.getElementById('app').style.flexDirection='column';
+  document.getElementById('tbUser').textContent=name;
+  const tr=document.getElementById('tbRole');tr.textContent=isAdmin?'Admin':'Staff';tr.className='tb-role '+(isAdmin?'admin':'staff');
+  loadData();
+}
+function doLogout(){user=null;document.getElementById('loginScreen').style.display='flex';document.getElementById('app').style.display='none';document.getElementById('lPass').value='';document.getElementById('lErr').style.display='none';}
+
+// ── FIREBASE ──
+async function loadData(){
+  let loaded=false;
+  try{
+    const r=await fetch(FB_URL);
+    if(r.ok){
+      const d=await r.json();
+      if(d.fields?.data){
+        const parsed=JSON.parse(d.fields.data.stringValue);
+        // Only update state if Firebase has real data (never overwrite with empty)
+        if(parsed && (parsed.properties?.length>0 || parsed.expenses?.length>0)){
+          S=parsed; loaded=true;
+        } else if(parsed) {
+          S=parsed; loaded=true; // Still load even if empty arrays
+        }
+      }
+    }
+  }catch(e){console.log('Load error:',e);}
+  if(!S.properties)S.properties=[];
+  if(!S.expenses)S.expenses=[];
+  if(!loaded) toast('⚠️ Could not reach server — working offline');
+  renderTab();
+  setInterval(async()=>{try{const r=await fetch(FB_URL);if(r.ok){const d=await r.json();if(d.fields?.data){S=JSON.parse(d.fields.data.stringValue);if(!S.properties)S.properties=[];if(!S.expenses)S.expenses=[];renderTab();}}}catch(e){}},20000);
+}
+async function save(){
+  try{
+    const r=await fetch(FB_URL+'&updateMask.fieldPaths=data',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:{data:{stringValue:JSON.stringify(S)}}})});
+    if(!r.ok) console.log('Save failed:',r.status);
+  }catch(e){console.log('Save error:',e);}
+}
+function sched(){clearTimeout(saveT);saveT=setTimeout(save,900);}
+
+// ── ROUTING ──
+function goTab(tab){curTab=tab;vProp=null;vRoom=null;document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['dash','props','billing','expenses'][i]===tab));renderTab();}
+function renderTab(){document.getElementById('crumb').textContent='';if(vRoom){renderRoom();return;}if(vProp){renderProp();return;}({dash:renderDash,props:renderProps,billing:renderBill,expenses:renderExp}[curTab]||renderDash)();}
+
+// ── DASHBOARD ──
+function renderDash(){
+  const mc=document.getElementById('mc');
+  const all=[];S.properties.forEach(p=>(p.rooms||[]).forEach(r=>all.push({p,r})));
+  const occ=all.filter(({r})=>r.tenant?.name).length;
+  const roll=all.filter(({r})=>r.tenant?.name).reduce((s,{r})=>s+Number(r.rent||0),0);
+  const cm=mk();
+  const coll=all.reduce((s,{r})=>s+(r.payments||[]).filter(x=>x.month===cm).reduce((ps,x)=>ps+Number(x.amount||0),0),0);
+  const totalExp=(S.expenses||[]).filter(e=>e.month===cm).reduce((s,e)=>s+(e.items||[]).reduce((is,i)=>is+Number(i.amount||0),0),0);
+  let elecColl=0,mainBill=0;
+  S.properties.forEach(p=>{
+    (p.rooms||[]).forEach(r=>{const rd=(r.electricityReadings||[]).find(x=>x.month===cm);if(rd)elecColl+=Number(rd.amount||0);});
+    const mm=(p.mainMeter||[]).find(x=>x.month===cm);if(mm)mainBill+=Number(mm.bill||0);
+  });
+  const pct=mainBill>0?Math.min(100,Math.round(elecColl/mainBill*100)):null;
+  const expiring=[];
+  S.properties.forEach(p=>(p.rooms||[]).forEach(r=>{if(r.lease?.endDate&&r.tenant?.name){const d=dl(r.lease.endDate);if(d!==null&&d<=60)expiring.push({pn:p.name,rt:r.type,ru:r.unitNo,tn:r.tenant.name,days:d,date:r.lease.endDate});}}));
+
+  mc.innerHTML=`
+  <div style="margin-bottom:18px;">
+    <div style="font-family:'Space Grotesk';font-size:18px;font-weight:700;">${user}'s Dashboard 👋</div>
+    <div style="font-size:12px;color:var(--muted);margin-top:2px;">${new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
+  </div>
+  <div class="g4" style="margin-bottom:14px;">
+    <div class="stat"><div class="stat-icon">🏢</div><div class="stat-label">Properties</div><div class="stat-value ora">${S.properties.length}</div><div class="stat-sub">${all.length} units total</div></div>
+    <div class="stat"><div class="stat-icon">✅</div><div class="stat-label">Occupied</div><div class="stat-value grn">${occ}</div><div class="stat-sub">${all.length-occ} vacant</div></div>
+    <div class="stat"><div class="stat-icon">💰</div><div class="stat-label">Rent Roll</div><div class="stat-value ora">${fm(roll)}</div><div class="stat-sub">Monthly</div></div>
+    <div class="stat"><div class="stat-icon">📥</div><div class="stat-label">Collected</div><div class="stat-value grn">${fm(coll)}</div><div class="stat-sub">${roll-coll>0?fm(roll-coll)+' pending':'All clear ✓'}</div></div>
+  </div>
+  <div class="g2" style="margin-bottom:14px;">
+    <div class="card">
+      <div class="card-head"><div class="card-title">⚡ Electricity Coverage — ${ml(cm)}</div></div>
+      <div class="card-body">
+        ${mainBill>0?`
+          <div class="irow"><span class="irow-label">Main Meter Bill</span><span class="irow-value" style="color:var(--red)">${fm(mainBill)}</span></div>
+          <div class="irow"><span class="irow-label">Collected from Tenants</span><span class="irow-value" style="color:var(--green)">${fm(elecColl)}</span></div>
+          <div class="irow"><span class="irow-label">${elecColl>=mainBill?'✅ Surplus':'⚠️ Shortfall'}</span><span class="irow-value" style="color:${elecColl>=mainBill?'var(--green)':'var(--red)'};">${fm(Math.abs(elecColl-mainBill))}</span></div>
+          <div class="cov-bar" style="margin-top:10px;"><div class="cov-fill ${pct>=100?'ok':pct>=75?'warn':'bad'}" style="width:${pct}%"></div></div>
+          <div style="font-size:11px;color:var(--muted);margin-top:5px;text-align:right;">${pct}% of main bill covered</div>
+        `:`<div class="empty" style="padding:16px 0;"><div style="font-size:13px;color:var(--muted);">No main meter added for ${ml(cm)}</div><button class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="goTab('props')">+ Add Main Meter</button></div>`}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">📊 ${ml(cm)} Summary</div></div>
+      <div class="card-body">
+        <div class="irow"><span class="irow-label">Rent Roll</span><span class="irow-value">${fm(roll)}</span></div>
+        <div class="irow"><span class="irow-label">Collected</span><span class="irow-value" style="color:var(--green)">${fm(coll)}</span></div>
+        <div class="irow"><span class="irow-label">Pending Rent</span><span class="irow-value" style="color:${roll-coll>0?'var(--red)':'var(--green)'};">${roll-coll>0?fm(roll-coll):'Nil ✓'}</span></div>
+        <div class="irow"><span class="irow-label">Electricity Collected</span><span class="irow-value" style="color:var(--blue)">${fm(elecColl)}</span></div>
+        <div class="irow"><span class="irow-label">Expenses</span><span class="irow-value" style="color:var(--amber)">${fm(totalExp)}</span></div>
+        <div style="background:var(--orange);color:#fff;padding:10px 14px;border-radius:8px;display:flex;justify-content:space-between;font-weight:700;margin-top:12px;"><span>Net Income</span><span>${fm(coll-totalExp)}</span></div>
+      </div>
+    </div>
+  </div>
+  ${expiring.length?`<div class="card"><div class="card-head"><div class="card-title">⚠️ Lease Alerts</div></div><div class="card-body" style="padding:0;"><table class="tbl"><thead><tr><th>Tenant</th><th>Property</th><th>Unit</th><th>Ends</th><th>Status</th></tr></thead><tbody>${expiring.map(e=>`<tr><td><strong>${e.tn}</strong></td><td>${e.pn}</td><td>${e.rt}${e.ru?' #'+e.ru:''}</td><td>${fd(e.date)}</td><td><span class="badge ${e.days<=0?'badge-red':e.days<=14?'badge-red':e.days<=30?'badge-amb':'badge-blu'}">${e.days<=0?'Expired':e.days+'d left'}</span></td></tr>`).join('')}</tbody></table></div></div>`:''}`;
+}
+
+// ── PROPERTIES ──
+function renderProps(){
+  const mc=document.getElementById('mc');
+  if(!S.properties.length){mc.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;"><div style="font-family:'Space Grotesk';font-size:18px;font-weight:700;">Properties</div>${isAdmin?`<button class="btn btn-orange" onclick="openAddProp()">+ Add Property</button>`:''}</div><div class="empty"><div class="empty-icon">🏢</div><div class="empty-text">No properties added yet</div>${isAdmin?`<button class="btn btn-orange" onclick="openAddProp()">Add Property</button>`:''}</div>`;return;}
+  mc.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;"><div style="font-family:'Space Grotesk';font-size:18px;font-weight:700;">Properties (${S.properties.length})</div>${isAdmin?`<button class="btn btn-orange" onclick="openAddProp()">+ Add Property</button>`:''}</div><div class="g3">${S.properties.map(p=>{const rooms=p.rooms||[];const occ=rooms.filter(r=>r.tenant?.name).length;return`<div class="prop-card" onclick="goProp('${p.id}')"><div class="prop-card-head"><div class="prop-card-name">${p.name}</div><div class="prop-card-addr">${p.address||'—'}</div></div><div class="prop-card-body"><div class="prop-stat"><span class="prop-stat-label">Total Units</span><span class="prop-stat-value">${rooms.length}</span></div><div class="prop-stat"><span class="prop-stat-label">Occupied</span><span class="prop-stat-value" style="color:var(--green)">${occ}</span></div><div class="prop-stat"><span class="prop-stat-label">Vacant</span><span class="prop-stat-value" style="color:var(--amber)">${rooms.length-occ}</span></div><div class="prop-stat"><span class="prop-stat-label">Rent Roll</span><span class="prop-stat-value">${fm(rooms.filter(r=>r.tenant?.name).reduce((s,r)=>s+Number(r.rent||0),0))}</span></div></div></div>`;}).join('')}</div>`;
+}
+
+function openAddProp(){openM('Add Property',`<div class="frow1"><label class="flabel">Property Name *</label><input class="finput" id="pN" placeholder="e.g. Sector 56 Building"/></div><div class="frow1"><label class="flabel">Address</label><input class="finput" id="pA" placeholder="Full address"/></div><div class="frow1"><label class="flabel">Default Electricity Rate (₹/unit)</label><input class="finput" id="pR" type="number" placeholder="e.g. 8.50"/><div class="fhint">Saved at property level, auto-fills all rooms</div></div>`,`<button class="btn btn-ghost" onclick="closeM()">Cancel</button><button class="btn btn-orange" onclick="saveProp()">Save</button>`);}
+function saveProp(){const n=document.getElementById('pN').value.trim();if(!n){toast('❌ Name required');return;}S.properties.push({id:uid(),name:n,address:document.getElementById('pA').value.trim(),electricityRate:document.getElementById('pR').value,rooms:[],mainMeter:[]});sched();closeM();renderProps();toast('✅ Property added');}
+function goProp(id){vProp=id;renderProp();}
+
+// ── PROP DETAIL ──
+function renderProp(){
+  const p=S.properties.find(x=>x.id===vProp);if(!p){vProp=null;renderProps();return;}
+  document.getElementById('crumb').textContent='› '+p.name;
+  const mc=document.getElementById('mc'),rooms=p.rooms||[],occ=rooms.filter(r=>r.tenant?.name).length,cm=mk();
+  const curMain=(p.mainMeter||[]).find(x=>x.month===cm);
+  mc.innerHTML=`
+  <button class="back" onclick="backProps()">← Properties</button>
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;">
+    <div><div style="font-family:'Space Grotesk';font-size:20px;font-weight:700;">${p.name}</div><div style="font-size:12px;color:var(--muted);">${p.address||''}${p.electricityRate?' · ₹'+p.electricityRate+'/unit':''}</div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      ${isAdmin?`<button class="btn btn-ghost btn-sm" onclick="editProp('${p.id}')">✏️ Edit</button>`:''}
+      <button class="btn btn-blue btn-sm" onclick="openMainMeter('${p.id}')">⚡ Main Meter</button>
+      ${isAdmin?`<button class="btn btn-orange btn-sm" onclick="openAddRoom('${p.id}')">+ Add Unit</button>`:''}
+    </div>
+  </div>
+  ${curMain?`<div class="status-bar"><div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;"><span style="font-size:11px;color:var(--muted);">⚡ Main Meter — ${ml(cm)}</span><div style="display:flex;gap:16px;flex-wrap:wrap;"><span style="font-size:12px;">Prev: <strong>${curMain.oldReading}</strong></span><span style="font-size:12px;">New: <strong>${curMain.reading}</strong></span><span style="font-size:12px;">Units: <strong style="color:var(--blue)">${curMain.units}</strong></span><span style="font-size:12px;">Bill: <strong style="color:var(--orange)">${fm(curMain.bill)}</strong></span></div></div></div>`:''}
+  <div class="g4" style="margin-bottom:18px;"><div class="stat"><div class="stat-label">Total Units</div><div class="stat-value">${rooms.length}</div></div><div class="stat"><div class="stat-label">Occupied</div><div class="stat-value grn">${occ}</div></div><div class="stat"><div class="stat-label">Vacant</div><div class="stat-value" style="color:var(--amber)">${rooms.length-occ}</div></div><div class="stat"><div class="stat-label">Rent Roll</div><div class="stat-value ora">${fm(rooms.filter(r=>r.tenant?.name).reduce((s,r)=>s+Number(r.rent||0),0))}</div></div></div>
+  ${rooms.length?`<div class="room-grid">${rooms.map(r=>roomCardH(r,p.id)).join('')}</div>`:` <div class="empty"><div class="empty-icon">🚪</div><div class="empty-text">No units yet</div>${isAdmin?`<button class="btn btn-orange" onclick="openAddRoom('${p.id}')">Add Unit</button>`:''}</div>`}`;
+}
+
+function roomCardH(r,pid){
+  const ht=!!r.tenant?.name,d=r.lease?.endDate?dl(r.lease.endDate):null;
+  const alert=d!==null&&d<=30?`<div style="font-size:11px;color:var(--red);margin-top:4px;">⚠️ ${d<=0?'Lease expired':d+'d left'}</div>`:'';
+  const dc=docCompleteness(r);
+  const docBadge=ht?(dc.missingRequired>0
+    ?`<div style="font-size:11px;color:var(--red);margin-top:4px;font-weight:600;display:flex;align-items:center;gap:4px;">🔴 ${dc.missingRequired} doc${dc.missingRequired>1?'s':''} missing</div>`
+    :`<div style="font-size:11px;color:var(--green);margin-top:4px;font-weight:600;">✅ Docs complete</div>`):'';
+  return`<div class="room-card" onclick="goRoom('${pid}','${r.id}')"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px;"><div class="room-type">${r.type}${r.unitNo?' #'+r.unitNo:''}</div><span class="badge ${ht?'badge-grn':'badge-amb'}">${ht?'Occupied':'Vacant'}</span></div><div class="room-rent">${fm(r.rent)}/mo</div><div class="room-tenant">${ht?'👤 '+r.tenant.name:'No tenant'}</div>${r.balance>0?`<div style="font-size:11px;color:var(--red);margin-top:4px;font-weight:600;">Bal: ${fm(r.balance)}</div>`:''}${docBadge}${alert}</div>`;
+}
+function backProps(){vProp=null;vRoom=null;renderProps();}
+function editProp(id){
+  const p=S.properties.find(x=>x.id===id);
+  openM('Edit Property',`<div class="frow1"><label class="flabel">Name *</label><input class="finput" id="pN" value="${p.name}"/></div><div class="frow1"><label class="flabel">Address</label><input class="finput" id="pA" value="${p.address||''}"/></div><div class="frow1"><label class="flabel">Default Rate (₹/unit)</label><input class="finput" id="pR" type="number" value="${p.electricityRate||''}"/></div>`,
+  `<button class="btn btn-ghost" onclick="closeM()">Cancel</button>${isAdmin?`<button class="btn btn-red btn-sm" onclick="delProp('${id}')">🗑</button>`:''}<button class="btn btn-orange" onclick="updProp('${id}')">Update</button>`);
+}
+function updProp(id){const p=S.properties.find(x=>x.id===id);p.name=document.getElementById('pN').value.trim();p.address=document.getElementById('pA').value.trim();p.electricityRate=document.getElementById('pR').value;sched();closeM();renderProp();toast('✅ Updated');}
+function delProp(id){if(!confirm('Delete property and all data?'))return;S.properties=S.properties.filter(x=>x.id!==id);sched();vProp=null;closeM();renderProps();toast('🗑 Deleted');}
+
+// ── MAIN METER ──
+function openMainMeter(pid){
+  const p=S.properties.find(x=>x.id===pid);
+  const readings=(p.mainMeter||[]).slice().sort((a,b)=>a.month.localeCompare(b.month));
+  const last=readings[readings.length-1],cm=mk(),cur=readings.find(x=>x.month===cm);
+  openM('⚡ Main Meter — '+p.name,`
+  <div style="background:#FFF7ED;border:1px solid rgba(249,115,22,0.2);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:var(--ink2);">
+    📌 Main meter tracks your total building electricity cost. Dashboard compares this vs sub-meter collections.
+  </div>
+  <div class="frow">
+    <div><label class="flabel">Month</label><input class="finput" id="mmM" type="month" value="${cm}" oninput="mmCalc()"/></div>
+    <div><label class="flabel">Rate per Unit (₹)</label><input class="finput" id="mmR" type="number" value="${cur?.rate||p.electricityRate||''}" placeholder="8.50" oninput="mmCalc()"/></div>
+  </div>
+  <div class="frow">
+    <div><label class="flabel">Previous Reading</label><input class="finput" id="mmO" type="number" value="${cur?.oldReading??last?.reading??''}" oninput="mmCalc()"/><div class="fhint">${last?'📌 From '+ml(last.month)+': '+last.reading+' units':'No previous reading'}</div></div>
+    <div><label class="flabel">Current Reading *</label><input class="finput" id="mmN" type="number" value="${cur?.reading||''}" placeholder="Enter new reading" oninput="mmCalc()"/></div>
+  </div>
+  <div class="ecalc" id="mmBox">
+    <div class="ecalc-title">📊 Main Meter Calculation</div>
+    <div class="ecalc-row"><span>Previous</span><span id="mm1">—</span></div>
+    <div class="ecalc-row"><span>Current</span><span id="mm2">—</span></div>
+    <div class="ecalc-row"><span>Units Consumed</span><span id="mm3" style="color:var(--blue)">—</span></div>
+    <div class="ecalc-row"><span>Rate</span><span id="mm4">—</span></div>
+    <div class="ecalc-total"><span>Total Building Bill</span><span id="mm5">—</span></div>
+  </div>
+  <div class="frow1" style="margin-top:10px;"><label class="flabel">Manual Override Amount <span style="color:var(--muted);font-weight:400;text-transform:none;">(optional)</span></label><input class="finput" id="mmA" type="number" value="${cur?.bill||''}" placeholder="Leave blank = auto-calculated"/></div>`,
+  `<button class="btn btn-ghost" onclick="closeM()">Cancel</button><button class="btn btn-orange" onclick="saveMainMeter('${pid}')">Save</button>`);
+  setTimeout(mmCalc,80);
+}
+function mmCalc(){
+  const o=Number(document.getElementById('mmO')?.value||0),n=Number(document.getElementById('mmN')?.value||0),r=Number(document.getElementById('mmR')?.value||0),box=document.getElementById('mmBox');if(!box)return;
+  if(n>0&&r>0){const u=n-o,t=u*r;box.classList.add('show');document.getElementById('mm1').textContent=o+' units';document.getElementById('mm2').textContent=n+' units';document.getElementById('mm3').textContent=u+' units';document.getElementById('mm4').textContent='₹'+r+'/unit';document.getElementById('mm5').textContent=fm(t);}else box.classList.remove('show');
+}
+function saveMainMeter(pid){
+  const n=document.getElementById('mmN').value;if(!n){toast('❌ Enter reading');return;}
+  const p=S.properties.find(x=>x.id===pid);if(!p.mainMeter)p.mainMeter=[];
+  const mo=document.getElementById('mmM').value,o=Number(document.getElementById('mmO').value||0),nR=Number(n),r=Number(document.getElementById('mmR').value||0),u=nR-o,man=document.getElementById('mmA').value;
+  p.mainMeter=p.mainMeter.filter(x=>x.month!==mo);
+  p.mainMeter.push({month:mo,oldReading:o,reading:nR,units:u,rate:r,bill:man?Number(man):u*r});
+  p.electricityRate=document.getElementById('mmR').value;sched();closeM();renderProp();toast('✅ Main meter saved');
+}
+
+// ── ADD/EDIT ROOM ──
+function roomFormH(r={}){
+  const types=['1 RK','1 BHK','2 BHK','3 BHK','Studio','Shop','Office','Warehouse','Other'];
+  return`<div class="fsec">Unit Details</div>
+  <div class="frow"><div><label class="flabel">Type *</label><select class="fselect" id="rT">${types.map(t=>`<option ${(r.type||'')==t?'selected':''}>${t}</option>`).join('')}</select></div><div><label class="flabel">Unit No / Floor</label><input class="finput" id="rU" value="${r.unitNo||''}" placeholder="e.g. 2B, GF"/></div></div>
+  <div class="frow"><div><label class="flabel">Monthly Rent (₹) *</label><input class="finput" id="rR" type="number" value="${r.rent||''}" placeholder="25000"/></div><div><label class="flabel">Security (₹)</label><input class="finput" id="rS" type="number" value="${r.security||''}" placeholder="50000"/></div></div>
+  <div class="fsec">Tenant</div>
+  <div class="frow"><div><label class="flabel">Name</label><input class="finput" id="tN" value="${r.tenant?.name||''}" placeholder="Full name"/></div><div><label class="flabel">Phone</label><input class="finput" id="tP" value="${r.tenant?.phone||''}" placeholder="10-digit"/></div></div>
+  <div class="frow1"><label class="flabel">Address</label><input class="finput" id="tA" value="${r.tenant?.address||''}" placeholder="Tenant address"/></div>
+  <div class="frow"><div><label class="flabel">Aadhaar No</label><input class="finput" id="tAd" value="${r.tenant?.aadhaar||''}" placeholder="XXXX XXXX XXXX"/></div><div><label class="flabel">PAN No</label><input class="finput" id="tPn" value="${r.tenant?.pan||''}" placeholder="ABCDE1234F"/></div></div>
+  <div class="frow1"><label class="flabel">Office / Company</label><input class="finput" id="tO" value="${r.tenant?.office||''}" placeholder="Where tenant works"/></div>
+  <div class="fsec">Lease</div>
+  <div class="frow"><div><label class="flabel">Start Date</label><input class="finput" id="lS" type="date" value="${r.lease?.startDate||''}"/></div><div><label class="flabel">End Date</label><input class="finput" id="lE" type="date" value="${r.lease?.endDate||''}"/></div></div>
+  <div class="frow"><div><label class="flabel">Escalation (%)</label><input class="finput" id="lEc" type="number" value="${r.lease?.escalation||''}" placeholder="10"/></div><div><label class="flabel">Notice Period (months)</label><input class="finput" id="lN" type="number" value="${r.lease?.noticePeriod||''}" placeholder="1"/></div></div>
+  <div class="frow1"><label class="flabel">Notice Served?</label><select class="fselect" id="lNS"><option value="no" ${(r.lease?.noticeServed||'no')==='no'?'selected':''}>No</option><option value="tenant" ${r.lease?.noticeServed==='tenant'?'selected':''}>Yes — By Tenant</option><option value="owner" ${r.lease?.noticeServed==='owner'?'selected':''}>Yes — By Owner</option></select></div>
+  <div class="frow1"><label class="flabel">Notes</label><textarea class="ftextarea" id="rNt">${r.notes||''}</textarea></div>`;
+}
+function collectRoom(ex={}){return{...ex,type:document.getElementById('rT').value,unitNo:document.getElementById('rU').value.trim(),rent:document.getElementById('rR').value,security:document.getElementById('rS').value,notes:document.getElementById('rNt').value.trim(),tenant:{name:document.getElementById('tN').value.trim(),phone:document.getElementById('tP').value.trim(),address:document.getElementById('tA').value.trim(),aadhaar:document.getElementById('tAd').value.trim(),pan:document.getElementById('tPn').value.trim(),office:document.getElementById('tO').value.trim()},lease:{startDate:document.getElementById('lS').value,endDate:document.getElementById('lE').value,escalation:document.getElementById('lEc').value,noticePeriod:document.getElementById('lN').value,noticeServed:document.getElementById('lNS').value}};}
+function openAddRoom(pid){openM('Add Room / Unit',roomFormH(),`<button class="btn btn-ghost" onclick="closeM()">Cancel</button><button class="btn btn-orange" onclick="saveRoom('${pid}')">Save</button>`);}
+function saveRoom(pid){if(!document.getElementById('rR').value){toast('❌ Rent required');return;}const p=S.properties.find(x=>x.id===pid);p.rooms.push(collectRoom({id:uid(),electricityReadings:[],payments:[],balance:0}));sched();closeM();renderProp();toast('✅ Room added');}
+function goRoom(pid,rid){vProp=pid;vRoom=rid;renderRoom();}
+
+// ── ROOM DETAIL ──
+function renderRoom(){
+  const p=S.properties.find(x=>x.id===vProp),r=(p?.rooms||[]).find(x=>x.id===vRoom);
+  if(!p||!r){vRoom=null;renderProp();return;}
+  document.getElementById('crumb').textContent=`› ${p.name} › ${r.type}${r.unitNo?' #'+r.unitNo:''}`;
+  const mc=document.getElementById('mc'),payments=r.payments||[];
+  const readings=(r.electricityReadings||[]).slice().sort((a,b)=>a.month.localeCompare(b.month));
+  const cm=mk(),curPaid=payments.filter(x=>x.month===cm).reduce((s,x)=>s+Number(x.amount||0),0);
+  const curElec=readings.find(x=>x.month===cm),bal=r.balance||0;
+  const totalDue=Number(r.rent||0)+Number(curElec?.amount||0)+bal,pend=totalDue-curPaid;
+
+  mc.innerHTML=`
+  <button class="back" onclick="backProp()">← ${p.name}</button>
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+    <div><div style="font-family:'Space Grotesk';font-size:20px;font-weight:700;">${r.type}${r.unitNo?' — #'+r.unitNo:''}</div><div style="font-size:12px;color:var(--muted);">${p.name}</div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      ${isAdmin?`<button class="btn btn-ghost btn-sm" onclick="editRoom('${p.id}','${r.id}')">✏️ Edit</button>`:''}
+      <button class="btn btn-blue btn-sm" onclick="openElec('${p.id}','${r.id}')">⚡ Electricity</button>
+      <button class="btn btn-amber btn-sm" onclick="openPayment('${p.id}','${r.id}')">💰 Payment</button>
+      <button class="btn btn-orange btn-sm" onclick="openReceipt('${p.id}','${r.id}')">🧾 Receipt</button>
+      <button class="btn btn-sm ${docCompleteness(r).missingRequired>0?'btn-red':'btn-green'}" onclick="openDocs('${p.id}','${r.id}')">📎 Documents ${docCompleteness(r).missingRequired>0?'⚠️':'✅'}</button>
+    </div>
+  </div>
+
+  <!-- Month Status -->
+  <div class="status-bar" style="border-left:3px solid ${pend<=0?'var(--green)':'var(--orange)'};margin-bottom:14px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <span style="font-size:12px;color:var(--muted);">📅 ${ml(cm)}</span>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;">
+        <span style="font-size:12px;">Rent: <strong>${fm(r.rent)}</strong></span>
+        ${curElec?`<span style="font-size:12px;">Elec: <strong style="color:var(--blue)">${fm(curElec.amount)}</strong></span>`:''}
+        ${bal>0?`<span style="font-size:12px;">Bal: <strong style="color:var(--red)">${fm(bal)}</strong></span>`:''}
+        <span style="font-size:12px;">Due: <strong style="color:var(--orange)">${fm(totalDue)}</strong></span>
+        <span style="font-size:12px;">Paid: <strong style="color:var(--green)">${fm(curPaid)}</strong></span>
+        <span class="badge ${pend<=0?'badge-grn':'badge-red'}">${pend<=0?'✓ Paid':fm(pend)+' pending'}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="g2" style="margin-bottom:14px;">
+    <div class="card">
+      <div class="card-head"><div class="card-title">👤 Tenant</div><span class="badge ${r.tenant?.name?'badge-grn':'badge-amb'}">${r.tenant?.name?'Occupied':'Vacant'}</span></div>
+      <div class="card-body">
+        ${r.tenant?.name?`
+        <div class="irow"><span class="irow-label">Name</span><span class="irow-value"><strong>${r.tenant.name}</strong></span></div>
+        <div class="irow"><span class="irow-label">Phone</span><span class="irow-value">${r.tenant.phone||'—'}</span></div>
+        <div class="irow"><span class="irow-label">Office</span><span class="irow-value">${r.tenant.office||'—'}</span></div>
+        ${isAdmin?`<div class="irow"><span class="irow-label">Aadhaar</span><span class="irow-value">${r.tenant.aadhaar||'—'}</span></div><div class="irow"><span class="irow-label">PAN</span><span class="irow-value">${r.tenant.pan||'—'}</span></div>`:'<div style="font-size:11px;color:var(--muted);margin-top:8px;">🔒 Sensitive details — admin only</div>'}
+        `:'<div style="text-align:center;padding:16px;color:var(--muted);">No tenant</div>'}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">📄 Lease & Financials</div></div>
+      <div class="card-body">
+        <div class="irow"><span class="irow-label">Monthly Rent</span><span class="irow-value" style="color:var(--orange);font-size:15px;font-weight:700;">${fm(r.rent)}</span></div>
+        <div class="irow"><span class="irow-label">Security</span><span class="irow-value">${fm(r.security)}</span></div>
+        <div class="irow"><span class="irow-label">Lease Start</span><span class="irow-value">${fd(r.lease?.startDate)}</span></div>
+        <div class="irow"><span class="irow-label">Lease End</span><span class="irow-value">${r.lease?.endDate?fd(r.lease.endDate)+(dl(r.lease.endDate)<=30?` <span class="badge badge-red">${dl(r.lease.endDate)<=0?'Expired':dl(r.lease.endDate)+'d'}</span>`:''):'—'}</span></div>
+        <div class="irow"><span class="irow-label">Escalation</span><span class="irow-value">${r.lease?.escalation?r.lease.escalation+'%':'—'}</span></div>
+        ${bal>0?`<div class="irow"><span class="irow-label">Balance Fwd</span><span class="irow-value" style="color:var(--red);font-weight:700;">${fm(bal)}</span></div>`:''}
+      </div>
+    </div>
+  </div>
+
+  <!-- Documents Status Card -->
+  <div class="card" style="margin-bottom:14px;">
+    <div class="card-head">
+      <div class="card-title">📎 Documents</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:12px;color:var(--muted);">${docCompleteness(r).uploaded}/${docCompleteness(r).total} uploaded</span>
+        <button class="btn btn-orange btn-sm" onclick="openDocs('${p.id}','${r.id}')">Manage</button>
+      </div>
+    </div>
+    <div class="card-body" style="padding:12px 18px;">
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        ${DOC_TYPES.map(dt=>{
+          const uploaded=(r.docs||{})[dt.key];
+          return`<div style="display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:8px;border:1px solid ${uploaded?'var(--green)':dt.required?'var(--red)':'var(--border)'};background:${uploaded?'var(--green-dim)':dt.required?'var(--red-dim)':'var(--bg)'};font-size:12px;">
+            <span>${dt.icon}</span>
+            <span style="font-weight:500;color:${uploaded?'var(--green)':dt.required?'var(--red)':'var(--muted)'};">${dt.label}</span>
+            <span style="font-size:11px;">${uploaded?'✓':'⚠️'}</span>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  </div>
+
+  <div class="g2">
+    <div class="card">
+      <div class="card-head"><div class="card-title">⚡ Electricity History</div><button class="btn btn-blue btn-sm" onclick="openElec('${p.id}','${r.id}')">+ Reading</button></div>
+      <div class="card-body" style="padding:0;overflow-x:auto;">
+        ${readings.length?`<table class="tbl"><thead><tr><th>Month</th><th>Prev</th><th>New</th><th>Units</th><th>Rate</th><th>Amount</th><th></th></tr></thead><tbody>${readings.slice(-6).reverse().map(rd=>`<tr><td>${ml(rd.month)}</td><td>${rd.oldReading??'—'}</td><td><strong>${rd.reading}</strong></td><td style="color:var(--blue);font-weight:600;">${rd.units??'—'}</td><td>₹${rd.rate||'—'}</td><td style="color:var(--green);font-weight:600;">${fm(rd.amount)}</td><td><button class="btn btn-orange btn-xs" onclick="openElecBill('${p.id}','${r.id}','${rd.month}')">Bill</button></td></tr>`).join('')}</tbody></table>`:'<div style="text-align:center;color:var(--muted);padding:18px;">No readings yet</div>'}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">💰 Payments</div><button class="btn btn-amber btn-sm" onclick="openPayment('${p.id}','${r.id}')">+ Add</button></div>
+      <div class="card-body" style="padding:0;overflow-x:auto;">
+        ${payments.length?`<table class="tbl"><thead><tr><th>Month</th><th>Amount</th><th>Mode</th><th>Date</th></tr></thead><tbody>${payments.slice(-8).reverse().map(py=>`<tr><td>${ml(py.month)}</td><td style="color:var(--green);font-weight:600;">${fm(py.amount)}</td><td>${py.mode||'—'}</td><td>${fd(py.date)}</td></tr>`).join('')}</tbody></table>`:'<div style="text-align:center;color:var(--muted);padding:18px;">No payments yet</div>'}
+      </div>
+    </div>
+  </div>`;
+}
+function backProp(){vRoom=null;renderProp();}
+function editRoom(pid,rid){const p=S.properties.find(x=>x.id===pid),r=(p?.rooms||[]).find(x=>x.id===rid);openM('Edit Room',roomFormH(r),`<button class="btn btn-ghost" onclick="closeM()">Cancel</button>${isAdmin?`<button class="btn btn-red btn-sm" onclick="delRoom('${pid}','${rid}')">🗑</button>`:''}<button class="btn btn-orange" onclick="updRoom('${pid}','${rid}')">Update</button>`);}
+function updRoom(pid,rid){const p=S.properties.find(x=>x.id===pid),idx=(p?.rooms||[]).findIndex(x=>x.id===rid);if(idx===-1)return;p.rooms[idx]=collectRoom(p.rooms[idx]);sched();closeM();renderRoom();toast('✅ Updated');}
+function delRoom(pid,rid){if(!confirm('Delete this room?'))return;const p=S.properties.find(x=>x.id===pid);p.rooms=p.rooms.filter(x=>x.id!==rid);sched();vRoom=null;closeM();renderProp();toast('🗑 Deleted');}
+
+// ── ELECTRICITY MODAL ──
+function openElec(pid,rid){
+  const p=S.properties.find(x=>x.id===pid),r=(p?.rooms||[]).find(x=>x.id===rid);
+  const readings=(r.electricityReadings||[]).slice().sort((a,b)=>a.month.localeCompare(b.month));
+  const last=readings[readings.length-1],cm=mk(),cur=readings.find(x=>x.month===cm);
+  openM('⚡ Electricity Reading — '+r.type+(r.unitNo?' #'+r.unitNo:''),`
+  <div class="frow">
+    <div><label class="flabel">Month</label><input class="finput" id="eM" type="month" value="${cm}" oninput="eCalc()"/></div>
+    <div><label class="flabel">Rate per Unit (₹) *</label><input class="finput" id="eRt" type="number" value="${cur?.rate||p.electricityRate||''}" placeholder="8.50" oninput="eCalc()"/><div class="fhint">Saved per property</div></div>
+  </div>
+  <div class="frow">
+    <div><label class="flabel">Previous Reading</label><input class="finput" id="eO" type="number" value="${cur?.oldReading??last?.reading??''}" oninput="eCalc()"/><div class="fhint">${last?'📌 Auto: '+ml(last.month)+' → '+last.reading+' units':'First reading for this unit'}</div></div>
+    <div><label class="flabel">Current Reading *</label><input class="finput" id="eN" type="number" value="${cur?.reading||''}" placeholder="New meter reading" oninput="eCalc()"/></div>
+  </div>
+  <div class="ecalc" id="eBox">
+    <div class="ecalc-title">⚡ Bill Calculation</div>
+    <div class="ecalc-row"><span>Previous Reading</span><span id="e1">—</span></div>
+    <div class="ecalc-row"><span>Current Reading</span><span id="e2">—</span></div>
+    <div class="ecalc-row"><span>Units Consumed</span><span id="e3" style="color:var(--blue)">—</span></div>
+    <div class="ecalc-row"><span>Rate per Unit</span><span id="e4">—</span></div>
+    <div class="ecalc-total"><span>Total Bill Amount</span><span id="e5">—</span></div>
+  </div>
+  <div class="frow1" style="margin-top:10px;"><label class="flabel">Manual Override <span style="color:var(--muted);font-weight:400;text-transform:none;">— leave blank for auto</span></label><input class="finput" id="eA" type="number" value="${cur?.manualAmt||''}" placeholder="Auto-calculated"/></div>`,
+  `<button class="btn btn-ghost" onclick="closeM()">Cancel</button><button class="btn btn-blue" onclick="openElecBill('${pid}','${rid}','${cm}')">📄 View Bill</button><button class="btn btn-orange" onclick="saveElec('${pid}','${rid}')">💾 Save</button>`);
+  setTimeout(eCalc,80);
+}
+function eCalc(){
+  const o=Number(document.getElementById('eO')?.value||0),n=Number(document.getElementById('eN')?.value||0),r=Number(document.getElementById('eRt')?.value||0),box=document.getElementById('eBox');if(!box)return;
+  if(n>0&&r>0){const u=n-o,t=u*r;box.classList.add('show');document.getElementById('e1').textContent=o+' units';document.getElementById('e2').textContent=n+' units';document.getElementById('e3').textContent=u+' units';document.getElementById('e4').textContent='₹'+r+'/unit';document.getElementById('e5').textContent=fm(t);}else box.classList.remove('show');
+}
+function saveElec(pid,rid){
+  const n=document.getElementById('eN').value,rt=document.getElementById('eRt').value;
+  if(!n){toast('❌ Enter current reading');return;}if(!rt){toast('❌ Enter rate');return;}
+  const p=S.properties.find(x=>x.id===pid),r=(p?.rooms||[]).find(x=>x.id===rid);
+  if(!r.electricityReadings)r.electricityReadings=[];p.electricityRate=rt;
+  const mo=document.getElementById('eM').value,o=Number(document.getElementById('eO').value||0),nR=Number(n),rtN=Number(rt),u=nR-o,man=document.getElementById('eA').value;
+  r.electricityReadings=r.electricityReadings.filter(x=>x.month!==mo);
+  r.electricityReadings.push({month:mo,oldReading:o,reading:nR,units:u,rate:rtN,amount:man?Number(man):u*rtN,manualAmt:man?Number(man):null});
+  sched();closeM();if(vRoom)renderRoom();else renderBill();toast('✅ Reading saved');
+}
+
+// ── ELECTRICITY BILL ──
+function openElecBill(pid,rid,month){
+  const p=S.properties.find(x=>x.id===pid),r=(p?.rooms||[]).find(x=>x.id===rid);
+  if(!r.tenant?.name){toast('❌ No tenant on this unit');return;}
+  const rd=(r.electricityReadings||[]).find(x=>x.month===month);
+  if(!rd){toast('❌ Save electricity reading first for '+ml(month));return;}
+  openM('⚡ Electricity Bill',`
+  <div class="receipt" id="eBill">
+    <div class="rhead">
+      <div><div class="rco">K.D. Constructions</div><div style="font-size:11px;color:var(--muted);">${p.address||'Gurugram, Haryana'}</div></div>
+      <div style="text-align:right;"><div style="font-size:10px;color:var(--muted);">Date</div><div style="font-size:13px;font-weight:600;">${fd(today())}</div></div>
+    </div>
+    <div class="rtitle">ELECTRICITY BILL</div>
+    <div class="rrow"><span>Property</span><span>${p.name}</span></div>
+    <div class="rrow"><span>Unit</span><span>${r.type}${r.unitNo?' #'+r.unitNo:''}</span></div>
+    <div class="rrow"><span>Tenant</span><span>${r.tenant.name}</span></div>
+    <div class="rrow"><span>Phone</span><span>${r.tenant.phone||'—'}</span></div>
+    <div class="rrow"><span>Billing Month</span><span>${ml(month)}</span></div>
+    <div style="border-top:2px dashed rgba(249,115,22,0.25);margin:10px 0;"></div>
+    <div class="rrow"><span>Previous Reading</span><span>${rd.oldReading} units</span></div>
+    <div class="rrow"><span>Current Reading</span><span>${rd.reading} units</span></div>
+    <div class="rrow"><span>Units Consumed</span><span style="color:var(--blue);font-weight:700;">${rd.units} units</span></div>
+    <div class="rrow"><span>Rate per Unit</span><span>₹${rd.rate}/unit</span></div>
+    <div class="rtotal"><span>Total Bill Amount</span><span>${fm(rd.amount)}</span></div>
+    <div class="rfooter">Kindly pay at the earliest.</div>
+  </div>
+  <div style="display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap;">
+    <button class="btn btn-ghost" onclick="doPrint('eBill','Electricity Bill')">📤 Share as PDF</button>
+    ${r.tenant.phone?`<button class="btn btn-orange" onclick="waElec('${r.tenant.phone}','${r.tenant.name}','${p.name}','${r.type}${r.unitNo?` #`+r.unitNo:''}','${month}','${rd.oldReading}','${rd.reading}','${rd.units}','${rd.rate}','${rd.amount}')">📱 Send WhatsApp</button>`:''}
+  </div>`);
+}
+
+// ── RENT RECEIPT ──
+function openReceipt(pid,rid){
+  const p=S.properties.find(x=>x.id===pid),r=(p?.rooms||[]).find(x=>x.id===rid);
+  if(!r.tenant?.name){toast('❌ No tenant');return;}
+  const cm=mk(),paid=(r.payments||[]).filter(x=>x.month===cm).reduce((s,x)=>s+Number(x.amount||0),0);
+  const elec=(r.electricityReadings||[]).find(x=>x.month===cm);
+  openM('🧾 Rent Receipt',`
+  <div class="receipt" id="rReceipt">
+    <div class="rhead">
+      <div><div class="rco">K.D. Constructions</div><div style="font-size:11px;color:var(--muted);">${p.address||'Gurugram, Haryana'}</div></div>
+      <div style="text-align:right;"><div style="font-size:10px;color:var(--muted);">Date</div><div style="font-size:13px;font-weight:600;">${fd(today())}</div></div>
+    </div>
+    <div class="rtitle">RENT RECEIPT</div>
+    <div class="rrow"><span>Property</span><span>${p.name}</span></div>
+    <div class="rrow"><span>Unit</span><span>${r.type}${r.unitNo?' #'+r.unitNo:''}</span></div>
+    <div class="rrow"><span>Tenant</span><span>${r.tenant.name}</span></div>
+    <div class="rrow"><span>Period</span><span>${ml(cm)}</span></div>
+    <div style="border-top:2px dashed rgba(249,115,22,0.25);margin:10px 0;"></div>
+    <div class="rrow"><span>Monthly Rent</span><span>${fm(r.rent)}</span></div>
+    ${elec?`<div class="rrow"><span>Electricity</span><span>${fm(elec.amount)}</span></div>`:''}
+    ${r.balance>0?`<div class="rrow"><span>Balance Forward</span><span style="color:var(--red)">${fm(r.balance)}</span></div>`:''}
+    <div class="rtotal"><span>Amount Received</span><span>${fm(paid||r.rent)}</span></div>
+    <div class="rfooter">Thank you for your payment.</div>
+  </div>
+  <div style="display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap;">
+    <button class="btn btn-ghost" onclick="doPrint('rReceipt','Rent Receipt')">📤 Share as PDF</button>
+    ${r.tenant.phone?`<button class="btn btn-orange" onclick="waReceipt('${r.tenant.phone}','${r.tenant.name}','${p.name}','${r.type}${r.unitNo?' #'+r.unitNo:''}','${cm}','${paid||r.rent}')">📱 Send WhatsApp</button>`:''}
+  </div>`);
+}
+
+// ── PRINT / PDF ──
+function doPrint(elId,title){
+  const content=document.getElementById(elId)?.innerHTML||'';
+  const w=window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html><head><title>${title}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Inter',sans-serif;padding:30px;background:#fff;color:#1A1A1A;max-width:560px;margin:0 auto;}
+    .rhead{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2.5px solid #F97316;padding-bottom:14px;margin-bottom:16px;}
+    .rco{font-family:'Inter';font-weight:700;font-size:15px;color:#F97316;}
+    .rtitle{font-size:20px;font-weight:700;text-align:center;color:#1A1A1A;letter-spacing:2px;margin-bottom:14px;}
+    .rrow{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #F3F4F6;font-size:13px;}
+    .rrow span:first-child{color:#9CA3AF;}
+    .rrow span:last-child{font-weight:600;}
+    .rtotal{background:#F97316;color:#fff;padding:12px 16px;border-radius:8px;display:flex;justify-content:space-between;margin-top:12px;font-weight:700;font-size:15px;}
+    .rfooter{text-align:center;margin-top:14px;font-size:11px;color:#9CA3AF;}
+    @media print{
+      body{padding:15px;}
+      button{display:none!important;}
+    }
+  </style>
+  <script>window.onload=function(){window.print();}<\/script>
+  </head><body>${content}</body></html>`);
+  w.document.close();
+}
+
+// ── COMBINED BILL (Rent + Electricity) ──
+function openCombinedBill(pid, rid, month){
+  const p=S.properties.find(x=>x.id===pid), r=(p?.rooms||[]).find(x=>x.id===rid);
+  if(!r.tenant?.name){toast('❌ No tenant on this unit');return;}
+  const elec=(r.electricityReadings||[]).find(x=>x.month===month);
+  const bal=r.balance||0;
+  const rentAmt=Number(r.rent||0);
+  const elecAmt=Number(elec?.amount||0);
+  const total=rentAmt+elecAmt+bal;
+
+  openM('📄 Monthly Bill — '+r.tenant.name,`
+  <div class="receipt" id="combinedBill">
+    <div class="rhead">
+      <div><div class="rco">K.D. Constructions</div><div style="font-size:11px;color:var(--muted);">${p.address||'Gurugram, Haryana'}</div></div>
+      <div style="text-align:right;"><div style="font-size:10px;color:var(--muted);">Bill Date</div><div style="font-size:13px;font-weight:600;">${fd(today())}</div></div>
+    </div>
+    <div class="rtitle">MONTHLY BILL</div>
+    <div class="rrow"><span>Property</span><span>${p.name}</span></div>
+    <div class="rrow"><span>Unit</span><span>${r.type}${r.unitNo?' #'+r.unitNo:''}</span></div>
+    <div class="rrow"><span>Tenant</span><span>${r.tenant.name}</span></div>
+    <div class="rrow"><span>Phone</span><span>${r.tenant.phone||'—'}</span></div>
+    <div class="rrow"><span>Billing Period</span><span>${ml(month)}</span></div>
+    <div style="border-top:2px dashed rgba(249,115,22,0.25);margin:10px 0;"></div>
+    <div class="rrow"><span>Monthly Rent</span><span>${fm(rentAmt)}</span></div>
+    ${elec?`
+    <div class="rrow"><span>Electricity (${elec.oldReading}→${elec.reading} = ${elec.units} units × ₹${elec.rate})</span><span style="color:var(--blue)">${fm(elecAmt)}</span></div>`:'<div class="rrow"><span>Electricity</span><span style="color:var(--muted)">Not added yet</span></div>'}
+    ${bal>0?`<div class="rrow"><span>Previous Balance</span><span style="color:var(--red)">${fm(bal)}</span></div>`:''}
+    <div class="rtotal"><span>Total Amount Due</span><span>${fm(total)}</span></div>
+    <div class="rfooter">Kindly pay at the earliest.</div>
+  </div>
+  <div style="display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap;">
+    <button class="btn btn-ghost" onclick="doPrint('combinedBill','Monthly Bill')">📤 Share as PDF</button>
+    ${r.tenant.phone?`<button class="btn btn-orange" onclick="waCombinedBill('${r.tenant.phone}','${r.tenant.name}','${p.name}','${r.type}${r.unitNo?' #'+r.unitNo:''}','${month}','${rentAmt}','${elecAmt}','${bal}','${total}')">📱 Send on WhatsApp</button>`:'<div style="font-size:12px;color:var(--muted);">Add tenant phone to enable WhatsApp</div>'}
+  </div>`);
+}
+
+// ── WHATSAPP ──
+function waElec(phone,name,prop,unit,month,oldR,newR,units,rate,amt){
+  const msg=encodeURIComponent(`Dear ${name},\n\n⚡ *Electricity Bill — ${ml(month)}*\nProperty: ${prop} | Unit: ${unit}\n\nPrevious Reading : ${oldR} units\nCurrent Reading  : ${newR} units\nUnits Consumed   : ${units} units\nRate             : ₹${rate}/unit\n\n*Total Bill: ₹${Number(amt).toLocaleString('en-IN')}*\n\nKindly pay at the earliest.`);
+  window.open(`https://wa.me/91${phone}?text=${msg}`,'_blank');
+}
+function waCombinedBill(phone,name,prop,unit,month,rent,elec,bal,total){
+  const elecLine=Number(elec)>0?`\nElectricity Bill : ₹${Number(elec).toLocaleString('en-IN')}`:'';
+  const balLine=Number(bal)>0?`\nPrev Balance     : ₹${Number(bal).toLocaleString('en-IN')}`:'';
+  const msg=encodeURIComponent(`Dear ${name},\n\n📄 *Monthly Bill — ${ml(month)}*\nProperty: ${prop} | Unit: ${unit}\n\nMonthly Rent     : ₹${Number(rent).toLocaleString('en-IN')}${elecLine}${balLine}\n\n*Total Due: ₹${Number(total).toLocaleString('en-IN')}*\n\nKindly pay at the earliest.`);
+  window.open(`https://wa.me/91${phone}?text=${msg}`,'_blank');
+}
+function waReceipt(phone,name,prop,unit,month,amt){
+  const msg=encodeURIComponent(`Dear ${name},\n\n🧾 *Rent Receipt — ${ml(month)}*\nProperty: ${prop} | Unit: ${unit}\n\n*Amount Received: ₹${Number(amt).toLocaleString('en-IN')}*\n\nThank you for your payment.`);
+  window.open(`https://wa.me/91${phone}?text=${msg}`,'_blank');
+}
+function waReminder(phone,name,prop,month,pend){
+  const msg=encodeURIComponent(`Dear ${name},\n\n📌 *Rent Reminder — ${ml(month)}*\nProperty: ${prop}\n\nAmount Pending: *₹${Number(pend).toLocaleString('en-IN')}*\n\nKindly pay at the earliest.`);
+  window.open(`https://wa.me/91${phone}?text=${msg}`,'_blank');
+}
+
+// ── PAYMENT ──
+function openPayment(pid,rid){
+  const p=S.properties.find(x=>x.id===pid),r=(p?.rooms||[]).find(x=>x.id===rid);
+  const cm=mk(),elec=(r.electricityReadings||[]).find(x=>x.month===cm),bal=r.balance||0;
+  const due=Number(r.rent||0)+Number(elec?.amount||0)+bal;
+  openM('💰 Record Payment — '+(r.tenant?.name||r.type),`
+  <div style="background:#FFF7ED;border:1px solid rgba(249,115,22,0.2);border-radius:8px;padding:12px 14px;margin-bottom:14px;">
+    <div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Total due — ${ml(cm)}</div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;">
+      <span>Rent: <strong>${fm(r.rent)}</strong></span>
+      ${elec?`<span>Elec: <strong style="color:var(--blue)">${fm(elec.amount)}</strong></span>`:''}
+      ${bal>0?`<span>Bal: <strong style="color:var(--red)">${fm(bal)}</strong></span>`:''}
+      <span style="color:var(--orange);font-weight:700;">Total: ${fm(due)}</span>
+    </div>
+  </div>
+  <div class="frow"><div><label class="flabel">Month</label><input class="finput" id="pyM" type="month" value="${cm}"/></div><div><label class="flabel">Amount Received (₹) *</label><input class="finput" id="pyA" type="number" placeholder="${due}" oninput="pyCheck(${due})"/></div></div>
+  <div id="pyStatus" style="margin-bottom:12px;display:none;"></div>
+  <div class="frow"><div><label class="flabel">Payment Mode</label><select class="fselect" id="pyMd"><option>Bank Transfer</option><option>UPI</option><option>Cash</option><option>Cheque</option></select></div><div><label class="flabel">Date</label><input class="finput" id="pyD" type="date" value="${today()}"/></div></div>
+  <div style="font-size:12px;color:var(--muted);padding:9px 12px;background:var(--bg);border-radius:8px;">💡 Short payment → balance auto carries forward to next month</div>`,
+  `<button class="btn btn-ghost" onclick="closeM()">Cancel</button><button class="btn btn-orange" onclick="savePayment('${pid}','${rid}')">Save Payment</button>`);
+}
+function pyCheck(due){
+  const a=Number(document.getElementById('pyA')?.value||0),st=document.getElementById('pyStatus');if(!st||!a)return;st.style.display='block';const d=due-a;
+  if(d>0)st.innerHTML=`<div style="background:var(--amber-dim);border:1px solid var(--amber);border-radius:7px;padding:8px 12px;font-size:12px;color:var(--amber);">⚠️ Short by ${fm(d)} — will carry forward</div>`;
+  else if(d<0)st.innerHTML=`<div style="background:var(--green-dim);border:1px solid var(--green);border-radius:7px;padding:8px 12px;font-size:12px;color:var(--green);">✅ Extra ${fm(Math.abs(d))} received</div>`;
+  else st.innerHTML=`<div style="background:var(--green-dim);border:1px solid var(--green);border-radius:7px;padding:8px 12px;font-size:12px;color:var(--green);">✅ Full amount received</div>`;
+}
+function savePayment(pid,rid){
+  const a=document.getElementById('pyA').value;if(!a){toast('❌ Enter amount');return;}
+  const p=S.properties.find(x=>x.id===pid),r=(p?.rooms||[]).find(x=>x.id===rid);
+  if(!r.payments)r.payments=[];
+  const mo=document.getElementById('pyM').value;
+  r.payments.push({id:uid(),month:mo,amount:Number(a),mode:document.getElementById('pyMd').value,date:document.getElementById('pyD').value});
+  const elec=(r.electricityReadings||[]).find(x=>x.month===mo),bal=r.balance||0;
+  const due=Number(r.rent||0)+Number(elec?.amount||0)+bal;
+  const totalPaid=r.payments.filter(x=>x.month===mo).reduce((s,x)=>s+Number(x.amount||0),0);
+  r.balance=Math.max(0,due-totalPaid);
+  sched();closeM();if(vRoom)renderRoom();else renderBill();toast('✅ Payment saved'+(r.balance>0?' — '+fm(r.balance)+' carried forward':''));
+}
+
+// ── BILLING TAB ──
+function renderBill(){
+  curTab='billing';
+  const mc=document.getElementById('mc');
+  const all=[];S.properties.forEach(p=>(p.rooms||[]).forEach(r=>{if(r.tenant?.name)all.push({p,r});}));
+  mc.innerHTML=`
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;">
+    <div style="font-family:'Space Grotesk';font-size:18px;font-weight:700;">⚡ Billing & Collections</div>
+    <div class="mnav"><button onclick="chBill(-1)">‹</button><span>${ml(billMo)}</span><button onclick="chBill(1)">›</button></div>
+  </div>
+  ${all.length?`<div class="card"><div class="card-body" style="padding:0;overflow-x:auto;"><table class="tbl">
+    <thead><tr><th>Property/Unit</th><th>Tenant</th><th>Rent</th><th>Prev→New</th><th>Units</th><th>Elec Bill</th><th>Balance</th><th>Total Due</th><th>Paid</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody>${all.map(({p,r})=>{
+      const elec=(r.electricityReadings||[]).find(x=>x.month===billMo);
+      const paid=(r.payments||[]).filter(x=>x.month===billMo).reduce((s,x)=>s+Number(x.amount||0),0);
+      const bal=r.balance||0,total=Number(r.rent||0)+Number(elec?.amount||0)+bal,pend=total-paid;
+      return`<tr>
+        <td><strong>${p.name}</strong><br/><span style="font-size:11px;color:var(--muted)">${r.type}${r.unitNo?' #'+r.unitNo:''}</span></td>
+        <td>${r.tenant.name}<br/><span style="font-size:11px;color:var(--muted)">${r.tenant.phone||''}</span></td>
+        <td style="font-weight:600">${fm(r.rent)}</td>
+        <td style="font-size:12px;color:var(--muted)">${elec?elec.oldReading+'→'+elec.reading:'—'}</td>
+        <td style="color:var(--blue);font-weight:600">${elec?elec.units:'—'}</td>
+        <td>${elec?`<span style="color:var(--green);font-weight:600">${fm(elec.amount)}</span> <button class="btn btn-orange btn-xs" onclick="openElecBill('${p.id}','${r.id}','${billMo}')">Bill</button>`:`<button class="btn btn-ghost btn-xs" onclick="openElec('${p.id}','${r.id}')">+Add</button>`}</td>
+        <td>${bal>0?`<span style="color:var(--red);font-weight:600">${fm(bal)}</span>`:'—'}</td>
+        <td style="color:var(--orange);font-weight:700">
+          ${fm(total)}
+          <div style="margin-top:4px;"><button class="btn btn-orange btn-xs" onclick="openCombinedBill('${p.id}','${r.id}','${billMo}')">📄 Send Bill</button></div>
+        </td>
+        <td style="color:var(--green);font-weight:600">${fm(paid)}</td>
+        <td><span class="badge ${pend<=0?'badge-grn':paid>0?'badge-amb':'badge-red'}">${pend<=0?'Paid':paid>0?'Part':'Pending'}</span></td>
+        <td><div style="display:flex;gap:3px;flex-wrap:wrap;">
+          <button class="btn btn-amber btn-xs" onclick="openPayment('${p.id}','${r.id}')">💰</button>
+          ${r.tenant.phone?`<button class="btn btn-ghost btn-xs" onclick="waReminder('${r.tenant.phone}','${r.tenant.name}','${p.name}','${billMo}','${pend}')">📱</button>`:''}
+        </div></td>
+      </tr>`;}).join('')}
+    </tbody></table></div></div>`
+  :`<div class="empty"><div class="empty-icon">💰</div><div class="empty-text">No occupied units</div></div>`}`;
+}
+function chBill(d){const[y,m]=billMo.split('-').map(Number);const dt=new Date(y,m-1+d);billMo=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');renderBill();}
+
+// ── EXPENSES ──
+let ei=1;
+function renderExp(){
+  curTab='expenses';
+  const mc=document.getElementById('mc');
+  const fil=(S.expenses||[]).filter(e=>e.month===expMo);
+  const tot=fil.reduce((s,e)=>s+(e.items||[]).reduce((is,i)=>is+Number(i.amount||0),0),0);
+  mc.innerHTML=`
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;">
+    <div style="font-family:'Space Grotesk';font-size:18px;font-weight:700;">📋 Expenses</div>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <div class="mnav"><button onclick="chExp(-1)">‹</button><span>${ml(expMo)}</span><button onclick="chExp(1)">›</button></div>
+      ${isAdmin?`<button class="btn btn-orange" onclick="openAddExp()">+ Add</button>`:''}
+    </div>
+  </div>
+  <div class="g3" style="margin-bottom:14px;">
+    <div class="stat"><div class="stat-label">Total Expenses</div><div class="stat-value red">${fm(tot)}</div><div class="stat-sub">${ml(expMo)}</div></div>
+    <div class="stat"><div class="stat-label">Properties</div><div class="stat-value">${fil.length}</div></div>
+    <div class="stat"><div class="stat-label">Line Items</div><div class="stat-value">${fil.reduce((s,e)=>s+(e.items||[]).length,0)}</div></div>
+  </div>
+  ${fil.length?fil.map(exp=>{
+    const p=S.properties.find(x=>x.id===exp.propertyId),t=(exp.items||[]).reduce((s,i)=>s+Number(i.amount||0),0);
+    return`<div class="card" style="margin-bottom:12px;"><div class="card-head"><div class="card-title">🏢 ${p?p.name:'Unknown'}</div><div style="display:flex;align-items:center;gap:10px;"><strong style="color:var(--amber)">${fm(t)}</strong>${isAdmin?`<button class="btn btn-ghost btn-sm" onclick="editExp('${exp.id}')">✏️</button><button class="btn btn-red btn-sm" onclick="delExp('${exp.id}')">🗑</button>`:''}</div></div><div class="card-body" style="padding:0;"><table class="tbl"><thead><tr><th>Description</th><th style="text-align:right">Amount</th></tr></thead><tbody>${(exp.items||[]).map(i=>`<tr><td>${i.desc}</td><td style="text-align:right;font-weight:600;color:var(--amber)">${fm(i.amount)}</td></tr>`).join('')}</tbody></table></div></div>`;
+  }).join(''):`<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">No expenses for ${ml(expMo)}</div>${isAdmin?`<button class="btn btn-orange" onclick="openAddExp()">Add Expense</button>`:''}</div>`}`;
+}
+function chExp(d){const[y,m]=expMo.split('-').map(Number);const dt=new Date(y,m-1+d);expMo=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');renderExp();}
+function expFormH(ex=null){
+  const opts=S.properties.map(p=>`<option value="${p.id}" ${ex?.propertyId===p.id?'selected':''}>${p.name}</option>`).join('');
+  const items=ex?.items||[{desc:'',amount:''}];
+  return`<div class="frow"><div><label class="flabel">Property *</label><select class="fselect" id="eP">${opts}</select></div><div><label class="flabel">Month *</label><input class="finput" type="month" id="eMo" value="${ex?.month||expMo}"/></div></div><div class="fsec">Items</div><div id="eItems">${items.map((item,i)=>`<div class="frow" id="ei_${i}"><div><label class="flabel">Description</label><input class="finput" id="ed_${i}" value="${item.desc}" placeholder="e.g. Maintenance"/></div><div><label class="flabel">Amount (₹)</label><input class="finput" id="ea_${i}" type="number" value="${item.amount}" placeholder="0"/></div></div>`).join('')}</div><button class="btn btn-ghost btn-sm" type="button" onclick="addEI()">+ Add Item</button>`;
+}
+function addEI(){const c=document.getElementById('eItems'),i=ei++;const d=document.createElement('div');d.className='frow';d.id=`ei_${i}`;d.innerHTML=`<div><label class="flabel">Description</label><input class="finput" id="ed_${i}" placeholder="Description"/></div><div><label class="flabel">Amount (₹)</label><input class="finput" id="ea_${i}" type="number" placeholder="0"/></div>`;c.appendChild(d);}
+function getEI(){const items=[];document.querySelectorAll('[id^="ed_"]').forEach(el=>{const i=el.id.split('_')[1],d=el.value.trim(),a=document.getElementById('ea_'+i)?.value;if(d&&a)items.push({desc:d,amount:Number(a)});});return items;}
+function openAddExp(){if(!S.properties.length){toast('❌ Add a property first');return;}ei=1;openM('Add Expense',expFormH(),`<button class="btn btn-ghost" onclick="closeM()">Cancel</button><button class="btn btn-orange" onclick="saveExp()">Save</button>`);}
+function saveExp(){const pid=document.getElementById('eP').value,mo=document.getElementById('eMo').value,items=getEI();if(!items.length){toast('❌ Add at least one item');return;}if(!S.expenses)S.expenses=[];S.expenses=S.expenses.filter(e=>!(e.propertyId===pid&&e.month===mo));S.expenses.push({id:uid(),propertyId:pid,month:mo,items});sched();closeM();renderExp();toast('✅ Saved');}
+function editExp(id){const exp=(S.expenses||[]).find(x=>x.id===id);if(!exp)return;ei=exp.items.length;openM('Edit Expense',expFormH(exp),`<button class="btn btn-ghost" onclick="closeM()">Cancel</button><button class="btn btn-orange" onclick="updExp('${id}')">Update</button>`);}
+function updExp(id){const exp=(S.expenses||[]).find(x=>x.id===id);if(!exp)return;exp.propertyId=document.getElementById('eP').value;exp.month=document.getElementById('eMo').value;exp.items=getEI();sched();closeM();renderExp();toast('✅ Updated');}
+function delExp(id){if(!confirm('Delete?'))return;S.expenses=(S.expenses||[]).filter(x=>x.id!==id);sched();renderExp();toast('🗑 Deleted');}
+
+// ── DOCUMENTS ──
+function openDocs(pid,rid){
+  const p=S.properties.find(x=>x.id===pid),r=(p?.rooms||[]).find(x=>x.id===rid);
+  if(!r)return;
+  const docs=r.docs||{};
+  const rows=DOC_TYPES.map(dt=>{
+    const uploaded=docs[dt.key];
+    return`<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border);">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:22px;">${dt.icon}</span>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--ink);">${dt.label} ${dt.required?'<span style="color:var(--red);font-size:10px;">*Required</span>':''}</div>
+          ${uploaded?`<div style="font-size:11px;color:var(--green);">✓ ${uploaded.name} &nbsp;·&nbsp; ${(uploaded.size/1024).toFixed(0)}KB &nbsp;·&nbsp; ${uploaded.uploadedAt?new Date(uploaded.uploadedAt).toLocaleDateString('en-IN'):''}</div>`:`<div style="font-size:11px;color:${dt.required?'var(--red)':'var(--muted)'};">${dt.required?'⚠️ Missing — required':'Not uploaded'}</div>`}
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        ${uploaded?`<button class="btn btn-green btn-xs" onclick="viewDoc('${rid}','${dt.key}')">👁 View</button><button class="btn btn-red btn-xs" onclick="delDoc('${pid}','${rid}','${dt.key}')">🗑</button>`:''}
+        <label for="docFileInput" class="btn btn-orange btn-xs" style="cursor:pointer;" onclick="setDocTarget('${pid}','${rid}','${dt.key}')">${uploaded?'🔄 Replace':'📤 Upload'}</label>
+      </div>
+    </div>`;
+  }).join('');
+
+  openM('📎 Documents — '+(r.tenant?.name||r.type),
+    `<div style="font-size:12px;color:var(--muted);padding:10px 12px;background:var(--bg);border-radius:8px;margin-bottom:14px;">Upload PDF or image files. Max ~700KB per file for best results.</div>${rows}`,
+    `<button class="btn btn-orange" onclick="closeM()">Done</button>`
+  );
+}
+
+function setDocTarget(pid, rid, docKey){
+  window._docPid=pid; window._docRid=rid; window._docKey=docKey;
+  // Reset value so same file can be re-selected
+  document.getElementById('docFileInput').value='';
+}
+
+async function handleDocUpload(event){
+  const pid=window._docPid, rid=window._docRid, docKey=window._docKey;
+  if(!pid||!rid||!docKey)return;
+  const file=event.target.files[0];
+  if(!file)return;
+  if(file.size>800000){toast('❌ File too large — keep under 700KB');event.target.value='';return;}
+  toast('⏳ Uploading '+file.name+'...',10000);
+  const reader=new FileReader();
+  reader.onload=async function(e){
+    const base64=e.target.result;
+    const ok=await saveDocToFS(rid,docKey,base64,file.name,file.type);
+    if(ok){
+      const p=S.properties.find(x=>x.id===pid),r=(p?.rooms||[]).find(x=>x.id===rid);
+      if(!r.docs)r.docs={};
+      r.docs[docKey]={name:file.name,size:file.size,mimeType:file.type,uploadedAt:new Date().toISOString()};
+      sched();
+      toast('✅ '+file.name+' saved!');
+      openDocs(pid,rid);
+      if(vRoom)renderRoom();
+    }else{
+      toast('❌ Upload failed. Check your connection and try again.');
+    }
+  };
+  reader.onerror=()=>toast('❌ Could not read file');
+  reader.readAsDataURL(file);
+}
+
+async function viewDoc(roomId, docKey){
+  toast('⏳ Loading document...',5000);
+  const doc=await loadDocFromFS(roomId,docKey);
+  if(!doc||!doc.data){toast('❌ Document not found');return;}
+  const w=window.open('','_blank');
+  if(doc.mimeType&&doc.mimeType.startsWith('image/')){
+    w.document.write(`<html><head><title>${doc.name||'Document'}</title></head><body style="margin:0;background:#111;display:flex;align-items:center;justify-content:center;min-height:100vh;"><img src="${doc.data}" style="max-width:100%;max-height:100vh;object-fit:contain;"/></body></html>`);
+  }else{
+    // PDF — open as data URL
+    w.location.href=doc.data;
+  }
+  toast('✅ Document opened');
+}
+
+async function delDoc(pid, rid, docKey){
+  if(!confirm('Remove this document?'))return;
+  await deleteDocFromFS(rid,docKey);
+  const p=S.properties.find(x=>x.id===pid),r=(p?.rooms||[]).find(x=>x.id===rid);
+  if(r.docs)delete r.docs[docKey];
+  sched();toast('🗑 Document removed');openDocs(pid,rid);if(vRoom)renderRoom();
+}
+
+window.onload=()=>{
+  document.getElementById('lName').focus();
+  // Wire file input change event reliably via JS
+  document.getElementById('docFileInput').addEventListener('change', handleDocUpload);
+  // Save immediately before page unload so no data is lost
+  window.addEventListener('beforeunload', ()=>{ clearTimeout(saveT); save(); });
+};
+</script>
+</body>
+</html>
