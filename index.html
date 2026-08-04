@@ -2174,9 +2174,18 @@ function calcClosingBalance(r,mo){
   const paid=(r.payments||[]).filter(x=>x.month===mo).reduce((s,x)=>s+Number(x.amount||0),0);
   return Math.max(0,due-paid);
 }
+const TRACKING_START_MONTH='2026-05';
 function getCarryIn(r,mo,_depth){
   _depth=_depth||0;
   if(!r.balanceByMonth)r.balanceByMonth={};
+  // Hard floor: May 2026 is the true start of data entry for every tenant, regardless of
+  // what any individual tenant's stored move-in/lease-start date says. Some tenants ended
+  // up with an earlier date on record (e.g. a blank date field defaulting to an earlier
+  // "today" during initial setup), which the recursive calculation below would otherwise
+  // trust and walk back from — inflating balances with months that predate real tracking.
+  // Declaring May as a hard boundary sidesteps having to audit every tenant's exact stored
+  // date individually.
+  if(mo<=TRACKING_START_MONTH)return 0;
   const pm=prevMonth(mo);
   // First check stored history for previous month
   if(r.balanceByMonth[pm]!==undefined)return r.balanceByMonth[pm];
