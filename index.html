@@ -9927,7 +9927,7 @@ async function deedToDocx(root,opt){
     firstPara=false;
     const after=o.after!=null?o.after:(mb?tw(px(+mb[1])):tw(px(opt.pAfterPx||11)));
     ls.forEach((r,i)=>{ const last=i===ls.length-1;
-      body.push(P(r,{align:center?'center':'both',before:i===0?before:0,after:last?after:0,keepNext:o.keepNext||!last||holdTogether,keepLines:o.keepLines||holdTogether,pageBreak:i===0&&pendingBreak})); });
+      body.push(P(r,{align:center?'center':'both',before:i===0?before:0,after:last?after:0,keepNext:o.keepNext||holdTogether||(!last&&r.replace(/<[^>]+>/g,'').length<=160),keepLines:o.keepLines||holdTogether,pageBreak:i===0&&pendingBreak})); });
     pendingBreak=false;
   };
   const cellXml=(w,borders,inner,mar,shade)=>'<w:tc><w:tcPr><w:tcW w:w="'+w+'" w:type="dxa"/>'
@@ -10048,7 +10048,7 @@ async function deedToDocx(root,opt){
     +media.map(m=>'<Relationship Id="'+m.rid+'" Type="'+R+'/image" Target="media/'+m.name+'"/>').join('')+'</Relationships>';
   const now=new Date().toISOString().replace(/\.\d+Z$/,'Z');
   const core=HDR+'<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">'
-    +'<dc:title>'+X(opt.title||'Lease Deed')+'</dc:title><dc:creator>KD Constructions</dc:creator><dcterms:created xsi:type="dcterms:W3CDTF">'+now+'</dcterms:created><dcterms:modified xsi:type="dcterms:W3CDTF">'+now+'</dcterms:modified></cp:coreProperties>';
+    +'<dc:title>'+X(opt.title||'Lease Deed')+'</dc:title><dc:creator>KD Constructions</dc:creator><dc:description>Word export v4</dc:description><dcterms:created xsi:type="dcterms:W3CDTF">'+now+'</dcterms:created><dcterms:modified xsi:type="dcterms:W3CDTF">'+now+'</dcterms:modified></cp:coreProperties>';
   const z=new window.JSZip();
   z.file('[Content_Types].xml',ct); z.file('_rels/.rels',rels); z.file('docProps/core.xml',core);
   z.file('word/document.xml',doc); z.file('word/styles.xml',styles); z.file('word/settings.xml',settings); z.file('word/footer1.xml',footer); z.file('word/_rels/document.xml.rels',drels);
