@@ -10020,7 +10020,10 @@ async function deedToDocx(root,opt){
     +'<w:pgMar w:top="'+mm(M.top)+'" w:right="'+mm(M.right)+'" w:bottom="'+mm(M.bottom)+'" w:left="'+mm(M.left)+'" w:header="0" w:footer="'+mm(6)+'" w:gutter="0"/></w:sectPr>';
   const NS='xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"';
   const HDR='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
-  const doc=HDR+'<w:document '+NS+'><w:body>'+stampXml.join('')+body.join('')+sect+'</w:body></w:document>';
+  // Word/Pages always need a paragraph after a final table; left to them it is a full-height line that can spill onto
+  // an empty extra page, so end with our own 1-point line instead.
+  const endPara='<w:p><w:pPr><w:spacing w:before="0" w:after="0" w:line="20" w:lineRule="exact"/><w:jc w:val="left"/><w:rPr><w:sz w:val="2"/><w:szCs w:val="2"/></w:rPr></w:pPr></w:p>';
+  const doc=HDR+'<w:document '+NS+'><w:body>'+stampXml.join('')+body.join('')+endPara+sect+'</w:body></w:document>';
   const fr={color:'777777',size:18};
   const fld=c=>'<w:r>'+rPr(fr)+'<w:fldChar w:fldCharType="begin"/></w:r><w:r>'+rPr(fr)+'<w:instrText xml:space="preserve"> '+c+' </w:instrText></w:r><w:r>'+rPr(fr)+'<w:fldChar w:fldCharType="separate"/></w:r><w:r>'+rPr(fr)+'<w:t>1</w:t></w:r><w:r>'+rPr(fr)+'<w:fldChar w:fldCharType="end"/></w:r>';
   const footer=HDR+'<w:ftr '+NS+'>'+P(run('Page ',fr)+fld('PAGE')+run(' of ',fr)+fld('NUMPAGES'),{align:'center',line:240})+'</w:ftr>';
