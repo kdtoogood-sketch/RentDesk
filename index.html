@@ -9883,9 +9883,13 @@ async function deedToDocx(root,opt){
     return s?'<w:rPr>'+s+'</w:rPr>':''; };
   const run=(t,f)=>'<w:r>'+rPr(f||{})+'<w:t xml:space="preserve">'+X(t)+'</w:t></w:r>';
   // paragraph properties in Word's required order: keepNext, keepLines, pageBreakBefore, pBdr, spacing, jc
+  // A signing line (borderTop) is drawn as its OWN empty, 1pt-high paragraph above the text — never as a border on
+  // the text paragraph itself, because Pages (Mac) ignores border spacing and would draw the line through the words.
   const P=(inner,o)=>{ o=o||{}; let p='';
+    if(o.borderTop){ const rule='<w:p><w:pPr><w:keepNext/>'+(o.keepLines?'<w:keepLines/>':'')+'<w:pBdr><w:bottom w:val="single" w:sz="6" w:space="0" w:color="333333"/></w:pBdr>'
+        +'<w:spacing w:before="'+(o.before||0)+'" w:after="0" w:line="20" w:lineRule="exact"/><w:jc w:val="left"/><w:rPr><w:sz w:val="2"/><w:szCs w:val="2"/></w:rPr></w:pPr></w:p>';
+      return rule+P(inner,{...o,borderTop:false,before:80}); }
     if(o.keepNext)p+='<w:keepNext/>'; if(o.keepLines)p+='<w:keepLines/>'; if(o.pageBreak)p+='<w:pageBreakBefore/>';
-    if(o.borderTop)p+='<w:pBdr><w:top w:val="single" w:sz="6" w:space="4" w:color="333333"/></w:pBdr>';
     p+='<w:spacing w:before="'+(o.before||0)+'" w:after="'+(o.after||0)+'" w:line="'+(o.line||LINE)+'" w:lineRule="'+(o.lineRule||'auto')+'"/>';
     p+='<w:jc w:val="'+(o.align||'both')+'"/>';
     return '<w:p><w:pPr>'+p+'</w:pPr>'+inner+'</w:p>'; };
@@ -10058,7 +10062,6 @@ async function _shareDocx(blob,name){
   const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),4000);
   return 'downloaded';
 }
-
 async function downloadLeaseWord(){
   if(!isAdmin){toast('❌ Word copy is admin only');return;}
   const pv=document.getElementById('loPreview'); const el=pv&&pv.querySelector('.deed-wrap');
