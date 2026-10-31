@@ -669,11 +669,13 @@ const FB_KEY='AIzaSyBiBmFAJHTxoZAddAON94u7fQ_d-RpX2io';
 const FB_URL=`https://firestore.googleapis.com/v1/projects/propdesk-f50e0/databases/(default)/documents/rentdesk/main?key=${FB_KEY}`;
 const DOCS_BASE=`https://firestore.googleapis.com/v1/projects/propdesk-f50e0/databases/(default)/documents/rentdesk_docs`;
 const DOC_TYPES=[
+  // required = must be uploaded or the tenant shows under "documents pending" on the Dashboard; the rest are optional
   {key:'lease_deed',label:'Lease Deed / Agreement',icon:'📋',required:true},
   {key:'aadhaar',label:'Aadhaar Card',icon:'🪪',required:true},
-  {key:'pan',label:'PAN Card',icon:'💳',required:true},
+  {key:'police_ver',label:'Police Verification',icon:'🚔',required:true},
+  {key:'pan',label:'PAN Card',icon:'💳',required:false},
   {key:'office_id',label:'Office / Employment ID',icon:'🏢',required:false},
-  {key:'police_ver',label:'Police Verification',icon:'🚔',required:false},
+  {key:'photo',label:'Passport Size Photo',icon:'📷',required:false},
 ];
 
 let S={properties:[],expenses:[],cash:[],tasks:[],reminders:[]};
@@ -6034,8 +6036,7 @@ function docsPendingRows(){
   (S.properties||[]).forEach(p=>sortRooms(p.rooms||[]).forEach(r=>{
     if(!isRoomOccupied(r)||!r.tenant)return;
     const dc=docCompleteness(r);
-    const miss=dc.missing.map(d=>d.label.split(' /')[0]);
-    if(!dc.police)miss.push('Police verification');
+    const miss=dc.missing.map(d=>d.label.split(' /')[0]);      // lease deed, Aadhaar, police verification
     if(miss.length)rows.push({p,r,miss});
   }));
   return rows;
