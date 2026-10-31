@@ -1568,6 +1568,35 @@ function renderDash(){
   let cashNow=cashGiven-cashSpent, cashWho='Preeti';
   try{ const st=staffList(); cashNow=st.reduce((t,n)=>t+cashBookMonth(n,mk(),'all').nowBal,0); cashWho=st.join(', ')||'Staff'; }catch(e){}
 
+  // quick site-wise glance for the Summary box — same rules as the totals above, so the rows add up to them
+  const _eSites=new Set(elecSites().map(p=>p.id));
+  const siteRows=(S.properties||[]).map(p=>{
+    const rent=(p.rooms||[]).filter(r=>isRoomOccupied(r)).reduce((a,r)=>a+Number(r.rent||0),0);
+    const eb=_eSites.has(p.id)?elecRecon(p,cm).billed:0;
+    const col=(p.rooms||[]).reduce((a,r)=>a+(r.payments||[]).filter(x=>x.month===cm).reduce((b,x)=>b+Number(x.amount||0),0),0);
+    const exp=(S.expenses||[]).filter(e=>e.month===cm&&!e.elecPay&&e.propertyId===p.id).reduce((a,e)=>a+(e.items||[]).reduce((b,i)=>b+Number(i.amount||0),0),0);
+    const me=Math.round(_mainBill(p,cm));
+    return {name:p.name,rent,eb,exp:rent+eb,col,pend:rent+eb-col,spent:exp,me,net:col-exp-me};
+  });
+  { const ids=new Set((S.properties||[]).map(p=>p.id));
+    const gen=(S.expenses||[]).filter(e=>e.month===cm&&!e.elecPay&&!ids.has(e.propertyId)).reduce((a,e)=>a+(e.items||[]).reduce((b,i)=>b+Number(i.amount||0),0),0);
+    if(gen)siteRows.push({name:'General',rent:0,eb:0,exp:0,col:0,pend:0,spent:gen,me:0,net:-gen,general:true}); }
+  const _sv=v=>(v<0?'−':'')+fm(Math.abs(v));
+  const siteGlanceH=`<div style="margin-top:14px;">
+    <div style="display:grid;grid-template-columns:minmax(52px,1fr) repeat(4,minmax(0,1.15fr));gap:4px;font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;padding:0 4px 6px;border-bottom:1px solid var(--border);">
+      <span>Site</span><span style="text-align:right;">Expected</span><span style="text-align:right;">Collected</span><span style="text-align:right;">Pending</span><span style="text-align:right;">Net</span></div>
+    ${siteRows.map(x=>`<div class="${_dfIsOpen('sum:'+x.name,false)?'df-open':''}" data-fold="${_escHtml('sum:'+x.name)}" style="border-bottom:1px solid var(--border);">
+      <div class="df-head" onclick="dashFold(this)" style="display:grid;grid-template-columns:minmax(52px,1fr) repeat(4,minmax(0,1.15fr));gap:4px;align-items:center;padding:8px 4px;font-size:12px;">
+        <span style="font-weight:800;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${_escHtml(x.name)}</span>
+        <span style="text-align:right;">${x.general?'—':fm(x.exp)}</span>
+        <span style="text-align:right;color:var(--green);font-weight:600;">${x.general?'—':fm(x.col)}</span>
+        <span style="text-align:right;color:${x.pend>0?'var(--red)':'var(--green)'};">${x.general?'—':x.pend>0?fm(x.pend):x.pend<0?'+'+fm(-x.pend):'Nil ✓'}</span>
+        <span style="text-align:right;font-weight:800;color:${x.net<0?'var(--red)':'var(--ink)'};">${_sv(x.net)}</span></div>
+      <div class="df-body" style="font-size:11.5px;color:var(--ink2);padding:0 4px 9px;line-height:1.7;">
+        ${x.general?'':`Rent ${fm(x.rent)} · Electricity billed ${fm(x.eb)}<br/>`}Expenses ${fm(x.spent)}${x.general?' (not linked to a site)':''}${x.me?' · Main electricity bill '+fm(x.me):''}</div></div>`).join('')}
+    <div style="font-size:10.5px;color:var(--muted);margin-top:6px;">Tap a site for rent, electricity and expenses. Net = collected − expenses − main electricity bill.</div>
+  </div>`;
+
   mc.innerHTML=`
   <div style="margin-bottom:18px;">
     <div style="font-family:'Space Grotesk';font-size:18px;font-weight:700;">Good day, ${user} 👋</div>
@@ -1636,6 +1665,7 @@ function renderDash(){
         <div class="irow"><span class="irow-label">Expenses${sumExpNoElec!==totalExp?' <span style="font-size:10px;color:var(--muted);">(excl. ⚡ bill payments)</span>':''}</span><span class="irow-value" style="color:var(--amber)">${fm(sumExpNoElec)}</span></div>
         <div class="irow"><span class="irow-label">Main electricity bill (meter)</span><span class="irow-value" style="color:var(--blue)">${fm(mainElecCost)}</span></div>
         <div style="background:var(--orange);color:#fff;padding:10px 14px;border-radius:8px;display:flex;justify-content:space-between;font-weight:700;margin-top:12px;"><span>Net Income</span><span>${(coll-sumExpNoElec-mainElecCost<0?'−':'')+fm(Math.abs(coll-sumExpNoElec-mainElecCost))}</span></div>
+        ${siteGlanceH}
       </div>
     </div>
   </div>
