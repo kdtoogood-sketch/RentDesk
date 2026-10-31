@@ -966,7 +966,7 @@ function workDateNavHTML(){
 }
 function toast(msg,dur=2600){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),dur);}
 function openM(ti,bo,fo=''){document.getElementById('mTitle').textContent=ti;document.getElementById('mBody').innerHTML=bo;document.getElementById('mFoot').innerHTML=fo;document.getElementById('ov').classList.add('open');}
-function closeM(){document.getElementById('ov').classList.remove('open');}
+function closeM(){const o=document.getElementById('ov');o.classList.remove('open');o.style.zIndex='';}
 function ovClick(e){if(e.target.id==='ov')closeM();}
 // docCompleteness → see TENANT DOCUMENTS (v2)
 
@@ -1176,6 +1176,22 @@ async function loadData(){
       actLog('Auto-migration: cleared stale balance cache for '+clearedRooms+' room(s) with no payment history');
       sched();
     }
+  }
+  if(dataLoadedFromFirebase&&isAdmin&&!S._rentAskBaseline){
+    let n=0;
+    (S.leases||[]).forEach(l=>{ if(l.status==='draft')return; const a=_leaseRentAsk(l); if(a){ l.rentDecision={rent:a.rent,action:'keep',on:today(),by:'existing (before rent check)'}; n++; } });
+    S._rentAskBaseline=true; sched();
+    if(n)actLog('Rent check started — '+n+' existing agreement rent difference(s) left as they are');
+  }
+  if(dataLoadedFromFirebase&&isAdmin&&!S._fixBandhanpreetNov){
+    let done=false;
+    (S.properties||[]).forEach(p=>{ if(String(p.name).trim()!=='798')return; (p.rooms||[]).forEach(r=>{
+      if(!r.tenant||!/bandhanpreet/i.test(r.tenant.name||''))return;
+      const h=(r.rentHistory||[]).find(x=>Number(x.rent)===27940&&String(x.effectiveFrom||'').slice(0,7)==='2026-08');
+      if(h&&!(r.rentHistory||[]).some(x=>String(x.effectiveFrom||'').slice(0,7)==='2026-11')){ h.effectiveFrom='2026-11-01'; _rebalance(r,'2026-08'); done=true;
+        actLog('Rent corrected — '+r.tenant.name+': ₹27,940 from 1 Nov 2026 (was back-dated to 1 Aug when the renewal was marked signed); Aug–Oct stay ₹25,400'); }
+    }); });
+    S._fixBandhanpreetNov=true; sched();
   }
   syncDueBookings();
   renderTab();
@@ -1609,6 +1625,7 @@ function renderDash(){
     <div style="font-size:12px;color:var(--muted);margin-top:2px;">${new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
   </div>
   ${dashLeaseUrgentH()}
+  ${dashRentAskH()}
   ${dashMeterReminderH()}
   ${dashBankCheckH()}
   ${dashBirthdaysH()}
@@ -3130,7 +3147,11 @@ function confirmRentChange(pid,rid,newRent){
   if(idx===-1)return;
   const effFrom=document.getElementById('rc_effFrom').value;
   if(!effFrom){toast('❌ Choose the effective month');return;}
-  const r=p.rooms[idx];
+  _applyRentChange(p.rooms[idx],newRent,effFrom);
+  sched();closeM();renderRoomDetail();
+  toast('✅ Rent updated to '+fm(newRent)+', effective '+ml(effFrom));
+}
+function _applyRentChange(r,newRent,effFrom){
   if(!r.rentHistory)r.rentHistory=[];
   // Record the OLD rate as having applied up to now, if this is the first change being
   // tracked (so months before this point still resolve to the old rate via rentForMonth's
@@ -3150,9 +3171,81 @@ function confirmRentChange(pid,rid,newRent){
   r.rentHistory=r.rentHistory;
   r.balanceByMonth={};
   r.balance=0;
-  sched();closeM();renderRoomDetail();
   actLog('Rent changed — '+(r.tenant&&r.tenant.name?r.tenant.name:'room')+' to '+fm(newRent)+' from '+ml(effFrom));
-  toast('✅ Rent updated to '+fm(newRent)+', effective '+ml(effFrom));
+}
+// ── New rent on a lease / renewal → the same "From which month?" box as Edit tenant (KD only).
+// Signing or renewing an agreement never changes the room's rent by itself.
+function openRentEffBox(pid,rid,newRent,o){
+  if(!isAdmin)return;
+  o=o||{};
+  const p=S.properties.find(x=>x.id===pid), r=((p&&p.rooms)||[]).find(x=>x.id===rid); if(!r)return;
+  const oldRent=Number(r.rent||0), sm=(o.startMonth||'').slice(0,7), def=sm&&sm>mk()?sm:mk();
+  const who=(r.tenant&&r.tenant.name)||(r.type+(r.unitNo?' #'+r.unitNo:''));
+  const ov=document.getElementById('ov');
+  openM('📅 Rent Change — From Which Month?',`
+      <div style="font-size:12px;color:var(--muted);margin:-4px 0 10px;">${_escHtml(who)} · ${_escHtml(p.name)}${o.leaseId?' · from the agreement':''}</div>
+      <div style="background:var(--orange-dim);border:1px solid var(--orange);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;">
+        Rent is changing from ${fm(oldRent)} to ${fm(newRent)}. Past months will keep using the old rate — only choose the month this new rate actually starts from.
+        ${sm?`<div style="margin-top:4px;color:var(--ink2);">Agreement starts ${ml(sm)}.</div>`:''}
+      </div>
+      <div class="frow1"><label class="flabel">New Rate Effective From *</label>
+        <input class="finput" type="month" id="rc_effFrom" value="${def}"/></div>`,
+    `<button class="btn btn-ghost" onclick="rentBoxKeep('${pid}','${rid}',${newRent},'${o.leaseId||''}')">Keep ${fm(oldRent)} for now</button>
+     <button class="btn btn-orange" onclick="rentBoxConfirm('${pid}','${rid}',${newRent},'${o.leaseId||''}')">Confirm</button>`);
+  ov.style.zIndex='400';   // above the lease editor when opened from there
+}
+function _rentDecided(pid,rid,newRent,leaseId,action,month){
+  const p=S.properties.find(x=>x.id===pid), r=((p&&p.rooms)||[]).find(x=>x.id===rid);
+  const rec={rent:newRent,action,month:month||'',on:today(),by:user};
+  const l=leaseId&&(S.leases||[]).find(x=>x.id===leaseId); if(l)l.rentDecision=rec;
+  if(r&&r.lease&&r.lease.rentAsk&&Number(r.lease.rentAsk.rent)===Number(newRent))delete r.lease.rentAsk;
+  return r;
+}
+function rentBoxConfirm(pid,rid,newRent,leaseId){
+  const effFrom=(document.getElementById('rc_effFrom')||{}).value;
+  if(!effFrom){toast('❌ Choose the effective month');return;}
+  const r=_rentDecided(pid,rid,newRent,leaseId,'applied',effFrom); if(!r)return;
+  _applyRentChange(r,newRent,effFrom);
+  sched();closeM();renderTab();
+  toast('✅ Rent '+fm(newRent)+' from '+ml(effFrom)+' — earlier months keep the old rent',4500);
+}
+function rentBoxKeep(pid,rid,newRent,leaseId){
+  const r=_rentDecided(pid,rid,newRent,leaseId,'keep'); if(!r)return;
+  actLog('Rent kept at '+fm(r.rent)+' — '+((r.tenant&&r.tenant.name)||'room')+' (agreement says '+fm(newRent)+')');
+  sched();closeM();renderTab();
+  toast('Rent stays '+fm(r.rent));
+}
+// A lease whose rent differs from the room's current rent, with no decision yet
+function _leaseRentAsk(l){
+  if(!l||!['active','draft'].includes(l.status||'active'))return null;
+  const rm=_findLeaseRoom(l); if(!rm||!rm.r.tenant||!leaseIsCurrent(l))return null;
+  const rent=Number(l.rentAmt||0);
+  if(!rent||rent===Number(rm.r.rent||0))return null;
+  if(l.rentDecision&&Number(l.rentDecision.rent)===rent)return null;
+  return {p:rm.p,r:rm.r,rent,leaseId:l.id,startMonth:(l.leaseStart||'').slice(0,7),draft:l.status==='draft'};
+}
+function _leaseRentCheck(l){ if(!isAdmin)return; const a=_leaseRentAsk(l); if(a)openRentEffBox(a.p.id,a.r.id,a.rent,{leaseId:a.leaseId,startMonth:a.startMonth}); }
+function rentAsksPending(){
+  const out=[];
+  (S.leases||[]).forEach(l=>{ const a=_leaseRentAsk(l); if(a&&!out.some(x=>x.r.id===a.r.id))out.push(a); });
+  (S.properties||[]).forEach(p=>(p.rooms||[]).forEach(r=>{ const k=r.lease&&r.lease.rentAsk;
+    if(k&&r.tenant&&Number(k.rent)!==Number(r.rent||0)&&!out.some(x=>x.r.id===r.id))out.push({p,r,rent:Number(k.rent),leaseId:'',startMonth:(k.start||'').slice(0,7)}); }));
+  return out;
+}
+// KD's dashboard: agreements whose rent hasn't been applied (or kept) yet
+function dashRentAskH(){
+  if(!isAdmin)return '';
+  const L=rentAsksPending(); if(!L.length)return '';
+  const row=a=>`<div class="urgent-row" style="border-bottom-color:rgba(249,115,22,.2);">
+      <div style="min-width:0;flex:1;"><div style="font-weight:700;font-size:14px;color:var(--ink);">${_escHtml(a.r.tenant.name||'')}</div>
+        <div style="font-size:12px;color:var(--ink2);">${_escHtml(a.p.name)} · ${_escHtml(a.r.type+(a.r.unitNo?' #'+a.r.unitNo:''))}${a.draft?' · renewal draft':''}</div>
+        <div style="font-size:12.5px;margin-top:3px;">Agreement <b>${fm(a.rent)}</b> · room rent now <b>${fm(a.r.rent)}</b>${a.startMonth?` <span style="color:var(--muted);">· starts ${ml(a.startMonth)}</span>`:''}</div></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button class="btn btn-orange btn-sm" onclick="openRentEffBox('${a.p.id}','${a.r.id}',${a.rent},{leaseId:'${a.leaseId}',startMonth:'${a.startMonth}'})">📅 Change rent…</button>
+        <button class="btn btn-ghost btn-sm" onclick="rentBoxKeep('${a.p.id}','${a.r.id}',${a.rent},'${a.leaseId}')">Keep ${fm(a.r.rent)}</button></div></div>`;
+  return dfBox('rentask','soon-card','border-color:var(--orange);','soon-head','background:var(--orange);',
+    `<span>💰 ${L.length} rent change${L.length>1?'s':''} to confirm</span>`,
+    dfSites('rentask',L,a=>a.p.name,g=>g.map(row).join('')));
 }
 function delRoom(pid,rid){if(!confirm('Delete this room?'))return;const p=S.properties.find(x=>x.id===pid);p.rooms=p.rooms.filter(x=>x.id!==rid);sched();vRoom=null;closeM();renderPropDetail();toast('🗑 Deleted');}
 
@@ -8782,7 +8875,7 @@ function _openRenewModal(){
       <strong style="color:var(--blue);">📄 Draft Renewal Deed</strong> creates the new lease as a <strong>draft</strong>. Print it and get it signed — the old lease stays as it is until you tap <strong>✅ Mark Signed</strong>.
     </div>
     <details style="margin-top:10px;font-size:12px;"><summary style="cursor:pointer;color:var(--muted);">Already signed on paper? Skip the draft</summary>
-      ${m.rm?`<label style="display:flex;gap:8px;align-items:flex-start;margin:8px 0;cursor:pointer;color:var(--ink2);"><input type="checkbox" id="mr_upd" checked style="margin-top:2px;"/><span>Also update room rent (now ${fm(roomRent)}) from the new start month. Earlier months keep the old rent.</span></label>`:''}
+      ${m.rm?`<div style="margin:8px 0;color:var(--ink2);">Room rent (now ${fm(roomRent)}) isn't changed by renewing.${isAdmin?' If the new rent is different you\'ll be asked from which month it applies.':' KD will set the new rent.'}</div>`:''}
       <button class="btn btn-green btn-sm" style="margin-top:6px;" onclick="saveMarkRenewed()">✅ Mark Renewed Now</button>
     </details>`,
     `<button class="btn btn-ghost" onclick="closeM()">Cancel</button>${extraBtns}
@@ -8845,12 +8938,16 @@ function saveMarkRenewed(){
     delete newL.renewedOn;delete newL.renewedBy;
     S.leases.push(newL);
   }
-  if(m.rm)roomMsg=_applyRoomRenewal(m.rm.r,start,end,ten,rent,esc,!!(upd&&upd.checked));
+  if(m.rm)roomMsg=_applyRoomRenewal(m.rm.r,start,end,ten,rent,esc,false);   // dates only — rent is set separately
+  const _newDeed=m.kind==='deed'?(S.leases||[])[S.leases.length-1]:null;
+  if(m.kind==='room'&&m.rm&&rent!==Number(m.rm.r.rent||0)){ if(!m.rm.r.lease)m.rm.r.lease={}; m.rm.r.lease.rentAsk={rent,start,on:today(),by:user}; }
   if(m.kind==='room'&&m.rm){ if(!m.rm.r.lease)m.rm.r.lease={}; m.rm.r.lease.police={status:'pending',since:today()}; }   // room without a deed
   actLog('Lease marked renewed — '+m.name+' till '+fd(end)+', rent ₹'+rent.toLocaleString('en-IN')+' ('+esc+'%)'+(note?' · '+note:''));
-  _mr=null;
+  const _mrr=m.rm; _mr=null;
   sched();closeM();renderTab();
   toast('✅ Renewed till '+fd(end)+roomMsg,4500);
+  if(_newDeed)_leaseRentCheck(_newDeed);
+  else if(_mrr&&rent!==Number(_mrr.r.rent||0))openRentEffBox(_mrr.p.id,_mrr.r.id,rent,{startMonth:start});
 }
 // ── RENEWAL DRAFT → SIGNED flow ──
 // Step 1: "Draft Renewal Deed" creates the new lease with status 'draft' (old lease untouched).
@@ -8911,7 +9008,7 @@ function _refreshLoSign(){
 function finalizeDraft(draftId){
   const ov=document.getElementById('leaseOverlay');
   if(ov&&ov.classList.contains('open')){
-    if(_curLeaseId===draftId)saveLease(); // keep any edits made in the editor
+    if(_curLeaseId===draftId)saveLease({noRentAsk:true}); // keep any edits made in the editor
     closeLeaseDeed(true);
   }
   const d=(S.leases||[]).find(x=>x.id===draftId);if(!d){toast('❌ Draft not found');return;}
@@ -8923,7 +9020,7 @@ function finalizeDraft(draftId){
       Confirm the renewal deed has been <strong>printed and signed</strong>.<br/>
       New lease: <strong>${fd(d.leaseStart)} → ${fd(d.leaseEnd)}</strong> · Rent <strong>${fm(newRent)}</strong>/mo
     </div>
-    ${rm&&roomRent!==newRent?`<label style="display:flex;gap:8px;align-items:flex-start;font-size:12px;cursor:pointer;color:var(--ink2);"><input type="checkbox" id="fz_upd" checked style="margin-top:2px;"/><span>Update room rent from ${fm(roomRent)} to ${fm(newRent)} from ${ml((d.leaseStart||'').slice(0,7))}. Earlier months keep the old rent.</span></label>`:''}`,
+    ${rm&&roomRent!==newRent?`<div style="font-size:12px;color:var(--ink2);">Room rent stays ${fm(roomRent)} — signing doesn't change it.${isAdmin?' You\'ll be asked from which month '+fm(newRent)+' applies.':' KD will set the new rent.'}</div>`:''}`,
     `<button class="btn btn-ghost" onclick="closeM()">Not yet</button>
      <button class="btn btn-green" onclick="confirmFinalize('${draftId}')">✅ Yes, Signed — Mark Renewed</button>`);
 }
@@ -8941,10 +9038,11 @@ function confirmFinalize(draftId){
   if(rm){
     const ten=parseInt(d.leaseTenure==='custom'?d.customTenure:d.leaseTenure)||11;
     const esc=Number(d.settledEscalation!=null?d.settledEscalation:(d.escalation||0));
-    msg=_applyRoomRenewal(rm.r,d.leaseStart,d.leaseEnd,ten,Number(d.rentAmt||0),esc,!upd||upd.checked);
+    msg=_applyRoomRenewal(rm.r,d.leaseStart,d.leaseEnd,ten,Number(d.rentAmt||0),esc,false);   // dates only — rent is set separately
   }
   actLog('Renewal signed — '+(d.lesseeName||'')+' till '+fd(d.leaseEnd));
   sched();closeM();renderTab();
+  _leaseRentCheck(d);
   toast('✅ Signed & renewed till '+fd(d.leaseEnd)+msg+(_policeDone(d)?'':' · 🚔 police verification still pending'),4500);
 }
 function closeLease(leaseId){
@@ -9756,7 +9854,7 @@ ${_renderPointsHTML(L,tenure)}
 }
 
 // ── LEASE DEED (Part 6 — saveLease) ──
-function saveLease(){
+function saveLease(opt){
   if(!S.leases)S.leases=[];
   const L=_collectLease();
   if(!L.lesseeName){toast('❌ Lessee name is required');return;}
@@ -9784,6 +9882,7 @@ function saveLease(){
   _refreshLoSign();
   if(curTab==='lease'||curTab==='dash')renderTab();
   toast(saved.status==='draft'?'📝 Renewal draft saved — print it, get it signed, then Mark Signed':'✅ Lease saved',3500);
+  if(!(opt&&opt.noRentAsk))_leaseRentCheck(saved);   // rent differs from the room's rent → "from which month?" (KD only)
 }
 
 // ── LEASE DEED (Part 7 — old renewal flow, replaced by the draft → signed flow) ──
