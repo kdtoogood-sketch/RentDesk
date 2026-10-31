@@ -380,7 +380,14 @@ button{cursor:pointer;}
 .bc-tick{border:1px solid var(--border);background:#fff;border-radius:14px;padding:2px 8px;font-size:11px;font-weight:700;cursor:pointer;color:var(--muted);}
 .bc-tick.on{background:var(--green-dim);color:var(--green);border-color:rgba(16,185,129,.35);}
 .bc-ok{color:var(--green);font-weight:700;}.bc-bad{color:var(--red);font-weight:700;}.bc-wait{color:var(--blue);font-weight:700;}
-.bc-act{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px;}.bc-act .btn{flex:0 0 auto;}.bc-more{font-weight:900;letter-spacing:1px;}
+.bc-act{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px;}
+.ms-sec{margin-top:12px;}.ms-st{font-size:10.5px;font-weight:800;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;margin-bottom:4px;}
+.ms-r{display:flex;justify-content:space-between;gap:10px;font-size:13.5px;padding:4px 0;}.ms-r i{display:block;font-size:11.5px;color:var(--muted);font-style:normal;}
+.ms-r b{white-space:nowrap;}.ms-tot{border-top:1px dashed var(--border);margin-top:4px;padding-top:7px;font-weight:800;}
+.ms-info{background:#F5F3FF;border-radius:10px;padding:9px 11px;font-size:12.5px;line-height:1.75;color:var(--ink2);}
+.ms-bal{margin-top:10px;border-radius:10px;padding:9px 12px;font-size:13.5px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;}
+.ms-hist{display:flex;gap:6px;}.ms-hm{flex:1;text-align:center;border-radius:9px;padding:6px 2px;font-size:11.5px;font-weight:700;}.ms-hm div{font-size:10.5px;font-weight:600;color:var(--muted);}
+.ms-act{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px;}.bc-act .btn{flex:0 0 auto;}.bc-more{font-weight:900;letter-spacing:1px;}
 .ow-card{margin-bottom:12px;}
 .ow-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border);}
 .ow-title{font-family:'Space Grotesk';font-weight:700;font-size:15px;color:var(--ink);}
@@ -3976,6 +3983,27 @@ function savePayment(pid,rid){
 }
 
 // ── BILLING TAB ──
+// One tenant's bill for one month — the same figures on the billing cards, the table and the month sheet.
+function _billCalc(r,mo){
+  const elec=(r.electricityReadings||[]).find(x=>x.month===mo);
+  const paid=(r.payments||[]).filter(x=>x.month===mo).reduce((s,x)=>s+Number(x.amount||0),0);
+  const bal=getCarryIn(r,mo);
+  const dedTotal=(r.deductions||[]).filter(d=>d.month===mo).reduce((s,d)=>s+Number(d.amount||0),0);
+  const activeStart=(r.tenant&&((r.tenant.activeFrom||r.tenant.moveInDate)||''))||(r.lease&&r.lease.startDate)||'';
+  const fullRent=rentForMonth(r,mo);
+  const rentAmt=proratedRentForMonth(fullRent,activeStart,mo);
+  const isProrated=rentAmt<Number(r.rent||0);
+  // Security due — only folded into Total Due during the tenant's actual move-in
+  // month, when it's a fresh charge. In every month after that, an unpaid security
+  // amount is already flowing forward through the carry-in (bal) above — adding it
+  // again here would double-count the same debt a second time.
+  const secAdvDue=securityAdvanceDueForMonth(r,mo);
+  const isMoveInMonth=activeStart&&sameMonthDate(activeStart,mo);
+  const secOnlyPending=(secAdvDue&&isMoveInMonth)?secAdvDue.secPending:0;
+  const total=rentAmt+Number((elec&&elec.amount)||0)+bal-dedTotal+secOnlyPending,pend=total-paid;
+  return {elec,paid,bal,dedTotal,activeStart,fullRent,rentAmt,isProrated,secAdvDue,isMoveInMonth,secOnlyPending,total,pend};
+}
+
 function renderBilling(){
   curTab='billing';
   const mc=document.getElementById('mc');
@@ -4034,21 +4062,7 @@ function renderBilling(){
     let pRent=0,pDue=0,pPaid=0,pPend=0,pElec=0,pDeposits=0;
     const cLive=[],cVac=[];
     const rowsArr=liveTenants.map(r=>{
-      const elec=(r.electricityReadings||[]).find(x=>x.month===billMo);
-      const paid=(r.payments||[]).filter(x=>x.month===billMo).reduce((s,x)=>s+Number(x.amount||0),0);
-      const bal=getCarryIn(r,billMo);
-      const dedTotal=(r.deductions||[]).filter(d=>d.month===billMo).reduce((s,d)=>s+Number(d.amount||0),0);
-      const activeStart=(r.tenant&&((r.tenant.activeFrom||r.tenant.moveInDate)||''))||(r.lease&&r.lease.startDate)||'';
-      const rentAmt=proratedRentForMonth(rentForMonth(r,billMo),activeStart,billMo);
-      const isProrated=rentAmt<Number(r.rent||0);
-      // Security due — only folded into Total Due during the tenant's actual move-in
-      // month, when it's a fresh charge. In every month after that, an unpaid security
-      // amount is already flowing forward through the carry-in (bal) above — adding it
-      // again here would double-count the same debt a second time.
-      const secAdvDue=securityAdvanceDueForMonth(r,billMo);
-      const isMoveInMonth=activeStart&&sameMonthDate(activeStart,billMo);
-      const secOnlyPending=(secAdvDue&&isMoveInMonth)?secAdvDue.secPending:0;
-      const total=rentAmt+Number((elec&&elec.amount)||0)+bal-dedTotal+secOnlyPending,pend=total-paid;
+      const {elec,paid,bal,dedTotal,activeStart,rentAmt,isProrated,secAdvDue,isMoveInMonth,secOnlyPending,total,pend}=_billCalc(r,billMo);
       const closingBal=Math.max(0,pend);
       const monthDeposits=depositLedgerForMonth(r,billMo);
       const monthDepositsTotal=monthDeposits.reduce((s,e)=>s+Number(e.amount||0),0);
@@ -4272,7 +4286,7 @@ function _bcLiveH(c){
   if(c.secAdvDue&&c.secAdvDue.pending>0)extra.push(`<span style="color:var(--amber);">🔐 Security/advance pending ${fm(c.secAdvDue.pending)}</span> <a href="#" onclick="openDepositEntry(${args});return false;" style="color:var(--purple);font-weight:700;">+ Collect</a>`);
   if(c.monthDepositsTotal>0)extra.push(`<span style="color:var(--purple);">🔐 ${fm(c.monthDepositsTotal)} deposit received this month</span>`);
   const q=[t.name,t.phone,r.type,r.unitNo,p.name].join(' ').toLowerCase();
-  return `<div class="bc ${_bcMatch(c)?'':'bc-hid'} ${c.pend>0?(c.paid>0?'st-amb':'st-red'):'st-grn'}" data-q="${_escHtml(q)}">
+  return `<div class="bc ${_bcMatch(c)?'':'bc-hid'} ${c.pend>0?(c.paid>0?'st-amb':'st-red'):'st-grn'}" data-q="${_escHtml(q)}" onclick="billCardTap(event,'${p.id}','${r.id}')" style="cursor:pointer;">
     <div class="bc-top"><div style="min-width:0;"><div class="bc-unit">${_escHtml(r.type+(r.unitNo?' #'+r.unitNo:''))}</div><div class="bc-name">${_escHtml(t.name||'—')}</div></div>${pill}</div>
     <div class="bc-line">${line}</div>
     <div class="bc-tot"><span>Due <b>${fm(c.total)}</b></span><span>Paid <b style="color:var(--green);">${fm(c.paid)}</b></span>${c.pend>0?`<span>Balance <b style="color:var(--red);">${fm(c.pend)}</b></span>`:''}</div>
@@ -4294,6 +4308,66 @@ function _bcVacH(c){
     <div class="bc-act">${refundActionH(t)}</div>
   </div>`;
 }
+function billCardTap(e,pid,rid){ if(e&&e.target&&e.target.closest('button,a,input,select,label,.bc-pill,.bc-tick'))return; openBillSheet(pid,rid,billMo); }
+function openBillSheet(pid,rid,mo){
+  const p=S.properties.find(x=>x.id===pid), r=((p&&p.rooms)||[]).find(x=>x.id===rid); if(!r||!r.tenant)return;
+  mo=mo||billMo; const t=r.tenant, c=_billCalc(r,mo), args=`'${pid}','${rid}','${mo}'`;
+  const unit=r.type+(r.unitNo?' #'+r.unitNo:'');
+  // tenant info strip
+  const info=[];
+  const ph=String(t.phone||'').trim(); info.push(ph?`📞 <a href="tel:${_escHtml(ph)}" style="color:var(--ink);font-weight:700;">${_escHtml(ph)}</a>`:`📞 <span style="color:var(--muted);">no phone</span>`);
+  const le=roomLeaseEndDate(r), ld=le?dl(le):null;
+  if(le)info.push(ld<0?`📝 <span style="color:var(--red);font-weight:700;">Lease ended ${fd(le)}</span>`:`📝 Lease ends <b>${fd(le)}</b> <span style="color:var(--muted);">(${ld<=31?ld+' day'+(ld!==1?'s':''):Math.round(ld/30.4)+' month'+(Math.round(ld/30.4)!==1?'s':'')})</span>`);
+  else info.push(`📝 <span style="color:var(--muted);">No lease end date</span>`);
+  const dc=docCompleteness(r), deed=(S.leases||[]).find(l=>l.roomId===r.id&&(l.status==='active'||l.status==='expired'));
+  const polOk=dc.police||(deed&&leasePoliceInfo(deed).done)||(r.lease&&r.lease.police&&r.lease.police.status==='done');
+  const docMiss=dc.missing.filter(d=>d.key!=='police_ver').map(d=>d.label.split(' /')[0]);
+  const flags=[polOk?`🚔 <span style="color:var(--green);font-weight:700;">Police verified</span>`:`🚔 <span style="color:var(--red);font-weight:700;">Police verification pending</span>`,
+    docMiss.length?`📎 <span style="color:var(--red);font-weight:700;">${_escHtml(docMiss.join(', '))} missing</span>`:`📎 <span style="color:var(--green);font-weight:700;">Docs complete</span>`];
+  const secT=Number([t.securityDeposit,t.security,r.security].find(v=>Number(v)>0)||0), sad=securityAdvanceDueForMonth(r,mo);
+  if(secT)flags.push(`🔐 Security <b>${fm(secT)}</b>${sad&&sad.secPending>0?` <span style="color:var(--amber);font-weight:700;">(${fm(sad.secPending)} not collected)</span>`:''}`);
+  // bill
+  const row=(l,sub,v,col)=>`<div class="ms-r"><span>${l}${sub?`<i>${sub}</i>`:''}</span><b${col?` style="color:${col};"`:''}>${v}</b></div>`;
+  const e=c.elec, needElec=!e&&!p.noMainMeter&&elecSites().some(x=>x.id===p.id);
+  let bill=row('Rent',c.isProrated?`${fm(c.fullRent)} a month, from ${fd(c.activeStart)} (pro-rata)`:'',fm(c.rentAmt));
+  if(e)bill+=row('Electricity',e.manualAmt!=null&&e.manualAmt!==''?`${e.oldReading} → ${e.reading} · ${e.units} units · fixed amount`:`${e.oldReading} → ${e.reading} · ${e.units} units × ₹${e.rate}`,fm(e.amount));
+  else bill+=row('Electricity',needElec?'<span style="color:var(--red);font-weight:700;">No reading entered yet</span>':'',needElec?'—':fm(0));
+  if(c.bal)bill+=row('Carry-in',`balance from ${ml(prevMonth(mo))}`,fm(c.bal),c.bal>0?'var(--red)':'');
+  if(c.secOnlyPending>0)bill+=row('Security (move-in month)','',fm(c.secOnlyPending),'var(--amber)');
+  (r.deductions||[]).filter(d=>d.month===mo).forEach(d=>{ bill+=row('Deduction',_escHtml(d.desc||''),'− '+fm(d.amount),'var(--purple)'); });
+  bill+=`<div class="ms-r ms-tot"><span>Total due</span><span>${fm(c.total)}</span></div>`;
+  const deps=depositLedgerForMonth(r,mo);
+  const depH=deps.length?`<div class="ms-sec"><div class="ms-st">Deposits received</div>${deps.map(d=>row({security:'🔐 Security',token:'🔑 Token',advance:'💸 Advance rent'}[d.kind]||d.kind,[fd(d.date),d.mode,d.ref?'Ref '+_escHtml(d.ref):''].filter(Boolean).join(' · '),fm(d.amount),'var(--purple)')).join('')}</div>`:'';
+  const pays=payChipsH(p,r,mo);
+  const nm=ml(_nextMonth(mo)).split(' ')[0];
+  const balH=c.pend>0?`<div class="ms-bal" style="background:var(--red-dim);"><span>Balance</span><span><b style="color:var(--red);">${fm(c.pend)}</b> → carries to ${nm}</span></div>`
+    :c.pend<0?`<div class="ms-bal" style="background:var(--green-dim);"><span>Paid more than due</span><b style="color:var(--green);">${fm(-c.pend)} extra</b></div>`
+    :`<div class="ms-bal" style="background:var(--green-dim);"><span>Balance</span><b style="color:var(--green);">✓ Fully paid</b></div>`;
+  // last 3 months
+  const ms=[prevMonth(prevMonth(mo)),prevMonth(mo),mo];
+  const hist=ms.map(m=>{ const here=c.activeStart?c.activeStart.slice(0,7)<=m:true;
+    if(!here||m<TRACKING_START_MONTH)return `<div class="ms-hm" style="background:var(--bg);color:var(--muted);">—<div>${ml(m).split(' ')[0].slice(0,3)}</div></div>`;
+    const x=m===mo?c:_billCalc(r,m), lab=x.pend<=0?'✓ Paid':(x.paid>0?fm(x.pend)+' short':fm(x.pend)+' due');
+    return `<div class="ms-hm" style="background:${x.pend<=0?'var(--green-dim)':'var(--amber-dim)'};color:${x.pend<=0?'var(--green)':'#B45309'};">${lab}<div>${ml(m).split(' ')[0].slice(0,3)}</div></div>`; }).join('');
+  const ded=(r.deductions||[]).some(d=>d.month===mo);
+  const B=(cls,txt,fn)=>`<button class="btn ${cls} btn-sm" onclick="closeM();${fn}">${txt}</button>`;
+  const acts=[c.pend>0?B('btn-orange','💰 Record payment',`openPayment(${args})`):B('btn-ghost','💰 Record payment',`openPayment(${args})`),
+    B('btn-ghost','📱 Send bill',`openCombinedBill(${args})`),
+    B(needElec?'btn-blue':'btn-ghost',e?'⚡ Edit reading':'⚡ Enter reading',`openElec(${args})`),
+    B('btn-ghost',ded?'➖ Deductions':'➖ Deduction',ded?`openManageDeductions(${args})`:`openDeduction(${args})`),
+    B('btn-ghost','💬 WhatsApp',`openWaMenu('${pid}','${rid}')`),
+    B('btn-ghost','🧾 Receipt',`openReceipt('${pid}','${rid}')`),
+    B('btn-ghost','🏠 Room',`goRoom('${pid}','${rid}')`)].join('');
+  openM((t.name||'Tenant')+' — '+ml(mo),`
+    <div style="font-size:12px;color:var(--muted);margin:-6px 0 10px;">${_escHtml(p.name)} · ${_escHtml(unit)}</div>
+    <div class="ms-info">${info.map(x=>'<span style="white-space:nowrap;">'+x+'</span>').join(' · ')}<br/>${flags.map(x=>'<span style="white-space:nowrap;">'+x+'</span>').join(' · ')}</div>
+    <div class="ms-sec"><div class="ms-st">Bill</div>${bill}</div>
+    <div class="ms-sec"><div class="ms-st">Payments</div>${pays||'<div style="font-size:12.5px;color:var(--muted);padding:4px 0;">No payment yet this month</div>'}</div>
+    ${depH}${balH}
+    <div class="ms-sec"><div class="ms-st">Last 3 months</div><div class="ms-hist">${hist}</div></div>
+    <div class="ms-act">${acts}</div>`,`<button class="btn btn-ghost" onclick="closeM()">Close</button>`);
+}
+function _nextMonth(m){ const [y,mm]=m.split('-').map(Number), d=new Date(y,mm,1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
 function billCardsViewH(sites,G){
   const all=sites.flatMap(x=>x.cards);
   const nPend=all.filter(c=>c.pend>0).length, nPaid=all.filter(c=>c.pend<=0).length, nElec=all.filter(_bcNeedsElec).length;
