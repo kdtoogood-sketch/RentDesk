@@ -1551,7 +1551,9 @@ function renderDash(){
   const occ=all.filter(({r})=>isRoomOccupied(r)).length;
   const roll=all.filter(({r})=>isRoomOccupied(r)).reduce((s,{r})=>s+Number(r.rent||0),0);
   const cm=mk();
-  const coll=all.reduce((s,{r})=>s+(r.payments||[]).filter(x=>x.month===cm).reduce((ps,x)=>ps+Number(x.amount||0),0),0);
+  // This month's money, site by site — exactly Billing's numbers (Due / Collected / Pending), incl. tenants who vacated this month
+  const _SM=(S.properties||[]).map(p=>({p,f:_siteMonth(p,cm)})), _T=k=>_SM.reduce((a,x)=>a+x.f[k],0);
+  const coll=_T('paid'), monDue=_T('due'), monPend=_T('pend'), monExtra=_T('extra'), monSecAdj=_T('secAdj'), monCash=_T('cash');
   const totalExp=(S.expenses||[]).filter(e=>e.month===cm).reduce((s,e)=>s+(e.items||[]).reduce((is,i)=>is+Number(i.amount||0),0),0);
   const sumExpNoElec=(S.expenses||[]).filter(e=>e.month===cm&&!e.elecPay).reduce((s,e)=>s+(e.items||[]).reduce((is,i)=>is+Number(i.amount||0),0),0);
   const mainElecCost=(S.properties||[]).reduce((s,p)=>s+Math.round(_mainBill(p,cm)),0);
@@ -1577,32 +1579,28 @@ function renderDash(){
   let cashNow=cashGiven-cashSpent, cashWho='Preeti';
   try{ const st=staffList(); cashNow=st.reduce((t,n)=>t+cashBookMonth(n,mk(),'all').nowBal,0); cashWho=st.join(', ')||'Staff'; }catch(e){}
 
-  // quick site-wise glance for the Summary box — same rules as the totals above, so the rows add up to them
-  const _eSites=new Set(elecSites().map(p=>p.id));
-  const siteRows=(S.properties||[]).map(p=>{
-    const rent=(p.rooms||[]).filter(r=>isRoomOccupied(r)).reduce((a,r)=>a+Number(r.rent||0),0);
-    const eb=_eSites.has(p.id)?elecRecon(p,cm).billed:0;
-    const col=(p.rooms||[]).reduce((a,r)=>a+(r.payments||[]).filter(x=>x.month===cm).reduce((b,x)=>b+Number(x.amount||0),0),0);
+  // quick site-wise glance for the Summary box — same numbers as each site's header in Billing, so the rows add up to the totals above
+  const siteRows=_SM.map(({p,f})=>{
     const exp=(S.expenses||[]).filter(e=>e.month===cm&&!e.elecPay&&e.propertyId===p.id).reduce((a,e)=>a+(e.items||[]).reduce((b,i)=>b+Number(i.amount||0),0),0);
     const me=Math.round(_mainBill(p,cm));
-    return {name:p.name,rent,eb,exp:rent+eb,col,pend:rent+eb-col,spent:exp,me,net:col-exp-me};
-  });
+    return {name:p.name,rent:f.rent,eb:f.elec,bal:f.bal,ded:f.ded,sec:f.sec,exp:f.due,col:f.paid,pend:f.pend,extra:f.extra,secAdj:f.secAdj,spent:exp,me,net:f.cash-exp-me};
+  }).filter(x=>x.exp||x.col||x.spent||x.me);
   { const ids=new Set((S.properties||[]).map(p=>p.id));
     const gen=(S.expenses||[]).filter(e=>e.month===cm&&!e.elecPay&&!ids.has(e.propertyId)).reduce((a,e)=>a+(e.items||[]).reduce((b,i)=>b+Number(i.amount||0),0),0);
-    if(gen)siteRows.push({name:'General',rent:0,eb:0,exp:0,col:0,pend:0,spent:gen,me:0,net:-gen,general:true}); }
+    if(gen)siteRows.push({name:'General',rent:0,eb:0,exp:0,col:0,pend:0,extra:0,secAdj:0,spent:gen,me:0,net:-gen,general:true}); }
   const _sv=v=>(v<0?'−':'')+fm(Math.abs(v));
   const siteGlanceH=`<div style="margin-top:14px;">
     <div style="font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;padding:0 2px 6px;border-bottom:1px solid var(--border);">Site-wise</div>
-    ${siteRows.map(x=>{ const pend=x.pend>0?`<span style="color:var(--red);font-weight:700;white-space:nowrap;">Pending ${fm(x.pend)}</span>`:x.pend<0?`<span style="color:var(--green);font-weight:700;white-space:nowrap;">Extra ${fm(-x.pend)}</span>`:`<span style="color:var(--green);font-weight:700;white-space:nowrap;">Nil pending ✓</span>`;
+    ${siteRows.map(x=>{ const pend=(x.pend>0?`<span style="color:var(--red);font-weight:700;white-space:nowrap;">Pending ${fm(x.pend)}</span>`:`<span style="color:var(--green);font-weight:700;white-space:nowrap;">Nil pending ✓</span>`)+(x.extra>0?` · <span style="color:var(--green);font-weight:700;white-space:nowrap;">+${fm(x.extra)} extra</span>`:'');
       return `<div class="${_dfIsOpen('sum:'+x.name,false)?'df-open':''}" data-fold="${_escHtml('sum:'+x.name)}" style="border-bottom:1px solid var(--border);">
       <div class="df-head" onclick="dashFold(this)" style="display:block;padding:9px 2px;">
         <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;">
           <span style="font-weight:800;font-size:14px;color:var(--ink);">${_escHtml(x.name)}</span>
           <span style="font-size:13.5px;font-weight:800;color:${x.net<0?'var(--red)':'var(--ink)'};white-space:nowrap;"><span style="font-size:11px;font-weight:600;color:var(--muted);">Net </span>${_sv(x.net)}</span></div>
-        <div style="font-size:12px;color:var(--ink2);margin-top:3px;line-height:1.5;">${x.general?'Expenses not linked to a site':`<span style="white-space:nowrap;">Expected ${fm(x.exp)}</span> · <span style="color:var(--green);font-weight:700;white-space:nowrap;">Collected ${fm(x.col)}</span> · ${pend}`}</div></div>
+        <div style="font-size:12px;color:var(--ink2);margin-top:3px;line-height:1.5;">${x.general?'Expenses not linked to a site':`<span style="white-space:nowrap;">Due ${fm(x.exp)}</span> · <span style="color:var(--green);font-weight:700;white-space:nowrap;">Collected ${fm(x.col)}</span> · ${pend}`}</div></div>
       <div class="df-body" style="font-size:11.5px;color:var(--muted);padding:0 2px 9px;line-height:1.6;">
-        ${x.general?'':`Rent ${fm(x.rent)} · Electricity billed ${fm(x.eb)}<br/>`}Expenses ${fm(x.spent)}${x.me?' · Main electricity bill '+fm(x.me):''}</div></div>`; }).join('')}
-    <div style="font-size:10.5px;color:var(--muted);margin-top:6px;">Tap a site for details. Net = collected − expenses − main electricity bill.</div>
+        ${x.general?'':`Rent ${fm(x.rent)} · Electricity ${fm(x.eb)}${x.bal?' · Carry-in '+fm(x.bal):''}${x.ded?' · Deductions −'+fm(x.ded):''}${x.sec?' · Security due '+fm(x.sec):''}<br/>`}Expenses ${fm(x.spent)}${x.me?' · Main electricity bill '+fm(x.me):''}${x.secAdj?'<br/>Collected includes '+fm(x.secAdj)+' adjusted from security (not counted in Net)':''}</div></div>`; }).join('')}
+    <div style="font-size:10.5px;color:var(--muted);margin-top:6px;">Tap a site for details. Same figures as Billing. Net = money received − expenses − main electricity bill.</div>
   </div>`;
 
   mc.innerHTML=`
@@ -1634,7 +1632,7 @@ function renderDash(){
     <div class="stat" style="cursor:pointer;" onclick="showCollectedBreakdown()">
       <div class="stat-icon">📥</div><div class="stat-label">Collected <span style="font-size:9px;color:var(--muted);">tap for details</span></div>
       <div class="stat-value grn">${fm(coll)}</div>
-      <div class="stat-sub">vs ${fm(roll+elecBilled)} expected</div>
+      <div class="stat-sub">of ${fm(monDue)} due</div>
     </div>
   </div>
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:14px;">
@@ -1665,14 +1663,18 @@ function renderDash(){
     <div class="card${_dfIsOpen('summary',true)?' df-open':''}" data-fold="summary">
       <div class="card-head df-head" onclick="dashFold(this)"><div class="card-title">📊 ${ml(cm)} Summary</div><span class="df-chev">▾</span></div>
       <div class="card-body df-body">
-        <div class="irow"><span class="irow-label">Rent Expected</span><span class="irow-value">${fm(roll)}</span></div>
-        <div class="irow"><span class="irow-label">Electricity Billed</span><span class="irow-value" style="color:var(--blue)">${fm(elecBilled)}</span></div>
-        <div class="irow" style="background:var(--bg);padding:6px 8px;border-radius:6px;margin:4px 0;"><span class="irow-label" style="font-weight:600;">Total Expected</span><span class="irow-value" style="font-weight:700;">${fm(roll+elecBilled)}</span></div>
-        <div class="irow"><span class="irow-label">Total Collected</span><span class="irow-value" style="color:var(--green);font-weight:600;">${fm(coll)}</span></div>
-        <div class="irow"><span class="irow-label">Pending</span><span class="irow-value" style="color:${(roll+elecBilled-coll)>0?'var(--red)':'var(--green)'};">${(roll+elecBilled-coll)>0?fm(roll+elecBilled-coll):'Nil ✓'}</span></div>
+        <div class="irow"><span class="irow-label">Rent (this month)</span><span class="irow-value">${fm(_T('rent'))}</span></div>
+        <div class="irow"><span class="irow-label">Electricity Billed</span><span class="irow-value" style="color:var(--blue)">${fm(_T('elec'))}</span></div>
+        ${_T('bal')?`<div class="irow"><span class="irow-label">Carry-in from last month</span><span class="irow-value" style="color:var(--red)">${fm(_T('bal'))}</span></div>`:''}
+        ${_T('sec')?`<div class="irow"><span class="irow-label">Security due (move-in)</span><span class="irow-value" style="color:var(--amber)">${fm(_T('sec'))}</span></div>`:''}
+        ${_T('ded')?`<div class="irow"><span class="irow-label">Deductions</span><span class="irow-value" style="color:var(--purple)">− ${fm(_T('ded'))}</span></div>`:''}
+        <div class="irow" style="background:var(--bg);padding:6px 8px;border-radius:6px;margin:4px 0;"><span class="irow-label" style="font-weight:600;">Total Due</span><span class="irow-value" style="font-weight:700;">${fm(monDue)}</span></div>
+        <div class="irow"><span class="irow-label">Total Collected${monSecAdj?` <span style="font-size:10px;color:var(--muted);">(incl. ${fm(monSecAdj)} from security)</span>`:''}</span><span class="irow-value" style="color:var(--green);font-weight:600;">${fm(coll)}</span></div>
+        <div class="irow"><span class="irow-label">Pending</span><span class="irow-value" style="color:${monPend>0?'var(--red)':'var(--green)'};">${monPend>0?fm(monPend):'Nil ✓'}</span></div>
+        ${monExtra?`<div class="irow"><span class="irow-label">Extra received <span style="font-size:10px;color:var(--muted);">(paid more than due)</span></span><span class="irow-value" style="color:var(--green)">${fm(monExtra)}</span></div>`:''}
         <div class="irow"><span class="irow-label">Expenses${sumExpNoElec!==totalExp?' <span style="font-size:10px;color:var(--muted);">(excl. ⚡ bill payments)</span>':''}</span><span class="irow-value" style="color:var(--amber)">${fm(sumExpNoElec)}</span></div>
         <div class="irow"><span class="irow-label">Main electricity bill (meter)</span><span class="irow-value" style="color:var(--blue)">${fm(mainElecCost)}</span></div>
-        <div style="background:var(--orange);color:#fff;padding:10px 14px;border-radius:8px;display:flex;justify-content:space-between;font-weight:700;margin-top:12px;"><span>Net Income</span><span>${(coll-sumExpNoElec-mainElecCost<0?'−':'')+fm(Math.abs(coll-sumExpNoElec-mainElecCost))}</span></div>
+        <div style="background:var(--orange);color:#fff;padding:10px 14px;border-radius:8px;display:flex;justify-content:space-between;font-weight:700;margin-top:12px;"><span>Net Income</span><span>${(monCash-sumExpNoElec-mainElecCost<0?'−':'')+fm(Math.abs(monCash-sumExpNoElec-mainElecCost))}</span></div>
         ${siteGlanceH}
       </div>
     </div>
@@ -1896,7 +1898,8 @@ function waSend(kind,pid,rid){
   if(kind==='rent'){
     const {elec,bal,due}=_calcDue(r,mo), paid=(r.payments||[]).filter(x=>x.month===mo).reduce((a,x)=>a+Number(x.amount||0),0), left=Math.max(0,due-paid);
     const R=v=>'₹'+Math.round(v).toLocaleString('en-IN');
-    msg=`Dear ${name},\n\nA gentle reminder for your rent for *${ml(mo)}*.\nProperty: ${p.name} · ${unit}\n\nRent: ${R(r.rent||0)}`+(elec?`\nElectricity (${elec.units} units): ${R(elec.amount)}`:'')+(bal>0?`\nPrevious balance: ${R(bal)}`:'')+`\n*Total: ${R(due)}*`+(paid>0?`\nPaid so far: ${R(paid)}\n*Balance: ${R(left)}*`:'')+`\n\nKindly pay at the earliest. Please ignore if already paid.`+WA_SIGN;
+    const _c=_billCalc(r,mo);
+    msg=`Dear ${name},\n\nA gentle reminder for your rent for *${ml(mo)}*.\nProperty: ${p.name} · ${unit}\n\nRent: ${R(_c.rentAmt)}`+(elec?`\nElectricity (${elec.units} units): ${R(elec.amount)}`:'')+(bal>0?`\nPrevious balance: ${R(bal)}`:'')+(_c.secOnlyPending>0?`\nSecurity deposit: ${R(_c.secOnlyPending)}`:'')+(_c.dedTotal>0?`\nDeductions: −${R(_c.dedTotal)}`:'')+`\n*Total: ${R(due)}*`+(paid>0?`\nPaid so far: ${R(paid)}\n*Balance: ${R(left)}*`:'')+`\n\nKindly pay at the earliest. Please ignore if already paid.`+WA_SIGN;
   } else if(kind==='docs'){
     const miss=(docsPendingRows().find(x=>x.r.id===rid)||{}).miss||[];
     msg=`Dear ${name},\n\nWe still need the following documents for your stay at ${p.name} (${unit}):\n`+miss.map(m=>'• '+m).join('\n')+`\n\nKindly share them on WhatsApp at the earliest. Thank you!`+WA_SIGN;
@@ -2892,9 +2895,10 @@ function renderRoomDetail(){
   const mc=document.getElementById('mc'),payments=r.payments||[];
   const readings=(r.electricityReadings||[]).slice().sort((a,b)=>a.month.localeCompare(b.month));
   const cm=mk(),curPaid=payments.filter(x=>x.month===cm).reduce((s,x)=>s+Number(x.amount||0),0);
-  const curElec=readings.find(x=>x.month===cm),bal=getCarryIn(r,cm);
-  const curDeductions=(r.deductions||[]).filter(d=>d.month===cm).reduce((s,d)=>s+Number(d.amount||0),0);
-  const totalDue=Number(r.rent||0)+Number((curElec&&curElec.amount)||0)+bal-curDeductions,pend=totalDue-curPaid;
+  const _rc=_billCalc(r,cm);   // same figures as Billing
+  const curElec=readings.find(x=>x.month===cm),bal=_rc.bal;
+  const curDeductions=_rc.dedTotal;
+  const totalDue=_rc.total,pend=_rc.pend;
   const status=roomStatus(r),ht=status==='occupied',bk=roomBookingInfo(r);
   const bkSecBal=bk?((bk.securityBalance!=null)?bk.securityBalance:Math.max(0,Number(bk.securityDeposit||0)-Number(bk.amount||0))):null;
   const dc=docCompleteness(r);
@@ -2952,8 +2956,9 @@ function renderRoomDetail(){
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
       <span style="font-size:12px;color:var(--muted);">📅 ${ml(cm)}</span>
       <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;">
-        <span style="font-size:12px;">Rent: <strong>${fm(r.rent)}</strong></span>
+        <span style="font-size:12px;">Rent: <strong>${fm(_rc.rentAmt)}</strong>${_rc.isProrated?' <span style="font-size:10px;color:var(--blue);">pro-rata</span>':''}</span>
         ${curElec?`<span style="font-size:12px;">Elec: <strong style="color:var(--blue)">${fm(curElec.amount)}</strong></span>`:''}
+        ${_rc.secOnlyPending>0?`<span style="font-size:12px;">Security: <strong style="color:var(--amber)">${fm(_rc.secOnlyPending)}</strong></span>`:''}
         ${bal>0?`<span style="font-size:12px;">Bal: <strong style="color:var(--red)">${fm(bal)}</strong></span>`:''}
         ${(r.deductions||[]).filter(d=>d.month===cm).length>0?`<span style="font-size:12px;">Deductions: <strong style="color:var(--purple)">${fm((r.deductions||[]).filter(d=>d.month===cm).reduce((s,d)=>s+Number(d.amount||0),0))}</strong></span>`:''}
         <span style="font-size:12px;">Due: <strong style="color:var(--orange)">${fm(totalDue)}</strong></span>
@@ -3192,6 +3197,7 @@ function saveElec(pid,rid){
   const mo=document.getElementById('eM').value,o=Number(document.getElementById('eO').value||0),nR=Number(n),rtN=Number(rt),u=nR-o,man=document.getElementById('eA').value;
   r.electricityReadings=r.electricityReadings.filter(x=>x.month!==mo);
   r.electricityReadings.push({month:mo,oldReading:o,reading:nR,units:u,rate:rtN,amount:man?Number(man):u*rtN,manualAmt:man?Number(man):null});
+  _rebalance(r,mo);
   sched();closeM();if(vRoom)renderRoomDetail();else renderBilling();toast('✅ Reading saved');
 }
 
@@ -3227,10 +3233,8 @@ function openElecBill(pid,rid,month){
 function openCombinedBill(pid,rid,month){
   const p=S.properties.find(x=>x.id===pid),r=((p&&p.rooms)||[]).find(x=>x.id===rid);
   if(!(r.tenant&&r.tenant.name)){toast('❌ No tenant');return;}
-  const elec=(r.electricityReadings||[]).find(x=>x.month===month);
-  const bal=getCarryIn(r,month),rentAmt=Number(r.rent||0),elecAmt=Number((elec&&elec.amount)||0);
-  const billDed=(r.deductions||[]).filter(d=>d.month===month).reduce((s,d)=>s+Number(d.amount||0),0);
-  const total=rentAmt+elecAmt+bal-billDed;
+  const _c=_billCalc(r,month);   // same figures as Billing
+  const elec=_c.elec, bal=_c.bal, rentAmt=_c.rentAmt, elecAmt=Number((elec&&elec.amount)||0), total=_c.total, paidSoFar=_c.paid, left=_c.pend;
   openM('📄 Monthly Bill — '+r.tenant.name,`
   <div class="receipt" id="combinedBill">
     <div class="rhead"><div><div class="rco">K.D. Constructions</div><div style="font-size:11px;color:var(--muted);">${p.address||'Gurugram, Haryana'}</div></div><div style="text-align:right;"><div style="font-size:10px;color:var(--muted);">Bill Date</div><div style="font-size:13px;font-weight:600;">${fd(today())}</div></div></div>
@@ -3240,7 +3244,8 @@ function openCombinedBill(pid,rid,month){
     <div class="rrow"><span>Tenant</span><span>${r.tenant.name}</span></div>
     <div class="rrow"><span>Billing Period</span><span>${ml(month)}</span></div>
     <div style="border-top:2px dashed rgba(249,115,22,0.25);margin:10px 0;"></div>
-    <div class="rrow"><span>Monthly Rent</span><span>${fm(rentAmt)}</span></div>
+    <div class="rrow"><span>Monthly Rent${_c.isProrated?' (from '+fd(_c.activeStart)+')':''}</span><span>${fm(rentAmt)}</span></div>
+    ${_c.secOnlyPending>0?`<div class="rrow"><span>Security Deposit</span><span>${fm(_c.secOnlyPending)}</span></div>`:''}
     ${(r.deductions||[]).filter(d=>d.month===month).map(d=>`
     <div class="rrow"><span style="color:var(--purple);">➖ ${d.desc}</span><span style="color:var(--purple);font-weight:700;">-${fm(d.amount)}</span></div>`).join('')}
     ${elec?`
@@ -3254,7 +3259,9 @@ function openCombinedBill(pid,rid,month){
     </div>`:'<div class="rrow"><span>Electricity</span><span style="color:var(--muted)">Not added</span></div>'}
     ${bal>0?`<div class="rrow"><span>Previous Balance</span><span style="color:var(--red)">${fm(bal)}</span></div>`:''}
     <div class="rtotal"><span>Total Amount Due</span><span>${fm(total)}</span></div>
-    <div class="rfooter">Kindly pay at the earliest.</div>
+    ${paidSoFar>0?`<div class="rrow"><span>Paid so far</span><span style="color:var(--green)">${fm(paidSoFar)}</span></div>
+    <div class="rrow" style="font-weight:700;"><span>${left>0?'Balance to pay':'Fully paid'}</span><span style="color:${left>0?'var(--red)':'var(--green)'}">${left>0?fm(left):'✓'}</span></div>`:''}
+    <div class="rfooter">${left>0||!paidSoFar?'Kindly pay at the earliest.':'Thank you for your payment.'}</div>
   </div>
   <div style="display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap;">
     <button class="btn btn-ghost" onclick="doPrint('combinedBill','Monthly Bill')">📤 Share as PDF</button>
@@ -3263,11 +3270,12 @@ function openCombinedBill(pid,rid,month){
 }
 
 // ── RECEIPT ──
-function openReceipt(pid,rid){
+function openReceipt(pid,rid,mo){
   const p=S.properties.find(x=>x.id===pid),r=((p&&p.rooms)||[]).find(x=>x.id===rid);
-  if(!(r.tenant&&r.tenant.name)){toast('❌ No tenant');return;}
-  const cm=mk(),paid=(r.payments||[]).filter(x=>x.month===cm).reduce((s,x)=>s+Number(x.amount||0),0);
-  const elec=(r.electricityReadings||[]).find(x=>x.month===cm);
+  if(!(r&&r.tenant&&r.tenant.name)){toast('❌ No tenant');return;}
+  const cm=mo||(curTab==='billing'?billMo:mk()), c=_billCalc(r,cm);   // same figures as Billing
+  const pays=(r.payments||[]).filter(x=>x.month===cm), paid=c.paid, elec=c.elec;
+  if(!paid){ toast('No payment recorded for '+ml(cm)+' yet — record the payment first',4500); return; }
   openM('🧾 Rent Receipt',`
   <div class="receipt" id="rReceipt">
     <div class="rhead"><div><div class="rco">K.D. Constructions</div><div style="font-size:11px;color:var(--muted);">${p.address||'Gurugram, Haryana'}</div></div><div style="text-align:right;"><div style="font-size:10px;color:var(--muted);">Date</div><div style="font-size:13px;font-weight:600;">${fd(today())}</div></div></div>
@@ -3277,15 +3285,21 @@ function openReceipt(pid,rid){
     <div class="rrow"><span>Tenant</span><span>${r.tenant.name}</span></div>
     <div class="rrow"><span>Period</span><span>${ml(cm)}</span></div>
     <div style="border-top:2px dashed rgba(249,115,22,0.25);margin:10px 0;"></div>
-    <div class="rrow"><span>Monthly Rent</span><span>${fm(r.rent)}</span></div>
-    ${elec?`<div class="rrow"><span>Electricity</span><span>${fm(elec.amount)}</span></div>`:''}
-    ${getCarryIn(r,cm)>0?`<div class="rrow"><span>Balance Forward</span><span style="color:var(--red)">${fm(getCarryIn(r,cm))}</span></div>`:''}
-    <div class="rtotal"><span>Amount Received</span><span>${fm(paid||r.rent)}</span></div>
+    <div class="rrow"><span>Monthly Rent${c.isProrated?' (from '+fd(c.activeStart)+')':''}</span><span>${fm(c.rentAmt)}</span></div>
+    ${elec?`<div class="rrow"><span>Electricity (${elec.units} units)</span><span>${fm(elec.amount)}</span></div>`:''}
+    ${c.bal>0?`<div class="rrow"><span>Balance Forward</span><span style="color:var(--red)">${fm(c.bal)}</span></div>`:''}
+    ${c.secOnlyPending>0?`<div class="rrow"><span>Security Deposit</span><span>${fm(c.secOnlyPending)}</span></div>`:''}
+    ${(r.deductions||[]).filter(d=>d.month===cm).map(d=>`<div class="rrow"><span style="color:var(--purple);">➖ ${_escHtml(d.desc||'Deduction')}</span><span style="color:var(--purple);">-${fm(d.amount)}</span></div>`).join('')}
+    <div class="rrow" style="font-weight:700;"><span>Total Due</span><span>${fm(c.total)}</span></div>
+    <div style="border-top:1px dashed rgba(249,115,22,0.2);margin:8px 0 4px;"></div>
+    ${pays.map(x=>`<div class="rrow" style="font-size:12px;"><span>${fd(x.date)} · ${_escHtml(x.mode||'')}${x.ref?' · Ref '+_escHtml(x.ref):''}</span><span>${fm(x.amount)}</span></div>`).join('')}
+    <div class="rtotal"><span>Amount Received</span><span>${fm(paid)}</span></div>
+    <div class="rrow" style="font-weight:700;"><span>${c.pend>0?'Balance Remaining':c.pend<0?'Paid Extra':'Balance'}</span><span style="color:${c.pend>0?'var(--red)':'var(--green)'}">${c.pend>0?fm(c.pend):c.pend<0?fm(-c.pend):'Nil ✓'}</span></div>
     <div class="rfooter">Thank you for your payment.</div>
   </div>
   <div style="display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap;">
     <button class="btn btn-ghost" onclick="doPrint('rReceipt','Rent Receipt')">📤 Share as PDF</button>
-    ${r.tenant.phone?`<button class="btn btn-orange" onclick="waReceipt('${pid}','${rid}')">📱 Send WhatsApp</button>`:''}
+    ${r.tenant.phone?`<button class="btn btn-orange" onclick="waReceipt('${pid}','${rid}','${cm}')">📱 Send WhatsApp</button>`:''}
   </div>`);
 }
 
@@ -3409,8 +3423,8 @@ function buildMonthlyReportDocDef(month,filterPropId){
   const printDate=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
   const monthLabel=ml(month);
   const propLabel=filterPropId&&data.props[0]?data.props[0].name:'';
-  const monthExpected=data.props.reduce((s,p)=>s+p.totalDue,0)+data.moveOutDue+data.moveInRent;
-  const monthCollected=data.totalCollected+data.moveOutCollected;
+  const monthExpected=data.props.reduce((s,p)=>s+p.totalDue,0);   // = Billing "Due" (vacated tenants are already inside each site)
+  const monthCollected=data.totalCollected;                          // = Billing "Collected"
   const fmI=v=>'\u20B9'+(v||0).toLocaleString('en-IN');
   const content=[];
 
@@ -3550,7 +3564,7 @@ function buildMonthlyReportDocDef(month,filterPropId){
         {text:r.unit,fontSize:9},
         {stack:tenantStack},
         tokenCell,
-        {text:fmI(r.rent),fontSize:9,alignment:'right'},
+        {text:fmI(r.rent)+(r.secDue>0?'\n+ '+fmI(r.secDue)+' security':''),fontSize:9,alignment:'right'},
         {text:r.elecOld!=null?String(r.elecOld):'\u2014',fontSize:9,alignment:'right',color:r.elecOld!=null?'#1A1A1A':'#9CA3AF'},
         {text:r.elecNew!=null?String(r.elecNew):'\u2014',fontSize:9,alignment:'right',bold:r.elecNew!=null,color:r.elecNew!=null?'#1A1A1A':'#9CA3AF'},
         {text:r.elecRate?fmI(r.elecRate)+'/u':'\u2014',fontSize:8,alignment:'right',color:r.elecRate?'#1A1A1A':'#9CA3AF'},
@@ -3788,28 +3802,28 @@ function waCombinedBill(pid,rid,month){
   if(!p||!r||!r.tenant||!r.tenant.phone){toast('❌ Tenant phone missing');return;}
   const phone=cleanPhoneForWA(r.tenant.phone);
   if(!phone){toast('❌ Phone number looks invalid ('+r.tenant.phone+'). Please fix it in tenant details — it should be a 10-digit mobile number.',6000);return;}
-  const elec=(r.electricityReadings||[]).find(x=>x.month===month);
-  const bal=getCarryIn(r,month),rentAmt=Number(r.rent||0),elecAmt=Number((elec&&elec.amount)||0);
+  const _c=_billCalc(r,month);   // same figures as Billing
+  const elec=_c.elec, bal=_c.bal, rentAmt=_c.rentAmt, elecAmt=Number((elec&&elec.amount)||0), total=_c.total;
   const deds=(r.deductions||[]).filter(d=>d.month===month);
-  const billDed=deds.reduce((s,d)=>s+Number(d.amount||0),0);
-  const total=rentAmt+elecAmt+bal-billDed;
   const unit=r.type+(r.unitNo?' #'+r.unitNo:'');
   const dedBlock=deds.length?'\n\n➖ *Deductions*\n'+deds.map(d=>`${d.desc}: -₹${Number(d.amount).toLocaleString('en-IN')}`).join('\n'):'';
   const elecBlock=elec&&elecAmt>0?`\n\n⚡ *Electricity Breakdown*\nPrev Reading : ${elec.oldReading} units\nNew Reading  : ${elec.reading} units\nUnits Used   : ${elec.units} units\nRate         : ₹${elec.rate}/unit\nElec Bill    : ₹${elecAmt.toLocaleString('en-IN')}`:'';
-  const balLine=bal>0?`\nPrev Balance : ₹${bal.toLocaleString('en-IN')}`:'';
-  const msg=encodeURIComponent(`Dear ${r.tenant.name},\n\n📄 *Monthly Bill — ${ml(month)}*\nProperty: ${p.name} | Unit: ${unit}\n\n🏠 Monthly Rent : ₹${rentAmt.toLocaleString('en-IN')}${elecBlock}${dedBlock}${balLine}\n\n*Total Due: ₹${total.toLocaleString('en-IN')}*\n\nKindly pay at the earliest.`);
+  const balLine=(bal>0?`\nPrev Balance : ₹${bal.toLocaleString('en-IN')}`:'')+(_c.secOnlyPending>0?`\nSecurity Deposit : ₹${_c.secOnlyPending.toLocaleString('en-IN')}`:'');
+  const paidLine=_c.paid>0?`\nPaid so far : ₹${_c.paid.toLocaleString('en-IN')}\n*${_c.pend>0?'Balance to pay : ₹'+_c.pend.toLocaleString('en-IN'):'Fully paid ✓'}*`:'';
+  const msg=encodeURIComponent(`Dear ${r.tenant.name},\n\n📄 *Monthly Bill — ${ml(month)}*\nProperty: ${p.name} | Unit: ${unit}\n\n🏠 Monthly Rent : ₹${rentAmt.toLocaleString('en-IN')}${elecBlock}${dedBlock}${balLine}\n\n*Total Due: ₹${total.toLocaleString('en-IN')}*${paidLine}\n\n${_c.pend>0||!_c.paid?'Kindly pay at the earliest.':'Thank you for your payment.'}`);
   const w=window.open(`https://wa.me/91${phone}?text=${msg}`,'_blank');
   if(!w)toast('❌ Allow popups for this site in browser settings');
 }
-function waReceipt(pid,rid){
+function waReceipt(pid,rid,mo){
   const p=S.properties.find(x=>x.id===pid),r=((p&&p.rooms)||[]).find(x=>x.id===rid);
   if(!p||!r||!r.tenant||!r.tenant.phone){toast('❌ Tenant phone missing');return;}
   const phone=cleanPhoneForWA(r.tenant.phone);
   if(!phone){toast('❌ Phone number looks invalid ('+r.tenant.phone+'). Please fix it in tenant details — it should be a 10-digit mobile number.',6000);return;}
-  const cm=mk(),paid=(r.payments||[]).filter(x=>x.month===cm).reduce((s,x)=>s+Number(x.amount||0),0);
-  const unit=r.type+(r.unitNo?' #'+r.unitNo:'');
-  const amt=paid||r.rent;
-  const msg=encodeURIComponent(`Dear ${r.tenant.name},\n\n🧾 *Rent Receipt — ${ml(cm)}*\nProperty: ${p.name} | Unit: ${unit}\n\n*Amount Received: ₹${Number(amt).toLocaleString('en-IN')}*\n\nThank you for your payment.`);
+  const cm=mo||(curTab==='billing'?billMo:mk()), c=_billCalc(r,cm);
+  if(!c.paid){ toast('No payment recorded for '+ml(cm)+' yet',4000); return; }
+  const unit=r.type+(r.unitNo?' #'+r.unitNo:''), R=v=>'₹'+Math.round(v).toLocaleString('en-IN');
+  const lines=(r.payments||[]).filter(x=>x.month===cm).map(x=>`${fd(x.date)} · ${x.mode||''}${x.ref?' · Ref '+x.ref:''} · ${R(x.amount)}`).join('\n');
+  const msg=encodeURIComponent(`Dear ${r.tenant.name},\n\n🧾 *Rent Receipt — ${ml(cm)}*\nProperty: ${p.name} | Unit: ${unit}\n\nTotal due: ${R(c.total)}\n${lines}\n\n*Amount Received: ${R(c.paid)}*\n${c.pend>0?'Balance remaining: '+R(c.pend):'Fully paid ✓'}\n\nThank you for your payment.`);
   const w=window.open(`https://wa.me/91${phone}?text=${msg}`,'_blank');
   if(!w)toast('❌ Allow popups for this site in browser settings');
 }
@@ -3898,33 +3912,36 @@ function getCarryIn(r,mo,_depth){
   // No payments for prev month and nothing cached — nothing owed from before tracking began.
   return 0;
 }
-function setBalanceAfterMonth(r,mo,val){
+function setBalanceAfterMonth(r,mo,val,manual){
   if(!r.balanceByMonth)r.balanceByMonth={};
+  if(manual){ if(!r.balanceManual)r.balanceManual={}; r.balanceManual[mo]=Math.max(0,val); }
+  else if(r.balanceManual)delete r.balanceManual[mo];
   r.balanceByMonth[mo]=Math.max(0,val);
   r.balance=Math.max(0,val);
 }
-function _calcDue(r,mo){
-  const elec=(r.electricityReadings||[]).find(x=>x.month===mo);
-  const bal=getCarryIn(r,mo);
-  const dedTotal=(r.deductions||[]).filter(d=>d.month===mo).reduce((s,d)=>s+Number(d.amount||0),0);
-  return{elec,bal,dedTotal,due:Number(r.rent||0)+Number((elec&&elec.amount)||0)+bal-dedTotal};
+function _calcDue(r,mo){ const c=_billCalc(r,mo); return {...c,due:c.total}; }   // same figures as Billing
+// "Total due" box in the payment form: the month's bill, what's already paid, and what's left to pay
+function _pyBannerH(r,mo){
+  const c=_billCalc(r,mo), left=c.pend;
+  return `<div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Total due — ${ml(mo)}</div>
+    <div style="display:flex;gap:6px 14px;flex-wrap:wrap;">
+      <span>Rent: <strong>${fm(c.rentAmt)}</strong>${c.isProrated?' <span style="font-size:10px;color:var(--blue);">pro-rata</span>':''}</span>
+      ${c.elec?`<span>Elec: <strong style="color:var(--blue)">${fm(c.elec.amount)}</strong></span>`:''}
+      ${c.bal>0?`<span>Carry-in: <strong style="color:var(--red)">${fm(c.bal)}</strong></span>`:''}
+      ${c.secOnlyPending>0?`<span>Security: <strong style="color:var(--amber)">${fm(c.secOnlyPending)}</strong></span>`:''}
+      ${c.dedTotal>0?`<span>Deductions: <strong style="color:var(--purple)">−${fm(c.dedTotal)}</strong></span>`:''}
+      <span style="color:var(--orange);font-weight:700;">Total: ${fm(c.total)}</span>
+      ${c.paid>0?`<span>Paid so far: <strong style="color:var(--green)">${fm(c.paid)}</strong></span><span style="font-weight:700;color:${left>0?'var(--red)':'var(--green)'};">${left>0?'Left to pay: '+fm(left):'✓ Fully paid'}</span>`:''}
+    </div>`;
 }
 function pyMonthChange(){
   const mo=(document.getElementById('pyM')||{}).value;if(!mo||!_pyPid||!_pyRid)return;
   const p=S.properties.find(x=>x.id===_pyPid),r=((p&&p.rooms)||[]).find(x=>x.id===_pyRid);
   if(!r)return;
-  const{elec,bal,due}=_calcDue(r,mo);
+  const due=Math.max(0,_billCalc(r,mo).pend);   // what's still left to pay this month
   // Update due info banner
   const banner=document.getElementById('pyDueBanner');
-  if(banner){
-    banner.innerHTML=`<div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Total due — ${ml(mo)}</div>
-      <div style="display:flex;gap:14px;flex-wrap:wrap;">
-        <span>Rent: <strong>${fm(r.rent)}</strong></span>
-        ${elec?`<span>Elec: <strong style="color:var(--blue)">${fm(elec.amount)}</strong></span>`:''}
-        ${bal>0?`<span>Bal: <strong style="color:var(--red)">${fm(bal)}</strong></span>`:''}
-        <span style="color:var(--orange);font-weight:700;">Total: ${fm(due)}</span>
-      </div>`;
-  }
+  if(banner)banner.innerHTML=_pyBannerH(r,mo);
   // Update amount placeholder to show due amount (greyed hint)
   const pyA=document.getElementById('pyA');
   if(pyA){pyA.placeholder=due;pyA.setAttribute('data-due',due);}
@@ -3935,11 +3952,10 @@ function openPayment(pid,rid,defaultMonth){
   _pyPid=pid;_pyRid=rid;
   const p=S.properties.find(x=>x.id===pid),r=((p&&p.rooms)||[]).find(x=>x.id===rid);
   const cm=defaultMonth||mk();
-  const{elec,bal,due}=_calcDue(r,cm);
+  const due=Math.max(0,_billCalc(r,cm).pend);   // what's still left to pay this month
   openM('💰 Record Payment — '+((r.tenant&&r.tenant.name)||r.type),`
   <div id="pyDueBanner" style="background:#FFF7ED;border:1px solid rgba(249,115,22,0.2);border-radius:8px;padding:12px 14px;margin-bottom:14px;">
-    <div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Total due — ${ml(cm)}</div>
-    <div style="display:flex;gap:14px;flex-wrap:wrap;"><span>Rent: <strong>${fm(r.rent)}</strong></span>${elec?`<span>Elec: <strong style="color:var(--blue)">${fm(elec.amount)}</strong></span>`:''}${bal>0?`<span>Bal: <strong style="color:var(--red)">${fm(bal)}</strong></span>`:''}<span style="color:var(--orange);font-weight:700;">Total: ${fm(due)}</span></div>
+    ${_pyBannerH(r,cm)}
   </div>
   <div class="frow"><div><label class="flabel">Month</label><input class="finput" id="pyM" type="month" value="${cm}" onchange="pyMonthChange()"/></div><div><label class="flabel">Amount Received (₹) *</label><input class="finput" id="pyA" type="number" placeholder="${due}" data-due="${due}" oninput="pyCheck()"/></div></div>
   <div id="pyStatus" style="margin-bottom:12px;display:none;"></div>
@@ -3976,7 +3992,7 @@ function savePayment(pid,rid){
   const secPending=(secAdvDue&&isMoveInMonth)?secAdvDue.secPending:0;
   const due=proratedRentForMonth(rentForMonth(r,mo),_as,mo)+Number((elec&&elec.amount)||0)+bal-dedTotal+secPending;
   const totalPaid=r.payments.filter(x=>x.month===mo).reduce((s,x)=>s+Number(x.amount||0),0);
-  setBalanceAfterMonth(r,mo,due-totalPaid);
+  setBalanceAfterMonth(r,mo,due-totalPaid); _rebalance(r,_nextMonth(mo));
   sched();closeM();if(vRoom)renderRoomDetail();else renderBilling();
   actLog('Payment saved — '+(r.tenant&&r.tenant.name?r.tenant.name:'tenant')+' ₹'+Number(a).toLocaleString('en-IN'));
   toast('✅ Payment saved'+(r.balance>0?' — '+fm(r.balance)+' carried forward':''));
@@ -4002,6 +4018,51 @@ function _billCalc(r,mo){
   const secOnlyPending=(secAdvDue&&isMoveInMonth)?secAdvDue.secPending:0;
   const total=rentAmt+Number((elec&&elec.amount)||0)+bal-dedTotal+secOnlyPending,pend=total-paid;
   return {elec,paid,bal,dedTotal,activeStart,fullRent,rentAmt,isProrated,secAdvDue,isMoveInMonth,secOnlyPending,total,pend};
+}
+// A tenant who vacated during this month — the same figures in Billing, the Monthly Report and the Dashboard.
+function _vacCalc(t,mo){
+  const elecRec=(t.electricityHistory||[]).find(x=>x.month===mo);
+  const elecAmt=Number((elecRec&&elecRec.amount)||0);
+  const deds=(t.deductionHistory||[]).filter(d=>d.month===mo);
+  const dedAmt=deds.reduce((s,d)=>s+Number(d.amount||0),0);
+  const cashPaid=(t.paymentHistory||[]).filter(x=>x.month===mo).reduce((s,x)=>s+Number(x.amount||0),0);
+  const secAdj=Number((t.settlement&&t.settlement.securityAdjusted)||0);
+  const totalPaid=cashPaid+secAdj;
+  // Actual rent CHARGED this month (prorated to rent-payable-till date) — not the pending balance.
+  // Falls back to legacy records saved before this fix (which only stored rentPending).
+  const rentDue=t.finalMonthRentCharged!=null?Number(t.finalMonthRentCharged||0):Number(t.settlement&&t.settlement.rentPending!=null?t.settlement.rentPending:t.rentAmount||0);
+  const total=rentDue+elecAmt-dedAmt;
+  const pend=Math.max(0,total-totalPaid);
+  const netRefund=Number((t.settlement&&t.settlement.netRefund)||0);
+  return {elecRec,elecAmt,deds,dedAmt,cashPaid,secAdj,totalPaid,rentDue,total,pend,netRefund};
+}
+// Who is billed at a site in a month: current tenants who had moved in by then (Billing's rule).
+function _liveRoomsFor(p,mo){
+  return sortRooms(p.rooms||[]).filter(r=>{ if(!isRoomOccupied(r))return false;
+    const mi=(r.tenant&&(r.tenant.activeFrom||r.tenant.moveInDate))||(r.lease&&r.lease.startDate)||'';
+    return !(mi&&mi.slice(0,7)>mo); });
+}
+// Everything billed and collected at one site in one month — exactly Billing's numbers.
+// pend = what is still owed (a tenant who paid extra counts 0, the extra is shown separately).
+// cash = money actually received (security kept against dues of a vacated tenant is not new cash).
+function _siteMonth(p,mo){
+  const f={live:[],vac:[],rent:0,elec:0,bal:0,ded:0,sec:0,due:0,paid:0,pend:0,extra:0,secAdj:0,cash:0};
+  _liveRoomsFor(p,mo).forEach(r=>{ const c=_billCalc(r,mo); f.live.push({r,c});
+    f.rent+=c.rentAmt; f.elec+=Number((c.elec&&c.elec.amount)||0); f.bal+=c.bal; f.ded+=c.dedTotal; f.sec+=c.secOnlyPending;
+    f.due+=c.total; f.paid+=c.paid; f.cash+=c.paid; if(c.pend>0)f.pend+=c.pend; else f.extra+=-c.pend; });
+  (S.pastTenants||[]).filter(t=>t.propertyId===p.id&&sameMonthDate(t.vacatingDate,mo)).forEach(t=>{ const v=_vacCalc(t,mo); f.vac.push({t,v});
+    f.rent+=v.rentDue; f.elec+=v.elecAmt; f.ded+=v.dedAmt; f.due+=v.total; f.paid+=v.totalPaid; f.pend+=v.pend; f.secAdj+=v.secAdj; f.cash+=v.cashPaid; });
+  return f;
+}
+// Stored month-end balances (the "carry forward" cache) are refreshed whenever a tenant's money records change,
+// for every later month already stored — otherwise next month's carry-in could miss a reading or payment entered late.
+// A balance typed by hand (✏️ Edit carry-in balance) is kept as typed.
+function _moveInMonth(r){ return ((r.tenant&&(r.tenant.activeFrom||r.tenant.moveInDate))||(r.lease&&r.lease.startDate)||TRACKING_START_MONTH).slice(0,7); }
+function _rebalance(r,from){
+  if(!r||!from||!r.balanceByMonth)return;
+  const man=r.balanceManual||{};
+  Object.keys(r.balanceByMonth).filter(k=>k>=from&&!Object.prototype.hasOwnProperty.call(man,k)).sort().forEach(k=>{
+    const v=Math.max(0,_billCalc(r,k).pend); r.balanceByMonth[k]=v; r.balance=v; });
 }
 
 function renderBilling(){
@@ -4070,8 +4131,8 @@ function renderBilling(){
       // "how much security have we collected in total" at a glance, any month you're viewing.
       const cumSec=depositLedgerTotal(r,'security'),cumToken=depositLedgerTotal(r,'token'),cumAdv=depositLedgerTotal(r,'advance');
       const cumSecTotal=cumSec+cumToken;
-      pRent+=rentAmt;pDue+=total;pPaid+=paid;pPend+=pend;pElec+=Number((elec&&elec.amount)||0);pDeposits+=monthDepositsTotal;
-      grandDue+=total;grandPaid+=paid;grandPend+=pend;
+      pRent+=rentAmt;pDue+=total;pPaid+=paid;pPend+=Math.max(0,pend);pElec+=Number((elec&&elec.amount)||0);pDeposits+=monthDepositsTotal;
+      grandDue+=total;grandPaid+=paid;grandPend+=Math.max(0,pend);   // a tenant who paid extra doesn't reduce what others still owe
       const depositLabel={token:'🔑 Token',security:'🔐 Security',advance:'💸 Advance'};
       const depositBreakdown=[cumToken>0?`🔑${fm(cumToken)}`:null,cumSec>0?`🔐${fm(cumSec)}`:null].filter(Boolean).join(' + ');
       cLive.push({kind:'live',p,r,elec,paid,bal,dedTotal,rentAmt,isProrated,secAdvDue,secOnlyPending,total,pend,monthDepositsTotal});
@@ -4117,21 +4178,9 @@ function renderBilling(){
       </tr>`;
     });
     const vacatedArr=vacatedThisMonth.map(t=>{
-      const elecRec=(t.electricityHistory||[]).find(x=>x.month===billMo);
-      const elecAmt=Number((elecRec&&elecRec.amount)||0);
-      const deds=(t.deductionHistory||[]).filter(d=>d.month===billMo);
-      const dedAmt=deds.reduce((s,d)=>s+Number(d.amount||0),0);
-      const cashPaid=(t.paymentHistory||[]).filter(x=>x.month===billMo).reduce((s,x)=>s+Number(x.amount||0),0);
-      const secAdj=Number((t.settlement&&t.settlement.securityAdjusted)||0);
-      const totalPaid=cashPaid+secAdj;
-      // Actual rent CHARGED this month (prorated to rent-payable-till date) — not the pending balance.
-      // Falls back to legacy records saved before this fix (which only stored rentPending).
-      const rentDue=t.finalMonthRentCharged!=null?Number(t.finalMonthRentCharged||0):Number(t.settlement&&t.settlement.rentPending!=null?t.settlement.rentPending:t.rentAmount||0);
-      const total=rentDue+elecAmt-dedAmt;
-      const pend=Math.max(0,total-totalPaid);
-      const netRefund=Number((t.settlement&&t.settlement.netRefund)||0);
+      const {elecRec,elecAmt,deds,dedAmt,cashPaid,secAdj,totalPaid,rentDue,total,pend,netRefund}=_vacCalc(t,billMo);
       const secLedgerThisMonth=depositLedgerTotal({depositLedger:t.depositLedger},null,billMo);
-      pRent+=rentDue;pDue+=total;pPaid+=totalPaid;pPend+=pend;
+      pRent+=rentDue;pDue+=total;pPaid+=totalPaid;pPend+=pend;pElec+=elecAmt;
       grandDue+=total;grandPaid+=totalPaid;grandPend+=pend;
       cVac.push({kind:'vac',p,t,elecRec,elecAmt,dedAmt,cashPaid,secAdj,rentDue,total,totalPaid,pend,netRefund});
       return`<tr style="background:#FFF7ED;">
@@ -4446,7 +4495,7 @@ function delDepositEntry(pid,rid,eid){
   if(!r||!r.depositLedger)return;
   if(!confirm('Delete this deposit entry? This cannot be undone.'))return;
   r.depositLedger=r.depositLedger.filter(e=>e.id!==eid);
-  syncBalancesFromLedger(r);
+  syncBalancesFromLedger(r); _rebalance(r,_moveInMonth(r));
   sched();renderRoomDetail();
   toast('🗑 Deposit entry deleted');
 }
@@ -4462,7 +4511,7 @@ function saveDepositEntry(pid,rid){
   const ref=refRead('dep_ref',mode); if(ref===null)return;
   const into=mode!=='Cash'?((document.getElementById('dep_into')||{}).value||''):'';
   addDepositEntry(r,kind,amt,date,mode,notes,{...(ref?{ref}:{}),...(into?{into}:{})});
-  syncBalancesFromLedger(r);
+  syncBalancesFromLedger(r); _rebalance(r,_moveInMonth(r));
   sched();closeM();renderBilling();
   actLog('Deposit logged — '+kind+' ₹'+amt.toLocaleString('en-IN')+' for '+((r.tenant&&r.tenant.name)||'tenant'));
   toast('✅ Logged '+fm(amt)+' as '+kind);
@@ -4499,6 +4548,7 @@ function saveApplyAdvance(pid,rid){
   if(amt>remaining){toast('❌ Only '+fm(remaining)+' available to apply');return;}
   if(!r.payments)r.payments=[];
   r.payments.push({id:uid(),month:mo,amount:amt,mode:'Advance Rent',date:today(),notes:'Applied from advance rent balance'});
+  _rebalance(r,mo);
   sched();closeM();
   if(curTab==='billing')renderBilling();else renderRoomDetail();
   actLog('Applied advance rent — '+(r.tenant&&r.tenant.name?r.tenant.name:'tenant')+' ₹'+amt.toLocaleString('en-IN')+' to '+ml(mo));
@@ -6732,7 +6782,7 @@ function saveEditPayment(pid, rid, payId){
   const secPending=(secAdvDue&&isMoveInMonth)?secAdvDue.secPending:0;
   const due=rentAmt+Number((elec&&elec.amount)||0)+bal-dedTotal+secPending;
   const totalPaid=(r.payments||[]).filter(x=>x.month===targetMonth).reduce((s,x)=>s+Number(x.amount||0),0);
-  setBalanceAfterMonth(r,targetMonth,due-totalPaid);
+  setBalanceAfterMonth(r,targetMonth,due-totalPaid); _rebalance(r,_nextMonth(targetMonth));
   sched();closeM();renderRoomDetail();toast('✅ Payment updated');
 }
 
@@ -6758,7 +6808,7 @@ function delPayment(pid, rid, payId){
   const secPending=(secAdvDue&&isMoveInMonth)?secAdvDue.secPending:0;
   const due=rentAmt+Number((elec&&elec.amount)||0)+bal-dedTotal+secPending;
   const totalPaid=(r.payments||[]).filter(x=>x.month===targetMonth).reduce((s,x)=>s+Number(x.amount||0),0);
-  setBalanceAfterMonth(r,targetMonth,due-totalPaid);
+  setBalanceAfterMonth(r,targetMonth,due-totalPaid); _rebalance(r,_nextMonth(targetMonth));
   sched();
   renderRoomDetail();
   toast('🗑 Payment deleted — balance updated');
@@ -6768,17 +6818,14 @@ function showCollectedBreakdown(){
   const cm=mk();
   let grandTotal=0,grandPaid=0,grandPend=0;
   const propSections=S.properties.map(p=>{
-    const tenants=sortRooms(p.rooms||[]).filter(r=>isRoomOccupied(r));
-    if(!tenants.length)return'';
+    const tenants=_liveRoomsFor(p,cm);
+    const _vac=_siteMonth(p,cm).vac;
+    if(!tenants.length&&!_vac.length)return'';
     let pTotal=0,pPaid=0,pPend=0;
     const rows=tenants.map(r=>{
-      const elec=(r.electricityReadings||[]).find(x=>x.month===cm);
-      const monthPmts=(r.payments||[]).filter(x=>x.month===cm);
-      const paid=monthPmts.reduce((s,x)=>s+Number(x.amount||0),0);
-      const total=Number(r.rent||0)+Number((elec&&elec.amount)||0)+getCarryIn(r,cm);
-      const pend=total-paid;
-      pTotal+=total;pPaid+=paid;pPend+=pend;
-      grandTotal+=total;grandPaid+=paid;grandPend+=pend;
+      const {total,paid,pend}=_billCalc(r,cm);
+      pTotal+=total;pPaid+=paid;pPend+=Math.max(0,pend);
+      grandTotal+=total;grandPaid+=paid;grandPend+=Math.max(0,pend);
       return`<tr>
         <td>${r.type+(r.unitNo?' #'+r.unitNo:'')}</td>
         <td><strong>${r.tenant.name}</strong>${r.tenant.phone?`<br/><span style="font-size:11px;color:var(--muted);">${r.tenant.phone}</span>`:''}</td>
@@ -6787,7 +6834,11 @@ function showCollectedBreakdown(){
         <td style="color:${pend>0?'var(--red)':'var(--green)'};font-weight:700;">${pend>0?fm(pend):'✓'}</td>
         <td>${pend>0?`<button class="btn btn-orange btn-xs" onclick="closeM();openPayment('${p.id}','${r.id}')">Pay</button>`:'—'}</td>
       </tr>`;
-    }).join('');
+    }).join('')+_vac.map(({t,v})=>{
+      pTotal+=v.total;pPaid+=v.totalPaid;pPend+=v.pend;grandTotal+=v.total;grandPaid+=v.totalPaid;grandPend+=v.pend;
+      return`<tr style="background:#FFF7ED;"><td>${_escHtml((t.roomType||'')+(t.unitNo?' #'+t.unitNo:''))}</td><td><strong>${_escHtml(t.name||'')}</strong><br/><span style="font-size:10px;color:var(--orange);font-weight:700;">VACATED ${fd(t.vacatingDate)}</span></td>
+        <td style="font-weight:700;">${fm(v.total)}</td><td style="color:var(--green);font-weight:600;">${fm(v.totalPaid)}</td>
+        <td style="color:${v.pend>0?'var(--red)':'var(--green)'};font-weight:700;">${v.pend>0?fm(v.pend):'✓'}</td><td>—</td></tr>`;}).join('');
     return`<div style="margin-bottom:14px;">
       <div style="background:var(--orange);color:#fff;padding:8px 12px;border-radius:8px 8px 0 0;font-weight:700;font-size:13px;">🏢 ${p.name}</div>
       <div style="overflow-x:auto;border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;">
@@ -6818,28 +6869,31 @@ function showCollectedBreakdown(){
 
 function showRentRollBreakdown(){
   const cm=mk();
-  let grandRent=0,grandElec=0,grandPaid=0,grandPend=0;
+  let grandRent=0,grandElec=0,grandPaid=0,grandPend=0,grandTotal2=0;
   const propSections=S.properties.map(p=>{
-    const tenants=sortRooms(p.rooms||[]).filter(r=>isRoomOccupied(r));
-    if(!tenants.length)return'';
-    let pRent=0,pElec=0,pPaid=0,pPend=0;
+    const tenants=_liveRoomsFor(p,cm);
+    const _vac=_siteMonth(p,cm).vac;
+    if(!tenants.length&&!_vac.length)return'';
+    let pRent=0,pElec=0,pPaid=0,pPend=0,pTotal2=0;
     const rows=tenants.map(r=>{
-      const elec=(r.electricityReadings||[]).find(x=>x.month===cm);
-      const paid=(r.payments||[]).filter(x=>x.month===cm).reduce((s,x)=>s+Number(x.amount||0),0);
-      const total=Number(r.rent||0)+Number((elec&&elec.amount)||0)+getCarryIn(r,cm);
-      const pend=total-paid;
-      pRent+=Number(r.rent||0);pElec+=Number((elec&&elec.amount)||0);pPaid+=paid;pPend+=pend;
-      grandRent+=Number(r.rent||0);grandElec+=Number((elec&&elec.amount)||0);grandPaid+=paid;grandPend+=pend;
+      const _c=_billCalc(r,cm), elec=_c.elec, paid=_c.paid, total=_c.total, pend=_c.pend;
+      pRent+=_c.rentAmt;pElec+=Number((elec&&elec.amount)||0);pPaid+=paid;pPend+=Math.max(0,pend);pTotal2+=total;
+      grandRent+=_c.rentAmt;grandElec+=Number((elec&&elec.amount)||0);grandPaid+=paid;grandPend+=Math.max(0,pend);grandTotal2+=total;
       return`<tr>
         <td>${r.type+(r.unitNo?' #'+r.unitNo:'')}</td>
         <td><strong>${r.tenant.name}</strong></td>
-        <td>${fm(r.rent)}</td>
+        <td>${fm(_c.rentAmt)}</td>
         <td style="color:var(--blue);">${(elec&&elec.amount)>0?fm(elec.amount):'—'}</td>
         <td style="font-weight:700;">${fm(total)}</td>
         <td style="color:var(--green);font-weight:600;">${fm(paid)}</td>
         <td style="color:${pend>0?'var(--red)':'var(--green)'};font-weight:700;">${pend>0?fm(pend):'✓'}</td>
       </tr>`;
-    }).join('');
+    }).join('')+_vac.map(({t,v})=>{
+      pRent+=v.rentDue;pElec+=v.elecAmt;pPaid+=v.totalPaid;pPend+=v.pend;pTotal2+=v.total;
+      grandRent+=v.rentDue;grandElec+=v.elecAmt;grandPaid+=v.totalPaid;grandPend+=v.pend;grandTotal2+=v.total;
+      return`<tr style="background:#FFF7ED;"><td>${_escHtml((t.roomType||'')+(t.unitNo?' #'+t.unitNo:''))}</td><td><strong>${_escHtml(t.name||'')}</strong><br/><span style="font-size:10px;color:var(--orange);font-weight:700;">VACATED ${fd(t.vacatingDate)}</span></td>
+        <td>${fm(v.rentDue)}</td><td style="color:var(--blue);">${v.elecAmt>0?fm(v.elecAmt):'—'}</td><td style="font-weight:700;">${fm(v.total)}</td>
+        <td style="color:var(--green);font-weight:600;">${fm(v.totalPaid)}</td><td style="color:${v.pend>0?'var(--red)':'var(--green)'};font-weight:700;">${v.pend>0?fm(v.pend):'✓'}</td></tr>`;}).join('');
     return`<div style="margin-bottom:14px;">
       <div style="background:var(--orange);color:#fff;padding:8px 12px;border-radius:8px 8px 0 0;font-weight:700;font-size:13px;">🏢 ${p.name}</div>
       <div style="overflow-x:auto;border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;">
@@ -6849,7 +6903,7 @@ function showRentRollBreakdown(){
         <tfoot><tr style="background:var(--bg);font-weight:700;">
           <td colspan="2" style="color:var(--ink);">Subtotal</td>
           <td>${fm(pRent)}</td><td style="color:var(--blue);">${fm(pElec)}</td>
-          <td>${fm(pRent+pElec)}</td>
+          <td>${fm(pTotal2)}</td>
           <td style="color:var(--green);">${fm(pPaid)}</td>
           <td style="color:${pPend>0?'var(--red)':'var(--green)'};">${pPend>0?fm(pPend):'✓'}</td>
         </tr></tfoot>
@@ -6860,6 +6914,7 @@ function showRentRollBreakdown(){
     <div style="background:var(--ink);color:#fff;padding:14px 16px;border-radius:8px;margin-top:4px;">
       <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="font-size:13px;">Total Rent</span><span style="font-weight:700;">${fm(grandRent)}</span></div>
       <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="font-size:13px;color:#aaa;">Total Electricity</span><span style="font-weight:700;">${fm(grandElec)}</span></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="font-size:13px;color:#aaa;">Total Due <span style="font-size:11px;">(incl. carry-in, deductions, security)</span></span><span style="font-weight:700;">${fm(grandTotal2)}</span></div>
       <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="font-size:13px;color:#aaa;">Total Collected</span><span style="font-weight:700;color:#6EE7A0;">${fm(grandPaid)}</span></div>
       <div style="border-top:1px solid rgba(255,255,255,0.2);padding-top:8px;margin-top:4px;display:flex;justify-content:space-between;">
         <span style="font-size:14px;font-weight:700;">Grand Total Pending</span>
@@ -6875,8 +6930,8 @@ function showRentRollBreakdown(){
 function openMonthlyReport(month, filterPropId=''){
   const data=buildMonthlyReportData(month, filterPropId);
   const propOpts='<option value="">All Properties</option>'+S.properties.map(p=>`<option value="${p.id}" ${filterPropId===p.id?'selected':''}>${p.name}</option>`).join('');
-  const monthExpected=data.props.reduce((s,p)=>s+p.totalDue,0)+data.moveOutDue+data.moveInRent;
-  const monthCollected=data.totalCollected+data.moveOutCollected;
+  const monthExpected=data.props.reduce((s,p)=>s+p.totalDue,0);   // = Billing "Due" (vacated tenants are already inside each site)
+  const monthCollected=data.totalCollected;                          // = Billing "Collected"
 
   openM('📊 Monthly Report — '+ml(month), `
     <!-- Month + Property selector -->
@@ -6959,7 +7014,7 @@ function openMonthlyReport(month, filterPropId=''){
               <td>${r.unit}</td>
               <td><strong>${r.tenant}</strong>${r.isVacated?`<div><span style="font-size:9px;background:var(--orange);color:#fff;padding:1px 5px;border-radius:3px;font-weight:700;">VACATED ${fd(r.vacatedOn)}</span></div><div style="font-size:10px;font-weight:600;color:${r.refundTone};">${r.refundLabel||''}</div>`:''}</td>
               <td style="font-size:11px;color:var(--purple);">${r.tokenAmount>0?`Token ${fm(r.tokenAmount)}${r.securityBalance!=null?`<br/><span style="color:var(--muted);">Sec bal ${fm(r.securityBalance)}</span>`:''}`:'—'}${(r.depositsThisMonth&&r.depositsThisMonth.length)?r.depositsThisMonth.map(e=>`<br/><span style="color:var(--orange);">+${e.kind} ${fm(e.amount)} (${fd(e.date)})</span>`).join(''):''}</td>
-              <td>${fm(r.rent)}</td>
+              <td>${fm(r.rent)}${r.secDue>0?`<div style="font-size:10px;color:var(--amber);font-weight:700;">+ ${fm(r.secDue)} security</div>`:''}</td>
               <td style="font-size:11px;color:var(--muted);">${r.elecOld!=null?r.elecOld+'→'+r.elecNew+' ('+r.elecUnits+'u)':'—'}</td>
               <td style="color:var(--blue);">${r.elec>0?fm(r.elec):'—'}</td>
               <td style="color:var(--red);font-weight:600;">${r.carryIn>0?fm(r.carryIn):'—'}</td>
@@ -7057,16 +7112,13 @@ function buildMonthlyReportData(month, filterPropId=''){
       const _moveInCheck=(r.tenant&&(r.tenant.activeFrom||r.tenant.moveInDate))||(r.lease&&r.lease.startDate)||'';
       if(_moveInCheck&&_moveInCheck.slice(0,7)>month){vacantCount++;vacantUnits.push(r.type+(r.unitNo?' #'+r.unitNo:''));return;}
       occupied++;
-      const elec=(r.electricityReadings||[]).find(x=>x.month===month);
-      const paid=(r.payments||[]).filter(x=>x.month===month).reduce((s,x)=>s+Number(x.amount||0),0);
-      const bal=getCarryIn(r,month);
-      const activeStart=(r.tenant&&((r.tenant.activeFrom||r.tenant.moveInDate)||''))||(r.lease&&r.lease.startDate)||'';
-      const rent=proratedRentForMonth(rentForMonth(r,month),activeStart,month);
+      const _c=_billCalc(r,month);
+      const {elec,paid,bal,activeStart}=_c, rent=_c.rentAmt, secDue=_c.secOnlyPending;
       const elecAmt=Number((elec&&elec.amount)||0);
       const deds=(r.deductions||[]).filter(d=>d.month===month);
-      const dedAmt=deds.reduce((s,d)=>s+Number(d.amount||0),0);
-      const total=rent+elecAmt+bal-dedAmt;
-      const pend=total-paid;
+      const dedAmt=_c.dedTotal;
+      const total=_c.total;
+      const pend=_c.pend;
       const secTotal=Number((r.tenant&&(r.tenant.security||r.tenant.securityDeposit))||r.security||0);
       const secBalRaw=(r.tenant&&r.tenant.securityBalance!=null)?r.tenant.securityBalance:r.securityBalance;
       const secBal=secBalRaw!=null?Number(secBalRaw||0):null;
@@ -7090,34 +7142,29 @@ function buildMonthlyReportData(month, filterPropId=''){
       const closingBal=Math.max(0,pend);
       const depositsThisMonth=depositLedgerForMonth(r,month);
       propRooms.push({roomId:r.id,unit:r.type+(r.unitNo?' #'+r.unitNo:''),tenant:r.tenant.name,phone:(r.tenant&&r.tenant.phone)||'',rent,elec:elecAmt,elecOld,elecNew,elecUnits,elecRate,deds,dedAmt,total,paid,pend,closingBal,carryIn:bal,bal,tokenAmount,securityBalance:secBal,tokenDate:(r.tenant&&r.tenant.tokenDate)||'',paymentDetails,depositsThisMonth});
-      propRent+=rent;propElec+=elecAmt;propDed+=dedAmt;propDue+=total;propPaid+=paid;propPend+=pend;
+      propRooms[propRooms.length-1].secDue=secDue;
+      propRent+=rent;propElec+=elecAmt;propDed+=dedAmt;propDue+=total;propPaid+=paid;propPend+=Math.max(0,pend);
     });
 
     // Vacated tenants this month — include as full rows in propRooms
     (S.pastTenants||[])
-      .filter(t=>(!filterPropId||t.propertyId===p.id)&&sameMonthDate(t.vacatingDate,month))
+      .filter(t=>t.propertyId===p.id&&sameMonthDate(t.vacatingDate,month))
       .forEach(t=>{
         const moveKey=['vacated',t.propertyId||p.id||'',t.roomId||'',t.unitNo||'',(t.name||'').trim().toLowerCase(),t.moveInDate||'',t.vacatingDate||''].join('|');
         if(movementKeys.has(moveKey))return;
         movementKeys.add(moveKey);
 
-        // Full row data from archived history
-        const elecRec=(t.electricityHistory||[]).find(x=>x.month===month);
-        const elecAmt=Number((elecRec&&elecRec.amount)||0);
+        // Full row data from archived history — same figures as the Billing card
+        const _v=_vacCalc(t,month);
+        const elecRec=_v.elecRec;
+        const elecAmt=_v.elecAmt;
         const elecOld=elecRec?elecRec.oldReading:null;
         const elecNew=elecRec?elecRec.reading:null;
         const elecUnits=elecRec?elecRec.units:null;
         const elecRate=elecRec?Number(elecRec.rate||0):null;
-        const deds=(t.deductionHistory||[]).filter(d=>d.month===month);
-        const dedAmt=deds.reduce((s,d)=>s+Number(d.amount||0),0);
-        const monthPaid=(t.paymentHistory||[]).filter(x=>x.month===month).reduce((s,x)=>s+Number(x.amount||0),0);
-        const secAdj=Number((t.settlement&&t.settlement.securityAdjusted)||0);
-        const totalPaidThisMonth=monthPaid+secAdj; // cash paid + security adjusted
-        // Rent due: actual rent CHARGED this month (prorated to rent-payable-till date),
-        // not the pending/unpaid balance — falls back to legacy records for old data.
-        const rentDue=t.finalMonthRentCharged!=null?Number(t.finalMonthRentCharged||0):Number(t.settlement&&t.settlement.rentPending!=null?t.settlement.rentPending:t.rentAmount||0);
-        const total=rentDue+elecAmt-dedAmt; // what was owed this month
-        const pend=Math.max(0,total-totalPaidThisMonth);
+        const deds=_v.deds, dedAmt=_v.dedAmt, secAdj=_v.secAdj;
+        const totalPaidThisMonth=_v.totalPaid; // cash paid + security adjusted
+        const rentDue=_v.rentDue, total=_v.total, pend=_v.pend;
         const closingBal=pend;
         const secHeld=Number(t.securityHeld||0);
         const secLeft=Math.max(0,secHeld-secAdj);
@@ -7238,8 +7285,8 @@ function buildMonthlyReportData(month, filterPropId=''){
 async function printMonthlyReport(month, filterPropId='', shareMode=false){
   const data=buildMonthlyReportData(month, filterPropId);
   const printDate=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
-  const monthExpected=data.props.reduce((s,p)=>s+p.totalDue,0)+data.moveOutDue+data.moveInRent;
-  const monthCollected=data.totalCollected+data.moveOutCollected;
+  const monthExpected=data.props.reduce((s,p)=>s+p.totalDue,0);   // = Billing "Due" (vacated tenants are already inside each site)
+  const monthCollected=data.totalCollected;                          // = Billing "Collected"
 
   // Build detailed per-tenant sections
   const propSections=data.props.map(p=>{
@@ -7254,7 +7301,7 @@ async function printMonthlyReport(month, filterPropId='', shareMode=false){
         +'<td>'+r.unit+'</td>'
         +'<td><strong>'+r.tenant+'</strong>'+(r.phone?'<br/><span style="font-size:10px;color:#9CA3AF;">'+r.phone+'</span>':'')+vacBadge+'</td>'
         +'<td style="font-size:10px;color:#6D28D9;">'+(r.tokenAmount>0?('Token &#8377;'+r.tokenAmount.toLocaleString('en-IN')+(r.securityBalance!=null?'<br/><span style="color:#6B7280;">Sec bal &#8377;'+r.securityBalance.toLocaleString('en-IN')+'</span>':'')):'—')+((r.depositsThisMonth&&r.depositsThisMonth.length)?r.depositsThisMonth.map(function(e){return '<br/><span style="color:#F97316;">+'+e.kind+' &#8377;'+e.amount.toLocaleString('en-IN')+' ('+fd(e.date)+')</span>';}).join(''):'')+'</td>'
-        +'<td>&#8377;'+r.rent.toLocaleString('en-IN')+'</td>'
+        +'<td>&#8377;'+r.rent.toLocaleString('en-IN')+(r.secDue>0?'<div style="font-size:10px;color:#B45309;font-weight:700;">+ &#8377;'+r.secDue.toLocaleString('en-IN')+' security</div>':'')+'</td>'
         +'<td style="font-size:11px;text-align:right;">'+(r.elecOld!=null?r.elecOld:'—')+'</td>'
         +'<td style="font-size:11px;text-align:right;font-weight:600;">'+(r.elecNew!=null?r.elecNew:'—')+'</td>'
         +'<td style="font-size:11px;text-align:right;">'+(r.elecRate?'&#8377;'+r.elecRate+'/u':'—')+'</td>'
@@ -7487,7 +7534,7 @@ function saveDeduction(pid, rid){
   const secPending=(secAdvDue&&isMoveInMonth)?secAdvDue.secPending:0;
   const due=rentAmt+Number((elec&&elec.amount)||0)+carryIn3-dedTotal+secPending;
   const totalPaid=(r.payments||[]).filter(x=>x.month===mo).reduce((s,x)=>s+Number(x.amount||0),0);
-  setBalanceAfterMonth(r,mo,due-totalPaid);
+  setBalanceAfterMonth(r,mo,due-totalPaid); _rebalance(r,_nextMonth(mo));
   sched();closeM();
   if(curTab==='billing')renderBilling();
   else if(vRoom)renderRoomDetail();
@@ -7515,7 +7562,7 @@ function saveBalance(pid,rid){
   if(!r)return;
   const v=document.getElementById('bbal').value;
   const mo2=curTab==='billing'?billMo:mk();
-  setBalanceAfterMonth(r,prevMonth(mo2),Number(v||0));
+  setBalanceAfterMonth(r,prevMonth(mo2),Number(v||0),true); _rebalance(r,mo2);
   sched();closeM();
   if(curTab==='billing')renderBilling();
   else if(vRoom)renderRoomDetail();
@@ -7546,7 +7593,7 @@ function delDeductionFromBilling(pid,rid,dedId,mo){
   const secPending=(secAdvDue&&isMoveInMonth)?secAdvDue.secPending:0;
   const due=rentAmt+Number((elec&&elec.amount)||0)+carryIn-dedTotal+secPending;
   const totalPaid=(r.payments||[]).filter(x=>x.month===mo).reduce((s,x)=>s+Number(x.amount||0),0);
-  setBalanceAfterMonth(r,mo,due-totalPaid);
+  setBalanceAfterMonth(r,mo,due-totalPaid); _rebalance(r,_nextMonth(mo));
   sched();closeM();
   if(curTab==='billing')renderBilling();
   else if(vRoom)renderRoomDetail();
@@ -7557,7 +7604,9 @@ function delDeduction(pid, rid, dedId){
   if(!confirm('Remove this deduction?'))return;
   const p=S.properties.find(x=>x.id===pid);
   const r=((p&&p.rooms)||[]).find(x=>x.id===rid);
+  const _dm=((r.deductions||[]).find(x=>x.id===dedId)||{}).month;
   r.deductions=(r.deductions||[]).filter(x=>x.id!==dedId);
+  if(_dm)_rebalance(r,_dm);
   sched();renderRoomDetail();toast('🗑 Deduction removed');
 }
 
@@ -7624,17 +7673,13 @@ function printExpensesOnly(month, filterPropId=''){
 function showPropRentRoll(pid){
   const p=S.properties.find(x=>x.id===pid);if(!p)return;
   const cm=mk();
-  const rows=sortRooms(p.rooms||[]).filter(r=>isRoomOccupied(r)).map(r=>{
-    const elec=(r.electricityReadings||[]).find(x=>x.month===cm);
-    const ded=(r.deductions||[]).filter(d=>d.month===cm).reduce((s,d)=>s+Number(d.amount||0),0);
-    const total=Number(r.rent||0)+Number((elec&&elec.amount)||0)+getCarryIn(r,cm)-ded;
-    const paid=(r.payments||[]).filter(x=>x.month===cm).reduce((s,x)=>s+Number(x.amount||0),0);
-    const pend=total-paid;
-    return{r,unit:r.type+(r.unitNo?' #'+r.unitNo:''),tenant:r.tenant.name,rent:Number(r.rent||0),elec:Number((elec&&elec.amount)||0),ded,total,paid,pend};
+  const rows=_liveRoomsFor(p,cm).map(r=>{
+    const c=_billCalc(r,cm);
+    return{r,unit:r.type+(r.unitNo?' #'+r.unitNo:''),tenant:r.tenant.name,rent:c.rentAmt,elec:Number((c.elec&&c.elec.amount)||0),ded:c.dedTotal,total:c.total,paid:c.paid,pend:c.pend};
   });
   const gTotal=rows.reduce((s,x)=>s+x.total,0);
   const gPaid=rows.reduce((s,x)=>s+x.paid,0);
-  const gPend=rows.reduce((s,x)=>s+x.pend,0);
+  const gPend=rows.reduce((s,x)=>s+Math.max(0,x.pend),0);
   openM('💰 Rent Roll — '+p.name+' — '+ml(cm),`
     <div style="overflow-x:auto;">
     <table class="tbl">
@@ -7705,8 +7750,9 @@ function startVacating(pid,rid){
   const _as=(r.tenant&&((r.tenant.activeFrom||r.tenant.moveInDate)||''))||(r.lease&&r.lease.startDate)||'';
   const proratedRent=proratedVacateRent(rentForMonth(r,vm),_as,vm,today()); // rent-till defaults to today · 30-day month
   const alreadyPaid=(r.payments||[]).filter(x=>x.month===vm).reduce((s,x)=>s+Number(x.amount||0),0);
-  const totalDue=Math.max(0,proratedRent+elecAmt+carryIn-alreadyPaid);
-  const secHeld=Number(r.securityDeposit||r.security||(r.tenant&&r.tenant.security)||0);
+  const vDed=(r.deductions||[]).filter(d=>d.month===vm).reduce((s,d)=>s+Number(d.amount||0),0);   // deductions in the final month
+  const totalDue=Math.max(0,proratedRent+elecAmt+carryIn-vDed-alreadyPaid);
+  const secHeld=Number([r.tenant&&r.tenant.securityDeposit,r.tenant&&r.tenant.security,r.security,r.securityDeposit].find(v=>Number(v)>0)||0);   // same order as Billing
   const lease=(S.leases||[]).find(l=>l.roomId===rid&&l.status==='active');
   const cleaningCharge=Number((lease&&lease.cleanCharge)||1000);
 
@@ -7815,14 +7861,15 @@ function recalcVacateRent(pid,rid){
   const _as=(r.tenant&&((r.tenant.activeFrom||r.tenant.moveInDate)||''))||(r.lease&&r.lease.startDate)||'';
   const proratedRent=proratedVacateRent(rentForMonth(r,vm),_as,vm,rentTill);
   const alreadyPaid=(r.payments||[]).filter(x=>x.month===vm).reduce((s,x)=>s+Number(x.amount||0),0);
-  const totalDue=Math.max(0,proratedRent+elecAmt+carryIn-alreadyPaid);
+  const vDed=(r.deductions||[]).filter(d=>d.month===vm).reduce((s,d)=>s+Number(d.amount||0),0);   // deductions in the final month
+  const totalDue=Math.max(0,proratedRent+elecAmt+carryIn-vDed-alreadyPaid);
   const duesEl=document.getElementById('vs_dues');
   if(duesEl){duesEl.value=totalDue;calcVacateRefund();}
   const info=document.getElementById('vs_rent_info');
   if(info){
     const full=rentForMonth(r,vm), days=vacateDays(_as,vm,rentTill);
     info.innerHTML='🧮 Rent for '+ml(vm)+': '+fm(full)+' ÷ 30 × '+days+' day'+(days!==1?'s':'')+' = <strong>'+fm(proratedRent)+'</strong>'
-      +(elecAmt?' · Electricity '+fm(elecAmt):'')+(carryIn?' · Previous balance '+fm(carryIn):'')+(alreadyPaid?' · Already paid −'+fm(alreadyPaid):'')
+      +(elecAmt?' · Electricity '+fm(elecAmt):'')+(carryIn?' · Previous balance '+fm(carryIn):'')+(vDed?' · Deductions −'+fm(vDed):'')+(alreadyPaid?' · Already paid −'+fm(alreadyPaid):'')
       +' → <strong>Rent due '+fm(totalDue)+'</strong>';
   }
 }
