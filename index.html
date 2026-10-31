@@ -210,6 +210,18 @@ button{cursor:pointer;}
 .soon-head{background:var(--amber);color:#fff;padding:10px 16px;font-family:'Space Grotesk';font-weight:700;font-size:13px;}
 .urgent-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid rgba(239,68,68,.18);flex-wrap:wrap;}
 .urgent-row:last-child{border-bottom:none;}
+/* dashboard: every box folds, lists inside are grouped by site */
+.df-head{cursor:pointer;user-select:none;-webkit-user-select:none;display:flex;align-items:center;gap:8px;}
+.df-head>:first-child{flex:1;min-width:0;}
+.df-chev{flex:none;font-size:12px;line-height:1;transition:transform .15s;transform:rotate(-90deg);opacity:.85;}
+[data-fold].df-open>.df-head>.df-chev{transform:none;}
+[data-fold]:not(.df-open)>.df-body{display:none;}
+.df-site{border-bottom:1px solid rgba(0,0,0,.08);}
+.df-site:last-child{border-bottom:none;}
+.df-site-head{padding:10px 16px;background:rgba(0,0,0,.035);font-size:13.5px;font-weight:800;color:var(--ink);}
+.df-site.df-open>.df-site-head{background:rgba(0,0,0,.06);}
+.df-count{display:inline-block;min-width:20px;padding:1px 7px;margin-left:6px;border-radius:10px;background:var(--ink);color:#fff;font-size:11px;text-align:center;}
+.df-sum{display:block;font-size:11.5px;font-weight:600;color:var(--ink2);margin-top:2px;}
 .tbl tr.row-expired td{background:#FEF2F2;}
 .tbl tr.row-soon td{background:#FFFBEB;}
 .bn-item{position:relative;}
@@ -1498,6 +1510,30 @@ function renderTab(){
 }
 
 // ── DASHBOARD ──
+// ── Dashboard folding: each box (and each site inside a box) opens/closes with a tap; the choice is remembered on this device ──
+let _dashFold=null;
+function _dfLoad(){ if(_dashFold)return _dashFold; try{ _dashFold=JSON.parse(localStorage.getItem('rd_dash_fold')||'{}')||{}; }catch(e){ _dashFold={}; } return _dashFold; }
+function _dfIsOpen(key,def){ const f=_dfLoad(); return Object.prototype.hasOwnProperty.call(f,key)?!!f[key]:def; }
+function dashFold(el){
+  const box=el&&el.closest('[data-fold]'); if(!box)return;
+  const open=box.classList.toggle('df-open'); _dfLoad()[box.dataset.fold]=open;
+  try{ localStorage.setItem('rd_dash_fold',JSON.stringify(_dashFold)); }catch(e){}
+}
+// a whole box: head (tap to fold) + body
+function dfBox(key,cls,style,headCls,headStyle,headInner,body,def){
+  const open=_dfIsOpen(key,def!==false);
+  return `<div class="${cls}${open?' df-open':''}" data-fold="${_escHtml(key)}"${style?` style="${style}"`:''}><div class="${headCls} df-head"${headStyle?` style="${headStyle}"`:''} onclick="dashFold(this)">${headInner}<span class="df-chev">▾</span></div><div class="df-body">${body}</div></div>`;
+}
+// a list grouped by site, in the same order as the Properties tab; a box with only one site opens it straight away
+function _siteIdx(name){ const n=String(name||'').trim().toLowerCase(); const i=(S.properties||[]).findIndex(p=>String(p.name||'').trim().toLowerCase()===n); return i<0?999:i; }
+function dfSites(boxKey,items,siteOf,groupH,sumFn){
+  const groups=new Map();
+  items.forEach(it=>{ const k=String(siteOf(it)||'').trim()||'Other'; if(!groups.has(k))groups.set(k,[]); groups.get(k).push(it); });
+  const names=[...groups.keys()].sort((a,b)=>_siteIdx(a)-_siteIdx(b)||a.localeCompare(b));
+  return names.map(n=>{ const g=groups.get(n), key=boxKey+':'+n, open=_dfIsOpen(key,names.length===1), sm=sumFn?sumFn(g):'';
+    return `<div class="df-site${open?' df-open':''}" data-fold="${_escHtml(key)}"><div class="df-site-head df-head" onclick="dashFold(this)"><span>🏢 ${_escHtml(n)}<span class="df-count">${g.length}</span>${sm?`<span class="df-sum">${sm}</span>`:''}</span><span class="df-chev">▾</span></div><div class="df-body">${groupH(g)}</div></div>`; }).join('');
+}
+
 function renderDash(){
   if(!isAdmin){renderStaffDash();return;}
   const mc=document.getElementById('mc');
@@ -1576,9 +1612,9 @@ function renderDash(){
     <div class="stat" style="cursor:pointer;" onclick="goTab('expenses')"><div class="stat-icon">📋</div><div class="stat-label">Expenses</div><div class="stat-value" style="color:var(--amber)">${fm(totalExp)}</div><div class="stat-sub">Tap to view · ${ml(cm)}</div></div>
   </div>
   <div class="g2" style="margin-bottom:14px;">
-    <div class="card">
-      <div class="card-head"><div class="card-title">⚡ Electricity Coverage — ${ml(cm)}</div><button class="btn btn-ghost btn-sm" onclick="billMo=mk();goTab('billing')">Site-wise ›</button></div>
-      <div class="card-body">
+    <div class="card${_dfIsOpen('elec',true)?' df-open':''}" data-fold="elec">
+      <div class="card-head df-head" onclick="dashFold(this)"><div class="card-title">⚡ Electricity Coverage — ${ml(cm)}</div><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();billMo=mk();goTab('billing')">Site-wise ›</button><span class="df-chev">▾</span></div>
+      <div class="card-body df-body">
         ${mainBill>0?`
         <div class="irow"><span class="irow-label">Main Meter Bill (units × ₹${mainMeterRate()})</span><span class="irow-value" style="color:var(--red)">${fm(mainBill)}</span></div>
         <div class="irow"><span class="irow-label">Billed to Tenants</span><span class="irow-value">${fm(elecBilled)}</span></div>
@@ -1589,9 +1625,9 @@ function renderDash(){
         `:`<div style="text-align:center;color:var(--muted);padding:16px 0;font-size:13px;">No main meter for ${ml(cm)}</div>`}
       </div>
     </div>
-    <div class="card">
-      <div class="card-head"><div class="card-title">📊 ${ml(cm)} Summary</div></div>
-      <div class="card-body">
+    <div class="card${_dfIsOpen('summary',true)?' df-open':''}" data-fold="summary">
+      <div class="card-head df-head" onclick="dashFold(this)"><div class="card-title">📊 ${ml(cm)} Summary</div><span class="df-chev">▾</span></div>
+      <div class="card-body df-body">
         <div class="irow"><span class="irow-label">Rent Expected</span><span class="irow-value">${fm(roll)}</span></div>
         <div class="irow"><span class="irow-label">Electricity Billed</span><span class="irow-value" style="color:var(--blue)">${fm(elecBilled)}</span></div>
         <div class="irow" style="background:var(--bg);padding:6px 8px;border-radius:6px;margin:4px 0;"><span class="irow-label" style="font-weight:600;">Total Expected</span><span class="irow-value" style="font-weight:700;">${fm(roll+elecBilled)}</span></div>
@@ -1640,15 +1676,15 @@ function renderStaffDash(){
   </div>
 
   ${myTasks.length?`
-  <div class="card" style="margin-bottom:14px;">
-    <div class="card-head"><div class="card-title">📌 My Tasks</div><button class="btn btn-ghost btn-sm" onclick="goTab('planner')">View All</button></div>
-    <div class="card-body" style="padding:0;">${myTasks.slice(0,5).map(t=>taskRowH(t)).join('')}</div>
+  <div class="card${_dfIsOpen('mytasks',true)?' df-open':''}" data-fold="mytasks" style="margin-bottom:14px;">
+    <div class="card-head df-head" onclick="dashFold(this)"><div class="card-title">📌 My Tasks</div><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();goTab('planner')">View All</button><span class="df-chev">▾</span></div>
+    <div class="card-body df-body" style="padding:0;">${myTasks.slice(0,5).map(t=>taskRowH(t)).join('')}</div>
   </div>`:''}
 
   ${myRem.length?`
-  <div class="card">
-    <div class="card-head"><div class="card-title">🔔 My Reminders</div><button class="btn btn-ghost btn-sm" onclick="goTab('reminders')">View All</button></div>
-    <div class="card-body" style="padding:0;">${myRem.slice(0,5).map(r=>reminderRowH(r)).join('')}</div>
+  <div class="card${_dfIsOpen('myrem',true)?' df-open':''}" data-fold="myrem">
+    <div class="card-head df-head" onclick="dashFold(this)"><div class="card-title">🔔 My Reminders</div><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();goTab('reminders')">View All</button><span class="df-chev">▾</span></div>
+    <div class="card-body df-body" style="padding:0;">${myRem.slice(0,5).map(r=>reminderRowH(r)).join('')}</div>
   </div>`:''}
   `;
 }
@@ -1722,7 +1758,6 @@ function bankFlag(pid,rid,kind,id){
   if(!confirm('Mark '+fm(x.amount)+' as NOT received in the bank?\n\nIt stays on your list in red until it shows up or is corrected.'))return;
   x.bankFlag={on:today(),by:user}; actLog('Bank check ✗ NOT received '+fm(x.amount)+' ('+fd(x.date)+')'); sched(); renderTab(); toast('⚠️ Flagged — follow up with the tenant / Preeti',4000);
 }
-let _bankAll=false;
 
 // ══════════════════════════════════════════════════════
 // 💬 WHATSAPP MESSAGE MENU (pick what to send) + 🎂 BIRTHDAYS (KD's dashboard only)
@@ -1861,14 +1896,15 @@ function dashBirthdaysH(){
   const fest=`<button class="btn btn-ghost btn-sm" style="width:100%;margin-bottom:14px;justify-content:center;border:1.5px dashed #F9A8D4;" onclick="openFestivalAll()">🪔 Send festival wishes to all tenants</button>`;
   if(!L.length)return fest;
   const yr=String(new Date().getFullYear());
-  return `<div class="card" style="margin-bottom:14px;border:1.5px solid #F9A8D4;">
-    <div class="card-head" style="background:#FDF2F8;"><div class="card-title">🎂 Birthdays this week</div><span style="font-size:11px;color:var(--muted);">${L.filter(x=>x.n.days===0).length} today</span></div>
-    ${L.map(x=>{ const sent=x.t.bdaySent===yr&&x.n.days===0, act=x.past?`sendPastBday('${x.past}')`:`waSend('bday','${x.pid}','${x.rid}');setTimeout(renderTab,300)`;
+  const _bSite=x=>x.past?((x.t&&x.t.propertyName)||'Past tenants'):((S.properties||[]).find(p=>p.id===x.pid)||{}).name;
+  const _bRow=x=>{ const sent=x.t.bdaySent===yr&&x.n.days===0, act=x.past?`sendPastBday('${x.past}')`:`waSend('bday','${x.pid}','${x.rid}');setTimeout(renderTab,300)`;
       return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px;border-top:1px solid var(--border);${x.n.days===0?'background:#FFF7FB;':''}">
       <div style="min-width:0;"><div style="font-weight:700;">${_escHtml(x.t.name||'')} ${x.n.days===0?'🎉':''}</div>
         <div style="font-size:12px;color:var(--muted);">${_escHtml(x.where)} · ${x.n.days===0?'<b style="color:#DB2777;">Today</b>':x.n.days===1?'Tomorrow':x.n.date.toLocaleDateString('en-IN',{weekday:'short',day:'2-digit',month:'short'})}</div></div>
-      ${x.n.days===0?(sent?'<span class="badge badge-grn">✓ Wished</span>':`<button class="btn btn-sm" style="background:#DB2777;color:#fff;" onclick="${act}">🎂 Send wishes</button>`):''}</div>`; }).join('')}
-  </div>`+fest;
+      ${x.n.days===0?(sent?'<span class="badge badge-grn">✓ Wished</span>':`<button class="btn btn-sm" style="background:#DB2777;color:#fff;" onclick="${act}">🎂 Send wishes</button>`):''}</div>`; };
+  return dfBox('bday','card','margin-bottom:14px;border:1.5px solid #F9A8D4;','card-head','background:#FDF2F8;',
+    `<div class="card-title">🎂 ${L.length} birthday${L.length>1?'s':''} this week</div><span style="font-size:11px;color:var(--muted);">${L.filter(x=>x.n.days===0).length} today</span>`,
+    dfSites('bday',L,_bSite,g=>g.map(_bRow).join(''),g=>{ const t=g.filter(x=>x.n.days===0).length; return t?t+' today':''; }))+fest;
 }
 
 
@@ -1916,11 +1952,8 @@ function dashBankCheckH(){
   if(!isAdmin)return '';
   const items=bankItems(); if(!items.length)return '';
   const total=items.reduce((a,i)=>a+Number(i.x.amount||0),0), flagged=items.filter(i=>i.x.bankFlag).length;
-  const show=_bankAll?items:items.slice(0,5);
-  return `<div class="urgent-card" style="border-color:var(--blue);box-shadow:0 4px 18px rgba(59,130,246,.15);background:#F5F9FF;">
-    <div class="urgent-head" style="background:var(--blue);"><span>🏦 ${items.length} payment${items.length>1?'s':''} to check in bank · ${fm(total)}</span><span style="font-size:11px;font-weight:600;opacity:.9;">${flagged?flagged+' not received':'Tick when seen'}</span></div>
-    ${show.map((i,ix)=>{ const x=i.x, args=`'${i.p.id}','${i.r.id}','${i.kind}','${x.id}'`, acc=x.into||'Account not marked', prev=ix?(show[ix-1].x.into||'Account not marked'):null;
-      const accT=items.filter(j=>(j.x.into||'Account not marked')===acc), accHead=acc!==prev?`<div style="padding:7px 16px;background:#E6EFFE;font-size:12px;font-weight:800;color:#1E40AF;display:flex;justify-content:space-between;"><span>🏦 ${_escHtml(acc)}</span><span>${accT.length} · ${fm(accT.reduce((a,j)=>a+Number(j.x.amount||0),0))}</span></div>`:'';
+  const grp=show=>show.map((i,ix)=>{ const x=i.x, args=`'${i.p.id}','${i.r.id}','${i.kind}','${x.id}'`, acc=x.into||'Account not marked', prev=ix?(show[ix-1].x.into||'Account not marked'):null;
+      const accT=show.filter(j=>(j.x.into||'Account not marked')===acc), accHead=acc!==prev?`<div style="padding:7px 16px;background:#E6EFFE;font-size:12px;font-weight:800;color:#1E40AF;display:flex;justify-content:space-between;"><span>🏦 ${_escHtml(acc)}</span><span>${accT.length} · ${fm(accT.reduce((a,j)=>a+Number(j.x.amount||0),0))}</span></div>`:'';
       return accHead+`<div class="urgent-row" style="border-bottom-color:rgba(59,130,246,.18);${x.bankFlag?'background:#FEF2F2;':''}">
       <div style="min-width:0;flex:1;"><div style="display:flex;justify-content:space-between;gap:8px;"><span style="font-weight:700;font-size:14px;color:var(--ink);">${_escHtml(i.who||'—')}</span><span style="font-weight:800;font-size:15px;color:var(--ink);white-space:nowrap;">${fm(x.amount)}</span></div>
         <div style="font-size:12px;color:var(--ink2);">${_escHtml(i.p.name)} · ${_escHtml(i.r.type+(i.r.unitNo?' #'+i.r.unitNo:''))} · ${_escHtml(i.what)}</div>
@@ -1928,9 +1961,10 @@ function dashBankCheckH(){
         ${x.bankFlag?`<div style="font-size:11.5px;color:var(--red);font-weight:700;margin-top:3px;">✗ Marked NOT received on ${fd(x.bankFlag.on)} — follow up</div>`:''}</div>
       <div style="display:flex;gap:6px;">
         <button class="btn btn-green btn-sm" onclick="bankTick(${args})">✓ Received</button>
-        <button class="btn btn-ghost btn-sm" title="${x.bankFlag?'Undo':'Not in bank'}" onclick="bankFlag(${args})">${x.bankFlag?'↩':'✗'}</button></div></div>`; }).join('')}
-    ${items.length>5?`<div style="padding:10px 16px;text-align:center;"><button class="btn btn-ghost btn-sm" onclick="_bankAll=!_bankAll;renderTab()">${_bankAll?'Show less ▲':'Show all '+items.length+' ▼'}</button></div>`:''}
-  </div>`;
+        <button class="btn btn-ghost btn-sm" title="${x.bankFlag?'Undo':'Not in bank'}" onclick="bankFlag(${args})">${x.bankFlag?'↩':'✗'}</button></div></div>`; }).join('');
+  return dfBox('bank','urgent-card','border-color:var(--blue);box-shadow:0 4px 18px rgba(59,130,246,.15);background:#F5F9FF;','urgent-head','background:var(--blue);',
+    `<span>🏦 ${items.length} payment${items.length>1?'s':''} to check in bank · ${fm(total)}</span><span style="font-size:11px;font-weight:600;opacity:.9;">${flagged?flagged+' not received':'Tick when seen'}</span>`,
+    dfSites('bank',items,i=>i.p.name,grp,g=>fm(g.reduce((a,i)=>a+Number(i.x.amount||0),0))+(g.some(i=>i.x.bankFlag)?' · '+g.filter(i=>i.x.bankFlag).length+' not received':'')));
 }
 
 // ── Compulsory reference for every non-cash payment (UPI ref / UTR / cheque no.) ──
@@ -2327,9 +2361,9 @@ function dashOwnerRentH(){
   if(!isAdmin)return ''; const m=mk(), d=new Date().getDate();
   const due=S.properties.filter(p=>propType(p)==='leased'&&ownerRentDue(p,m)>0&&d>=Number((p.ownLease||{}).dueDay||7)&&_sumA(_ownPays(p.id,m))+_sumA(_ownDeds(p.id,m))<ownerRentDue(p,m));
   if(!due.length)return '';
-  return `<div class="soon-card"><div class="soon-head">🤝 Owner rent for ${ml(m)} not entered</div>
-    ${due.map(p=>`<div class="urgent-row"><div style="min-width:0;flex:1;"><div style="font-weight:700;">${_escHtml(p.name)}${p.ownLease&&p.ownLease.owner?' → '+_escHtml(p.ownLease.owner):''}</div><div style="font-size:12px;color:var(--ink2);">Due ${fm(ownerRentDue(p,m))} by the ${p.ownLease.dueDay||7}th · entered ${fm(_sumA(_ownPays(p.id,m))+_sumA(_ownDeds(p.id,m)))}</div></div>
-      <button class="btn btn-orange btn-sm" onclick="openOwnerPayExp('${p.id}','${m}')">+ Pay owner</button></div>`).join('')}</div>`;
+  return dfBox('owner','soon-card','','soon-head','',`<span>🤝 Owner rent for ${ml(m)} not entered · ${due.length} site${due.length>1?'s':''}</span>`,
+    `${due.map(p=>`<div class="urgent-row"><div style="min-width:0;flex:1;"><div style="font-weight:700;">${_escHtml(p.name)}${p.ownLease&&p.ownLease.owner?' → '+_escHtml(p.ownLease.owner):''}</div><div style="font-size:12px;color:var(--ink2);">Due ${fm(ownerRentDue(p,m))} by the ${p.ownLease.dueDay||7}th · entered ${fm(_sumA(_ownPays(p.id,m))+_sumA(_ownDeds(p.id,m)))}</div></div>
+      <button class="btn btn-orange btn-sm" onclick="openOwnerPayExp('${p.id}','${m}')">+ Pay owner</button></div>`).join('')}`);
 }
 // profit PDF (same look as the other reports)
 function buildProfitDocDef(){
@@ -2697,11 +2731,10 @@ function dashMeterReminderH(){
       <div style="display:flex;gap:6px;flex-wrap:wrap;">${btns}</div></div>`;
   }).join('');
   const pend=open.length;
-  return`<div class="${late?'urgent-card':'soon-card'}">
-    <div class="${late?'urgent-head':'soon-head'}" style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><span>⚡ Main Meter Readings — ${ml(cm)}</span><span style="font-size:12px;">${pend} of ${props.length} pending</span></div>
-    ${rows}
-    <div style="padding:8px 16px;font-size:11px;color:var(--muted);">Done when the reading is saved. "Mark Taken" if you've noted it and will enter it later.${late?'':' Turns red after the '+METER_DUE_DAY+'th.'}</div>
-  </div>`;
+  return dfBox('meter',late?'urgent-card':'soon-card','',late?'urgent-head':'soon-head','justify-content:space-between;',
+    `<span>⚡ Main Meter Readings — ${ml(cm)}</span><span style="font-size:12px;flex:none;">${pend} of ${props.length} pending</span>`,
+    `${rows}
+    <div style="padding:8px 16px;font-size:11px;color:var(--muted);">Done when the reading is saved. "Mark Taken" if you've noted it and will enter it later.${late?'':' Turns red after the '+METER_DUE_DAY+'th.'}</div>`);
 }
 function markMeterTaken(pid){
   const p=S.properties.find(x=>x.id===pid);if(!p)return;
@@ -5978,19 +6011,16 @@ function docsPendingRows(){
   }));
   return rows;
 }
-let _docsPendAll=false;
 function dashDocsPendingH(){
   const rows=docsPendingRows(); if(!rows.length)return '';
-  const show=_docsPendAll?rows:rows.slice(0,4);
-  return `<div class="urgent-card">
-    <div class="urgent-head"><span>📋 ${rows.length} tenant${rows.length>1?'s':''} — documents pending</span><span style="font-size:11px;font-weight:600;opacity:.9;">Upload to clear</span></div>
-    ${show.map(({p,r,miss})=>`<div class="urgent-row">
+  const rowH=({p,r,miss})=>`<div class="urgent-row">
       <div style="min-width:0;flex:1;"><div style="font-weight:700;font-size:14px;color:var(--ink);">${_escHtml(r.tenant.name||'')}</div>
         <div style="font-size:12px;color:var(--ink2);">${_escHtml(p.name)} · ${_escHtml(r.type+(r.unitNo?' #'+r.unitNo:''))}</div>
         <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px;">${miss.map(m=>`<span class="badge" style="background:#fff;color:var(--red);border:1px solid rgba(239,68,68,.35);">${_escHtml(m)}</span>`).join('')}</div></div>
-      <button class="btn btn-orange btn-sm" onclick="openDocs('${p.id}','${r.id}')">📎 Upload</button></div>`).join('')}
-    ${rows.length>4?`<div style="padding:10px 16px;text-align:center;"><button class="btn btn-ghost btn-sm" onclick="_docsPendAll=!_docsPendAll;renderTab()">${_docsPendAll?'Show less ▲':'Show all '+rows.length+' ▼'}</button></div>`:''}
-  </div>`;
+      <button class="btn btn-orange btn-sm" onclick="openDocs('${p.id}','${r.id}')">📎 Upload</button></div>`;
+  return dfBox('docs','urgent-card','','urgent-head','',
+    `<span>📋 ${rows.length} tenant${rows.length>1?'s':''} — documents pending</span><span style="font-size:11px;font-weight:600;opacity:.9;flex:none;">Upload to clear</span>`,
+    dfSites('docs',rows,x=>x.p.name,g=>g.map(rowH).join('')));
 }
 
 // ── storage used by documents (Settings) ──
@@ -6239,9 +6269,9 @@ function dashReportsReminderH(){
   const d=new Date().getDate(), m=_prevMonth(mk());
   if(d<10||d>15||_repDone(m))return '';
   const waiting=_driveQ.some(j=>j.type==='report'&&j.month===m);
-  return `<div class="soon-card"><div class="soon-head">📁 ${ml(m)} reports not saved to Drive yet</div>
-    <div class="urgent-row" style="border-bottom:none;"><div style="font-size:12px;color:var(--ink2);min-width:0;flex:1;">Rent report + Cash &amp; Exp for every site, in Drive → RentDesk Monthly Reports. ${waiting?'<b>Saving now…</b>':'If not saved by the 15th, the app saves them automatically on the 16th.'}</div>
-    <button class="btn btn-orange btn-sm" onclick="driveSaveMonthAll('${m}','month-end');renderTab()">☁️ Save all now</button></div></div>`;
+  return dfBox('reports','soon-card','','soon-head','',`<span>📁 ${ml(m)} reports not saved to Drive yet</span>`,
+    `<div class="urgent-row" style="border-bottom:none;"><div style="font-size:12px;color:var(--ink2);min-width:0;flex:1;">Rent report + Cash &amp; Exp for every site, in Drive → RentDesk Monthly Reports. ${waiting?'<b>Saving now…</b>':'If not saved by the 15th, the app saves them automatically on the 16th.'}</div>
+    <button class="btn btn-orange btn-sm" onclick="driveSaveMonthAll('${m}','month-end');renderTab()">☁️ Save all now</button></div>`);
 }
 function driveAutoJobs(){
   if(!isAdmin||!driveOn()||!dataLoadedFromFirebase)return;
@@ -8441,7 +8471,6 @@ function agreementsPending(){
       out.push({kind:'room',pid:p.id,rid:r.id,name:(r.tenant&&r.tenant.name)||'—',prop:p.name,unit:r.type+(r.unitNo?' #'+r.unitNo:''),start:r.lease.renewedStart||'',end:r.lease.endDate||'',rent:Number(r.rent||0),sg:{done:true,on:pl.since,src:''},pv:{done:false}}); }));
   return out.sort((a,b)=>(a.sg.done-b.sg.done)||String(b.start||'').localeCompare(String(a.start||'')));
 }
-let _agrAll=false;
 function _agrRowH(a){
   const arg=a.kind==='lease'?`'lease','${a.id}'`:`'room','${a.pid}','${a.rid}'`;
   const L=a.kind==='lease'?(S.leases||[]).find(x=>x.id===a.id):null;
@@ -8466,12 +8495,10 @@ function _agrRowH(a){
 }
 function dashAgreementsH(){
   const list=agreementsPending(); if(!list.length)return '';
-  const shown=_agrAll?list:list.slice(0,5);
-  return `<div class="soon-card" style="border-color:#C7D2FE;">
-    <div class="soon-head" style="background:#4338CA;color:#fff;">📝 ${list.length} agreement${list.length>1?'s':''} to sign &amp; verify</div>
-    ${shown.map(_agrRowH).join('')}
-    ${list.length>5?`<div style="padding:8px 12px;"><button class="btn btn-ghost btn-sm" onclick="_agrAll=!_agrAll;renderTab()">${_agrAll?'Show fewer':'Show all '+list.length}</button></div>`:''}
-  </div>`;
+  return dfBox('agr','soon-card','border-color:#C7D2FE;','soon-head','background:#4338CA;color:#fff;',
+    `<span>📝 ${list.length} agreement${list.length>1?'s':''} to sign &amp; verify</span>`,
+    dfSites('agr',list,a=>a.prop,g=>g.map(_agrRowH).join(''),g=>{ const ns=g.filter(a=>!a.sg.done).length, np=g.filter(a=>!a.pv.done).length;
+      return [ns?ns+' not signed':'', np?np+' police pending':''].filter(Boolean).join(' · '); }));
 }
 // accept a copy already in the tenant's Documents (uploaded before this agreement's dates)
 function agrUseCopy(id,what,on){
@@ -8529,14 +8556,13 @@ function dashLeaseUrgentH(){
   const al=allLeaseAlerts();
   const ex=al.filter(a=>a.days<0),soon=al.filter(a=>a.days>=0);
   let h='';
-  if(ex.length)h+=`<div class="urgent-card">
-    <div class="urgent-head"><span>🚨 ${ex.length} Lease${ex.length>1?'s':''} Expired — Action Needed</span><button class="btn btn-sm" style="background:#fff;color:var(--red);" onclick="goTab('lease')">View All</button></div>
-    ${ex.map(_alertRowH).join('')}
-  </div>`;
-  if(soon.length)h+=`<div class="soon-card">
-    <div class="soon-head">⏳ ${soon.length} lease${soon.length>1?'s':''} ending within 30 days</div>
-    ${soon.map(_alertRowH).join('')}
-  </div>`;
+  const drafted=g=>{ const d=g.filter(a=>a.draftId).length; return d?d+' renewal'+(d>1?'s':'')+' drafted':''; };
+  if(ex.length)h+=dfBox('exp','urgent-card','','urgent-head','',
+    `<span>🚨 ${ex.length} Lease${ex.length>1?'s':''} Expired — Action Needed</span><button class="btn btn-sm" style="background:#fff;color:var(--red);flex:none;" onclick="event.stopPropagation();goTab('lease')">View All</button>`,
+    dfSites('exp',ex,a=>a.prop,g=>g.map(_alertRowH).join(''),drafted));
+  if(soon.length)h+=dfBox('soon','soon-card','','soon-head','',
+    `<span>⏳ ${soon.length} lease${soon.length>1?'s':''} ending within 30 days</span>`,
+    dfSites('soon',soon,a=>a.prop,g=>g.map(_alertRowH).join(''),drafted));
   h+=dashAgreementsH();
   return h;
 }
