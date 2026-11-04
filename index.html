@@ -208,6 +208,7 @@ button{cursor:pointer;}
 .urgent-head{background:var(--red);color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;font-family:'Space Grotesk';font-weight:700;font-size:14px;}
 .soon-card{background:#FFFBEB;border:1.5px solid var(--amber);border-radius:var(--r);margin-bottom:16px;overflow:hidden;}
 .soon-head{background:var(--amber);color:#fff;padding:10px 16px;font-family:'Space Grotesk';font-weight:700;font-size:13px;}
+.tap-row{cursor:pointer;transition:background .12s}.tap-row:hover{background:rgba(15,23,42,.035)}.tap-row:active{background:rgba(15,23,42,.06)}.tap-hint{color:var(--muted);font-weight:700;margin-left:4px;font-size:13px}
 .urgent-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid rgba(239,68,68,.18);flex-wrap:wrap;}
 .urgent-row:last-child{border-bottom:none;}
 /* dashboard: every box folds, lists inside are grouped by site */
@@ -1507,7 +1508,7 @@ async function deleteDocFromFS(roomId,docKey){
 
 // ── ROUTING ──
 function goTab(tab){
-  curTab=tab;vProp=null;vRoom=null;
+  curTab=tab;vProp=null;vRoom=null;_dashBack=null;
   // Update bottom nav active state
   ['dash','props','billing','expenses','cash','planner','reminders','attendance','lease','settings','past','owners'].forEach(t=>{
     const el=document.getElementById('bn-'+t);
@@ -1754,7 +1755,7 @@ function renderProps(){
 }
 function openAddProp(){openM('Add Property',`<div class="frow1"><label class="flabel">Property Name *</label><input class="finput" id="pN" placeholder="e.g. Sector 56 Building"/></div><div class="frow1"><label class="flabel">Address</label><input class="finput" id="pA" placeholder="Full address"/></div><div class="frow1"><label class="flabel">Default Electricity Rate (₹/unit)</label><input class="finput" id="pR" type="number" placeholder="8.50"/></div>`,`<button class="btn btn-ghost" onclick="closeM()">Cancel</button><button class="btn btn-orange" onclick="saveProp()">Save</button>`);}
 function saveProp(){const n=document.getElementById('pN').value.trim();if(!n){toast('❌ Name required');return;}S.properties.push({id:uid(),name:n,address:document.getElementById('pA').value.trim(),electricityRate:document.getElementById('pR').value,rooms:[],mainMeter:[]});sched();closeM();renderProps();toast('✅ Property added');}
-function goProp(id){vProp=id;renderPropDetail();}
+function goProp(id){_dashBack=null;vProp=id;renderPropDetail();}
 
 // ── PROP DETAIL ──
 function renderPropDetail(){
@@ -1763,7 +1764,7 @@ function renderPropDetail(){
   const mc=document.getElementById('mc'),rooms=sortRooms(p.rooms||[]),occ=rooms.filter(r=>isRoomOccupied(r)).length,cm=mk();
   const curMain=(p.mainMeter||[]).find(x=>x.month===cm);
   mc.innerHTML=`
-  <button class="back" onclick="backProps()">← Properties</button>
+  ${_dashBack&&!vRoom?`<button class="back" onclick="dashBack()">← Dashboard</button>`:`<button class="back" onclick="backProps()">← Properties</button>`}
   <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;">
     <div><div style="font-family:'Space Grotesk';font-size:20px;font-weight:700;">${p.name}</div><div style="font-size:12px;color:var(--muted);">${p.address||''}${p.electricityRate?' · ₹'+p.electricityRate+'/unit':''}</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">👤 Lease owner: <strong style="color:var(--ink2);">${(p.lessor&&p.lessor.name)||DEFAULT_LESSOR.name}</strong>${p.lessor&&p.lessor.name?'':' (default)'} · <a href="#" onclick="editProp('${p.id}');return false;" style="color:var(--orange);">change</a></div></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-ghost btn-sm" onclick="editProp('${p.id}')">✏️ Edit</button><button class="btn btn-sm" style="background:#DCFCE7;color:#15803D;" onclick="openGroupMsg('${p.id}')">📢 Group message</button>${p.noMainMeter?`<button class="btn btn-ghost btn-sm" onclick="toggleNoMainMeter('${p.id}')">⚡ Turn on main meter</button>`:`<button class="btn btn-blue btn-sm" onclick="openMainMeter('${p.id}')">⚡ Main Meter</button><button class="btn btn-ghost btn-sm" title="This site has no main meter" onclick="toggleNoMainMeter('${p.id}')">🚫 No meter</button>`}<button class="btn btn-orange btn-sm" onclick="openAddRoom('${p.id}')">+ Add Unit</button></div>
@@ -1956,8 +1957,8 @@ function dashBirthdaysH(){
   const yr=String(new Date().getFullYear());
   const _bSite=x=>x.past?((x.t&&x.t.propertyName)||'Past tenants'):((S.properties||[]).find(p=>p.id===x.pid)||{}).name;
   const _bRow=x=>{ const sent=x.t.bdaySent===yr&&x.n.days===0, act=x.past?`sendPastBday('${x.past}')`:`waSend('bday','${x.pid}','${x.rid}');setTimeout(renderTab,300)`;
-      return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px;border-top:1px solid var(--border);${x.n.days===0?'background:#FFF7FB;':''}">
-      <div style="min-width:0;"><div style="font-weight:700;">${_escHtml(x.t.name||'')} ${x.n.days===0?'🎉':''}</div>
+      return `<div class="tap-row" ${x.past?`data-past="${x.past}"`:`data-room="${x.pid}|${x.rid}"`} style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px;border-top:1px solid var(--border);${x.n.days===0?'background:#FFF7FB;':''}">
+      <div style="min-width:0;"><div style="font-weight:700;">${_escHtml(x.t.name||'')} ${x.n.days===0?'🎉':''}<span class="tap-hint">›</span></div>
         <div style="font-size:12px;color:var(--muted);">${_escHtml(x.where)} · ${x.n.days===0?'<b style="color:#DB2777;">Today</b>':x.n.days===1?'Tomorrow':x.n.date.toLocaleDateString('en-IN',{weekday:'short',day:'2-digit',month:'short'})}</div></div>
       ${x.n.days===0?(sent?'<span class="badge badge-grn">✓ Wished</span>':`<button class="btn btn-sm" style="background:#DB2777;color:#fff;" onclick="${act}">🎂 Send wishes</button>`):''}</div>`; };
   return dfBox('bday','card','margin-bottom:14px;border:1.5px solid #F9A8D4;','card-head','background:#FDF2F8;',
@@ -2012,7 +2013,7 @@ function dashBankCheckH(){
   const total=items.reduce((a,i)=>a+Number(i.x.amount||0),0), flagged=items.filter(i=>i.x.bankFlag).length;
   const grp=show=>show.map((i,ix)=>{ const x=i.x, args=`'${i.p.id}','${i.r.id}','${i.kind}','${x.id}'`, acc=x.into||'Account not marked', prev=ix?(show[ix-1].x.into||'Account not marked'):null;
       const accT=show.filter(j=>(j.x.into||'Account not marked')===acc), accHead=acc!==prev?`<div style="padding:7px 16px;background:#E6EFFE;font-size:12px;font-weight:800;color:#1E40AF;display:flex;justify-content:space-between;"><span>🏦 ${_escHtml(acc)}</span><span>${accT.length} · ${fm(accT.reduce((a,j)=>a+Number(j.x.amount||0),0))}</span></div>`:'';
-      return accHead+`<div class="urgent-row" style="border-bottom-color:rgba(59,130,246,.18);${x.bankFlag?'background:#FEF2F2;':''}">
+      return accHead+`<div class="urgent-row tap-row" data-room="${i.p.id}|${i.r.id}" style="border-bottom-color:rgba(59,130,246,.18);${x.bankFlag?'background:#FEF2F2;':''}">
       <div style="min-width:0;flex:1;"><div style="display:flex;justify-content:space-between;gap:8px;"><span style="font-weight:700;font-size:14px;color:var(--ink);">${_escHtml(i.who||'—')}</span><span style="font-weight:800;font-size:15px;color:var(--ink);white-space:nowrap;">${fm(x.amount)}</span></div>
         <div style="font-size:12px;color:var(--ink2);">${_escHtml(i.p.name)} · ${_escHtml(i.r.type+(i.r.unitNo?' #'+i.r.unitNo:''))} · ${_escHtml(i.what)}</div>
         <div style="font-size:11.5px;color:var(--muted);margin-top:2px;">${fd(x.date)} · ${_escHtml(x.mode||'')}${x.ref?' · <b style="color:var(--ink);">Ref '+_escHtml(x.ref)+'</b>':' · <span style="color:var(--red);">no ref</span>'}${x.notes?' · '+_escHtml(x.notes):''}</div>
@@ -2420,7 +2421,7 @@ function dashOwnerRentH(){
   const due=S.properties.filter(p=>propType(p)==='leased'&&ownerRentDue(p,m)>0&&d>=Number((p.ownLease||{}).dueDay||7)&&_sumA(_ownPays(p.id,m))+_sumA(_ownDeds(p.id,m))<ownerRentDue(p,m));
   if(!due.length)return '';
   return dfBox('owner','soon-card','','soon-head','',`<span>🤝 Owner rent for ${ml(m)} not entered · ${due.length} site${due.length>1?'s':''}</span>`,
-    `${due.map(p=>`<div class="urgent-row"><div style="min-width:0;flex:1;"><div style="font-weight:700;">${_escHtml(p.name)}${p.ownLease&&p.ownLease.owner?' → '+_escHtml(p.ownLease.owner):''}</div><div style="font-size:12px;color:var(--ink2);">Due ${fm(ownerRentDue(p,m))} by the ${p.ownLease.dueDay||7}th · entered ${fm(_sumA(_ownPays(p.id,m))+_sumA(_ownDeds(p.id,m)))}</div></div>
+    `${due.map(p=>`<div class="urgent-row tap-row" data-prop="${p.id}"><div style="min-width:0;flex:1;"><div style="font-weight:700;">${_escHtml(p.name)}${p.ownLease&&p.ownLease.owner?' → '+_escHtml(p.ownLease.owner):''}<span class="tap-hint">›</span></div><div style="font-size:12px;color:var(--ink2);">Due ${fm(ownerRentDue(p,m))} by the ${p.ownLease.dueDay||7}th · entered ${fm(_sumA(_ownPays(p.id,m))+_sumA(_ownDeds(p.id,m)))}</div></div>
       <button class="btn btn-orange btn-sm" onclick="openOwnerPayExp('${p.id}','${m}')">+ Pay owner</button></div>`).join('')}`);
 }
 // profit PDF (same look as the other reports)
@@ -2783,8 +2784,8 @@ function dashMeterReminderH(){
     else if(s==='taken'){badge=`<span class="badge badge-amb">📸 Taken ${fd(p.meterTaken.on)} by ${p.meterTaken.by} — enter reading</span>`;btns=`<button class="btn btn-orange btn-sm" onclick="openMainMeter('${p.id}')">⚡ Enter Reading</button>`;}
     else{badge=`<span class="badge ${late?'badge-red':'badge-amb'}">${late?'⚠️ Overdue':'⏳ Pending'}</span>`;
       btns=`<button class="btn btn-orange btn-sm" onclick="openMainMeter('${p.id}')">⚡ Enter Reading</button><button class="btn btn-ghost btn-sm" onclick="markMeterTaken('${p.id}')">✓ Mark Taken</button>`;}
-    return`<div class="urgent-row" style="border-bottom-color:${late?'rgba(239,68,68,.18)':'rgba(245,158,11,.2)'};${s==='done'?'opacity:.6;':''}">
-      <div style="min-width:0;"><div style="font-weight:700;font-size:14px;color:var(--ink);">${p.name}</div>
+    return`<div class="urgent-row tap-row" data-prop="${p.id}" style="border-bottom-color:${late?'rgba(239,68,68,.18)':'rgba(245,158,11,.2)'};${s==='done'?'opacity:.6;':''}">
+      <div style="min-width:0;"><div style="font-weight:700;font-size:14px;color:var(--ink);">${p.name}<span class="tap-hint">›</span></div>
         <div style="font-size:12px;color:var(--muted);margin-top:2px;">${lastTxt}</div><div style="margin-top:4px;">${badge}</div></div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;">${btns}</div></div>`;
   }).join('');
@@ -2902,7 +2903,32 @@ function collectRoom(ex={}){
 }
 function openAddRoom(pid){openM('Add Room / Unit',roomFormH(),`<button class="btn btn-ghost" onclick="closeM()">Cancel</button><button class="btn btn-orange" onclick="saveRoom('${pid}')">Save</button>`);}
 function saveRoom(pid){if(!document.getElementById('rR').value){toast('❌ Rent required');return;}const p=S.properties.find(x=>x.id===pid);p.rooms.push(collectRoom({id:uid(),electricityReadings:[],payments:[],balance:0}));sched();closeM();renderPropDetail();toast('✅ Room added');}
-function goRoom(pid,rid){vProp=pid;vRoom=rid;renderRoomDetail();}
+function goRoom(pid,rid){_dashBack=null;vProp=pid;vRoom=rid;renderRoomDetail();}
+/* ── Tap a person/site row on the Dashboard (or in a dashboard pop-up) to open it; "← Dashboard" brings you back ── */
+let _dashBack=null;
+function _scrollEl(){ const mc=document.getElementById('mc'); return (mc&&mc.scrollHeight>mc.clientHeight+4&&getComputedStyle(mc).overflowY!=='visible')?mc:document.scrollingElement||document.documentElement; }
+function dashOpenRoom(pid,rid){ const back={tab:curTab,y:_scrollEl().scrollTop}; vProp=pid;vRoom=rid;_dashBack=back; renderRoomDetail(); _scrollEl().scrollTop=0; }
+function dashOpenProp(pid){ const back={tab:curTab,y:_scrollEl().scrollTop}; vRoom=null;vProp=pid;_dashBack=back; renderPropDetail(); _scrollEl().scrollTop=0; }
+function dashBack(){ const b=_dashBack; _dashBack=null; vProp=null;vRoom=null; curTab=(b&&b.tab)||'dash'; renderTab(); if(b)setTimeout(()=>{ _scrollEl().scrollTop=b.y||0; },0); }
+// a lease deed → the tenant's room (by room link, else same site + same name); null if the tenant has no room
+function _leaseRoomRef(id){
+  const l=(S.leases||[]).find(x=>x.id===id); if(!l)return null;
+  const f=_findLeaseRoom(l); if(f&&f.r&&isRoomOccupied(f.r))return {pid:f.p.id,rid:f.r.id};
+  const nm=String(l.lesseeName||'').trim().toLowerCase(), pn=String(l.propertyName||'').trim().toLowerCase();
+  for(const p of (S.properties||[])){ if(pn&&String(p.name||'').trim().toLowerCase()!==pn)continue;
+    for(const r of (p.rooms||[])){ if(!isRoomOccupied(r))continue; const names=[r.tenant&&r.tenant.name].concat((r.coTenants||[]).map(c=>c&&c.name)).filter(Boolean).map(x=>String(x).trim().toLowerCase()); if(nm&&names.includes(nm))return {pid:p.id,rid:r.id}; } }
+  return f&&f.r?{pid:f.p.id,rid:f.r.id}:null;
+}
+document.addEventListener('click',e=>{
+  const row=e.target.closest&&e.target.closest('[data-room],[data-lease],[data-prop],[data-past]'); if(!row)return;
+  if(e.target.closest('button,a,input,select,textarea,label,summary'))return;          // buttons inside the row keep doing their own job
+  if(row.closest('#ov'))closeM();
+  const d=row.dataset;
+  if(d.room){ const [pid,rid]=d.room.split('|'); dashOpenRoom(pid,rid); }
+  else if(d.lease){ const ref=_leaseRoomRef(d.lease); if(ref)dashOpenRoom(ref.pid,ref.rid); else openLeaseDeed(d.lease); }
+  else if(d.prop){ dashOpenProp(d.prop); }
+  else if(d.past){ goTab('past'); }
+});
 
 // ── ROOM DETAIL ──
 function renderRoomDetail(){
@@ -2952,7 +2978,7 @@ function renderRoomDetail(){
       :`<div style="text-align:center;padding:16px;color:var(--muted);">No tenant</div>`;
 
   mc.innerHTML=`
-  <button class="back" onclick="backProp()">← ${p.name}</button>
+  ${_dashBack?`<button class="back" onclick="dashBack()">← Dashboard</button>`:`<button class="back" onclick="backProp()">← ${p.name}</button>`}
   <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
     <div><div style="font-family:'Space Grotesk';font-size:20px;font-weight:700;">${r.type}${r.unitNo?' — #'+r.unitNo:''}</div><div style="font-size:12px;color:var(--muted);">${p.name}</div></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -3107,7 +3133,7 @@ function renderRoomDetail(){
     </div>
   </div>`;
 }
-function backProp(){vRoom=null;renderPropDetail();}
+function backProp(){_dashBack=null;vRoom=null;renderPropDetail();}
 function editRoom(pid,rid){const p=S.properties.find(x=>x.id===pid),r=((p&&p.rooms)||[]).find(x=>x.id===rid);openM('Edit Room',roomFormH(r),`<button class="btn btn-ghost" onclick="closeM()">Cancel</button>${isAdmin?`<button class="btn btn-red btn-sm" onclick="delRoom('${pid}','${rid}')">🗑</button>`:''}<button class="btn btn-orange" onclick="updRoom('${pid}','${rid}')">Update</button>`);}
 function updRoom(pid,rid){
   const p=S.properties.find(x=>x.id===pid),idx=((p&&p.rooms)||[]).findIndex(x=>x.id===rid);
@@ -3236,8 +3262,8 @@ function rentAsksPending(){
 function dashRentAskH(){
   if(!isAdmin)return '';
   const L=rentAsksPending(); if(!L.length)return '';
-  const row=a=>`<div class="urgent-row" style="border-bottom-color:rgba(249,115,22,.2);">
-      <div style="min-width:0;flex:1;"><div style="font-weight:700;font-size:14px;color:var(--ink);">${_escHtml(a.r.tenant.name||'')}</div>
+  const row=a=>`<div class="urgent-row tap-row" data-room="${a.p.id}|${a.r.id}" style="border-bottom-color:rgba(249,115,22,.2);">
+      <div style="min-width:0;flex:1;"><div style="font-weight:700;font-size:14px;color:var(--ink);">${_escHtml(a.r.tenant.name||'')}<span class="tap-hint">›</span></div>
         <div style="font-size:12px;color:var(--ink2);">${_escHtml(a.p.name)} · ${_escHtml(a.r.type+(a.r.unitNo?' #'+a.r.unitNo:''))}${a.draft?' · renewal draft':''}</div>
         <div style="font-size:12.5px;margin-top:3px;">Agreement <b>${fm(a.rent)}</b> · room rent now <b>${fm(a.r.rent)}</b>${a.startMonth?` <span style="color:var(--muted);">· starts ${ml(a.startMonth)}</span>`:''}</div></div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;">
@@ -6260,8 +6286,8 @@ function docsPendingRows(){
 }
 function dashDocsPendingH(){
   const rows=docsPendingRows(); if(!rows.length)return '';
-  const rowH=({p,r,miss})=>`<div class="urgent-row">
-      <div style="min-width:0;flex:1;"><div style="font-weight:700;font-size:14px;color:var(--ink);">${_escHtml(r.tenant.name||'')}</div>
+  const rowH=({p,r,miss})=>`<div class="urgent-row tap-row" data-room="${p.id}|${r.id}">
+      <div style="min-width:0;flex:1;"><div style="font-weight:700;font-size:14px;color:var(--ink);">${_escHtml(r.tenant.name||'')}<span class="tap-hint">›</span></div>
         <div style="font-size:12px;color:var(--ink2);">${_escHtml(p.name)} · ${_escHtml(r.type+(r.unitNo?' #'+r.unitNo:''))}</div>
         <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px;">${miss.map(m=>`<span class="badge" style="background:#fff;color:var(--red);border:1px solid rgba(239,68,68,.35);">${_escHtml(m)}</span>`).join('')}</div></div>
       <button class="btn btn-orange btn-sm" onclick="openDocs('${p.id}','${r.id}')">📎 Upload</button></div>`;
@@ -6919,7 +6945,7 @@ function showCollectedBreakdown(){
       const {total,paid,pend}=_billCalc(r,cm);
       pTotal+=total;pPaid+=paid;pPend+=Math.max(0,pend);
       grandTotal+=total;grandPaid+=paid;grandPend+=Math.max(0,pend);
-      return`<tr>
+      return`<tr class="tap-row" data-room="${p.id}|${r.id}">
         <td>${r.type+(r.unitNo?' #'+r.unitNo:'')}</td>
         <td><strong>${r.tenant.name}</strong>${r.tenant.phone?`<br/><span style="font-size:11px;color:var(--muted);">${r.tenant.phone}</span>`:''}</td>
         <td style="font-weight:700;">${fm(total)}</td>
@@ -6929,7 +6955,7 @@ function showCollectedBreakdown(){
       </tr>`;
     }).join('')+_vac.map(({t,v})=>{
       pTotal+=v.total;pPaid+=v.totalPaid;pPend+=v.pend;grandTotal+=v.total;grandPaid+=v.totalPaid;grandPend+=v.pend;
-      return`<tr style="background:#FFF7ED;"><td>${_escHtml((t.roomType||'')+(t.unitNo?' #'+t.unitNo:''))}</td><td><strong>${_escHtml(t.name||'')}</strong><br/><span style="font-size:10px;color:var(--orange);font-weight:700;">VACATED ${fd(t.vacatingDate)}</span></td>
+      return`<tr class="tap-row" data-past="${t.id}" style="background:#FFF7ED;"><td>${_escHtml((t.roomType||'')+(t.unitNo?' #'+t.unitNo:''))}</td><td><strong>${_escHtml(t.name||'')}</strong><br/><span style="font-size:10px;color:var(--orange);font-weight:700;">VACATED ${fd(t.vacatingDate)}</span></td>
         <td style="font-weight:700;">${fm(v.total)}</td><td style="color:var(--green);font-weight:600;">${fm(v.totalPaid)}</td>
         <td style="color:${v.pend>0?'var(--red)':'var(--green)'};font-weight:700;">${v.pend>0?fm(v.pend):'✓'}</td><td>—</td></tr>`;}).join('');
     return`<div style="margin-bottom:14px;">
@@ -6972,7 +6998,7 @@ function showRentRollBreakdown(){
       const _c=_billCalc(r,cm), elec=_c.elec, paid=_c.paid, total=_c.total, pend=_c.pend;
       pRent+=_c.rentAmt;pElec+=Number((elec&&elec.amount)||0);pPaid+=paid;pPend+=Math.max(0,pend);pTotal2+=total;
       grandRent+=_c.rentAmt;grandElec+=Number((elec&&elec.amount)||0);grandPaid+=paid;grandPend+=Math.max(0,pend);grandTotal2+=total;
-      return`<tr>
+      return`<tr class="tap-row" data-room="${p.id}|${r.id}">
         <td>${r.type+(r.unitNo?' #'+r.unitNo:'')}</td>
         <td><strong>${r.tenant.name}</strong></td>
         <td>${fm(_c.rentAmt)}</td>
@@ -6984,7 +7010,7 @@ function showRentRollBreakdown(){
     }).join('')+_vac.map(({t,v})=>{
       pRent+=v.rentDue;pElec+=v.elecAmt;pPaid+=v.totalPaid;pPend+=v.pend;pTotal2+=v.total;
       grandRent+=v.rentDue;grandElec+=v.elecAmt;grandPaid+=v.totalPaid;grandPend+=v.pend;grandTotal2+=v.total;
-      return`<tr style="background:#FFF7ED;"><td>${_escHtml((t.roomType||'')+(t.unitNo?' #'+t.unitNo:''))}</td><td><strong>${_escHtml(t.name||'')}</strong><br/><span style="font-size:10px;color:var(--orange);font-weight:700;">VACATED ${fd(t.vacatingDate)}</span></td>
+      return`<tr class="tap-row" data-past="${t.id}" style="background:#FFF7ED;"><td>${_escHtml((t.roomType||'')+(t.unitNo?' #'+t.unitNo:''))}</td><td><strong>${_escHtml(t.name||'')}</strong><br/><span style="font-size:10px;color:var(--orange);font-weight:700;">VACATED ${fd(t.vacatingDate)}</span></td>
         <td>${fm(v.rentDue)}</td><td style="color:var(--blue);">${v.elecAmt>0?fm(v.elecAmt):'—'}</td><td style="font-weight:700;">${fm(v.total)}</td>
         <td style="color:var(--green);font-weight:600;">${fm(v.totalPaid)}</td><td style="color:${v.pend>0?'var(--red)':'var(--green)'};font-weight:700;">${v.pend>0?fm(v.pend):'✓'}</td></tr>`;}).join('');
     return`<div style="margin-bottom:14px;">
@@ -8315,7 +8341,7 @@ function showNotices(){
     <div style="display:flex;flex-direction:column;gap:10px;">
     ${notices.map(({p,r,n})=>`
       <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;">
-        <div style="background:var(--orange);color:#fff;padding:8px 12px;font-weight:700;font-size:13px;">
+        <div class="tap-row" data-room="${p.id}|${r.id}" style="background:var(--orange);color:#fff;padding:8px 12px;font-weight:700;font-size:13px;">
           ${p.name} — ${r.type+(r.unitNo?' #'+r.unitNo:'')}
           ${r.tenant&&r.tenant.name?` · ${r.tenant.name}`:''}
         </div>
@@ -8615,9 +8641,9 @@ function _alertRowH(a){
       ${_policeDone(dr)?'':`<button class="btn btn-sm" style="background:#EEF2FF;color:#3730A3;border:1.5px solid #C7D2FE;" onclick="openPoliceDone('lease','${dr.id}')">🚔 Police Verification Done</button>`}`
     :`<button class="btn btn-orange btn-sm" onclick="${_alertRenewCall(a)}">🔄 Renew</button>
       ${_alertSecondBtn(a)}`;
-  return`<div class="urgent-row" style="${urgent?'':'border-bottom-color:rgba(245,158,11,.2);'}">
+  return`<div class="urgent-row tap-row" ${a.kind==='room'?`data-room="${a.pid}|${a.rid}"`:`data-lease="${a.leaseId}"`} style="${urgent?'':'border-bottom-color:rgba(245,158,11,.2);'}">
     <div style="min-width:0;">
-      <div style="font-weight:700;font-size:14px;color:var(--ink);">${a.name}</div>
+      <div style="font-weight:700;font-size:14px;color:var(--ink);">${a.name}<span class="tap-hint">›</span></div>
       <div style="font-size:12px;color:var(--ink2);">${a.prop}${a.unit?' · '+a.unit:''}${a.rent?' · '+fm(a.rent)+'/mo':''}</div>
       ${when}${note}${draftLine}${polLine}
     </div>
@@ -8727,9 +8753,9 @@ function _agrRowH(a){
   const btns=(a.kind==='lease'&&!a.sg.done?`<button class="btn btn-green btn-sm" onclick="openAgrSigned('${a.id}')">✅ Mark Signed</button>`:'')
     +(!a.pv.done?`<button class="btn btn-sm" style="background:#EEF2FF;color:#3730A3;border:1.5px solid #C7D2FE;" onclick="openPoliceDone(${arg})">🚔 Police Verification Done</button>`:'')
     +(a.kind==='lease'&&!a.sg.done&&!a.pv.done?`<button class="btn btn-ghost btn-sm" onclick="agrBothDone('${a.id}')">Both already done</button>`:'');
-  return`<div class="urgent-row" style="border-bottom-color:rgba(99,102,241,.2);">
+  return`<div class="urgent-row tap-row" ${a.kind==='room'?`data-room="${a.pid}|${a.rid}"`:`data-lease="${a.id}"`} style="border-bottom-color:rgba(99,102,241,.2);">
     <div style="min-width:0;">
-      <div style="font-weight:700;font-size:14px;color:var(--ink);">${a.name}</div>
+      <div style="font-weight:700;font-size:14px;color:var(--ink);">${a.name}<span class="tap-hint">›</span></div>
       <div style="font-size:12px;color:var(--ink2);">${a.prop}${a.unit?' · '+a.unit:''}${a.rent?' · '+fm(a.rent)+'/mo':''}</div>
       ${a.start||a.end?`<div style="font-size:11px;color:var(--muted);margin-top:1px;">Agreement ${fd(a.start)} → ${fd(a.end)}</div>`:''}
       ${sgL}${pvL}
