@@ -715,6 +715,12 @@ function mk(d){const dt=d||new Date();return dt.getFullYear()+'-'+String(dt.getM
 function ml(k){if(!k)return'—';const[y,m]=k.split('-');return new Date(y,m-1).toLocaleString('en-IN',{month:'long',year:'numeric'});}
 function fd(s){if(!s)return'—';return new Date(s).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});}
 function fm(n){return'₹'+Number(n||0).toLocaleString('en-IN');}
+/* Typed text can't break a screen: < and > are dropped and " becomes ” as you type (names, notes…). */
+document.addEventListener('input',e=>{ const t=e.target; if(!t)return;
+  if(!(t.tagName==='TEXTAREA'||(t.tagName==='INPUT'&&(!t.getAttribute('type')||t.type==='text'||t.type==='search'))))return;
+  const v=t.value, c=v.replace(/[<>]/g,'').replace(/"/g,'”'); if(c===v)return;
+  const pos=Math.max(0,(t.selectionStart||c.length)-(v.length-c.length)); t.value=c; try{t.setSelectionRange(pos,pos);}catch(_){}
+},true);
 function today(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}   // phone's local date (India time) — was UTC, which gave yesterday's date between 12:00 and 5:30 AM
 function dl(s){if(!s)return null;return Math.ceil((new Date(s)-new Date())/86400000);}
 function sameOrBeforeToday(s){return !!s&&s<=today();}
@@ -1188,16 +1194,7 @@ async function loadData(){
     S._rentAskBaseline=true; sched();
     if(n)actLog('Rent check started — '+n+' existing agreement rent difference(s) left as they are');
   }
-  if(dataLoadedFromFirebase&&isAdmin&&!S._fixBandhanpreetNov){
-    let done=false;
-    (S.properties||[]).forEach(p=>{ if(String(p.name).trim()!=='798')return; (p.rooms||[]).forEach(r=>{
-      if(!r.tenant||!/bandhanpreet/i.test(r.tenant.name||''))return;
-      const h=(r.rentHistory||[]).find(x=>Number(x.rent)===27940&&String(x.effectiveFrom||'').slice(0,7)==='2026-08');
-      if(h&&!(r.rentHistory||[]).some(x=>String(x.effectiveFrom||'').slice(0,7)==='2026-11')){ h.effectiveFrom='2026-11-01'; _rebalance(r,'2026-08'); done=true;
-        actLog('Rent corrected — '+r.tenant.name+': ₹27,940 from 1 Nov 2026 (was back-dated to 1 Aug when the renewal was marked signed); Aug–Oct stay ₹25,400'); }
-    }); });
-    S._fixBandhanpreetNov=true; sched();
-  }
+  // (one-time rent correction for 798 ran on 11 Nov 2026 — removed from the code; S._fixBandhanpreetNov stays set in the data)
   syncDueBookings();
   renderTab();
   setTimeout(maybePromptExpiredLeases,700);
@@ -1483,7 +1480,7 @@ function actLog(action){
   const ts=`[${dd}/${mm}/${yyyy} ${hh}:${mn}]`;
   const uname=user||'Unknown';
   S.activityLog.unshift({ts,user:uname,action,full:`${ts} [${uname}] ${action}`});
-  if(S.activityLog.length>100)S.activityLog=S.activityLog.slice(0,100);
+  if(S.activityLog.length>300)S.activityLog=S.activityLog.slice(0,300);   // was 100
 }
 
 // Firebase docs storage
@@ -2053,10 +2050,8 @@ function refRead(id,mode,skipId){
   return v;
 }
 // ── 307 / 1141 style sites: rent goes straight to the owner. Optional "owner confirmed" tick + WhatsApp the owner ──
-const OWNER_PHONE_DEFAULT={'307':'9582102006','1141':'8800008009'};
 function ownerPhoneOf(p){
-  if(!p)return ''; if(p.ownerPhone!==undefined)return p.ownerPhone||'';
-  const n=String(p.name||'').replace(/[^0-9]/g,''); return OWNER_PHONE_DEFAULT[n]||'';
+  if(!p)return ''; return p.ownerPhone||'';   // owners' numbers live in the data (Site → owner phone), not in the code
 }
 function payOkToggle(pid,rid,kind,id){
   const x=_bankFind(pid,rid,kind,id); if(!x)return;
@@ -3307,8 +3302,20 @@ function saveElec(pid,rid){
   const p=S.properties.find(x=>x.id===pid),r=((p&&p.rooms)||[]).find(x=>x.id===rid);
   if(!r.electricityReadings)r.electricityReadings=[];p.electricityRate=rt;
   const mo=document.getElementById('eM').value,o=Number(document.getElementById('eO').value||0),nR=Number(n),rtN=Number(rt),u=nR-o,man=document.getElementById('eA').value;
+  if(u<0&&!man){toast('❌ Current reading ('+nR+') is lower than the previous reading ('+o+'). Check it — if the meter was replaced, change the previous reading to the new meter\'s start.',7000);return;}
+  const was=r.electricityReadings.find(x=>x.month===mo);
   r.electricityReadings=r.electricityReadings.filter(x=>x.month!==mo);
-  r.electricityReadings.push({month:mo,oldReading:o,reading:nR,units:u,rate:rtN,amount:man?Number(man):u*rtN,manualAmt:man?Number(man):null});
+  r.electricityReadings.push({month:mo,oldReading:o,reading:nR,units:u,rate:rtN,amount:man?Number(man):Math.round(u*rtN),manualAmt:man?Number(man):null});
+  // the next month's bill starts from this reading — offer to update it if it used the old figure
+  const nm=_nextMonth(mo), nx=r.electricityReadings.find(x=>x.month===nm);
+  if(was&&nx&&Number(nx.oldReading)===Number(was.reading)&&Number(was.reading)!==nR){
+    const nu=Number(nx.reading)-nR, na=nx.manualAmt!=null?nx.manualAmt:Math.round(nu*Number(nx.rate||rtN));
+    if(nu>=0&&confirm(ml(nm)+'\'s bill starts from '+was.reading+'. Change it to '+nR+' too?\n\n'+ml(nm)+': '+nu+' units, '+fm(na)+' (was '+fm(nx.amount)+').')){
+      nx.oldReading=nR; nx.units=nu; nx.amount=na;
+      actLog('Electricity — '+((r.tenant&&r.tenant.name)||r.type)+' '+ml(nm)+' previous reading updated to '+nR+' ('+fm(na)+')');
+    }
+  }
+  actLog('Electricity reading — '+((r.tenant&&r.tenant.name)||r.type)+' ('+p.name+') '+ml(mo)+': '+o+' → '+nR+' = '+u+' units, '+fm(man?Number(man):Math.round(u*rtN))+(was?' (was '+fm(was.amount)+')':''));
   _rebalance(r,mo);
   sched();closeM();if(vRoom)renderRoomDetail();else renderBilling();toast('✅ Reading saved');
 }
@@ -4094,6 +4101,7 @@ function savePayment(pid,rid){
   if(!r.payments)r.payments=[];
   const mo=document.getElementById('pyM').value;
   const _md=document.getElementById('pyMd').value;
+  if(!_payLockOK(_md,(document.getElementById('pyRcv')||{}).value||user,document.getElementById('pyD').value))return;
   const _ref=refRead('pyRef',_md); if(_ref===null)return;
   r.payments.push({id:uid(),month:mo,amount:Number(a),mode:_md,...(_ref?{ref:_ref}:{}),date:document.getElementById('pyD').value,notes:(document.getElementById('pyNote')||{}).value||'',...(_md==='Cash'?{receivedBy:(document.getElementById('pyRcv')||{}).value||user}:{}),...((_md!=='Cash'&&(document.getElementById('pyInto')||{}).value)?{into:document.getElementById('pyInto').value}:{})});
   const elec=(r.electricityReadings||[]).find(x=>x.month===mo),bal=getCarryIn(r,mo);
@@ -4120,7 +4128,7 @@ function _billCalc(r,mo){
   const activeStart=(r.tenant&&((r.tenant.activeFrom||r.tenant.moveInDate)||''))||(r.lease&&r.lease.startDate)||'';
   const fullRent=rentForMonth(r,mo);
   const rentAmt=proratedRentForMonth(fullRent,activeStart,mo);
-  const isProrated=rentAmt<Number(r.rent||0);
+  const isProrated=rentAmt<fullRent;   // part month only — not months before a rent increase
   // Security due — only folded into Total Due during the tenant's actual move-in
   // month, when it's a fresh charge. In every month after that, an unpaid security
   // amount is already flowing forward through the carry-in (bal) above — adding it
@@ -4874,6 +4882,7 @@ function saveExp(){
   if(!S.expenses)S.expenses=[];
   const pid=document.getElementById('eP').value,mo=dateVal.substr(0,7);
   const paidBy=document.getElementById('ePaidBy').value;
+  if(!_cashLockOK(paidBy,dateVal))return;
   const own=_expOwnerRead(); if(own===null)return; const elec=own?undefined:_expElecRead();
   S.expenses.push({id:uid(),propertyId:pid,date:dateVal,month:mo,items,addedBy:user,paidBy:paidBy,...(own?{ownerRent:own}:{}),...(elec?{elecPay:elec}:{})});
   sched();closeM();renderTab();
@@ -4883,8 +4892,8 @@ function saveExp(){
   toast('✅ Saved'+(paidBy==='Preeti'?' · Added to Cash Tab':''));
 }
 function editExp(id){const exp=(S.expenses||[]).find(x=>x.id===id);if(!exp)return;ei=(exp.items&&exp.items.length)||0;openM('Edit Expense',expFormH(exp),`${isAdmin?`<button class="btn btn-red" style="margin-right:auto;" onclick="closeM();delExp('${id}')">🗑 Delete</button>`:''}<button class="btn btn-ghost" onclick="closeM()">Cancel</button><button class="btn btn-orange" onclick="updExp('${id}')">Update</button>`);}
-function updExp(id){const exp=(S.expenses||[]).find(x=>x.id===id);if(!exp)return;const own=_expOwnerRead(id);if(own===null)return;if(own)exp.ownerRent=own;else if(document.getElementById('eOwn'))delete exp.ownerRent;{const el=own?undefined:_expElecRead();if(el)exp.elecPay=el;else if(document.getElementById('eElec'))delete exp.elecPay;}const dateVal=document.getElementById('eMo').value;exp.propertyId=document.getElementById('eP').value;exp.date=dateVal;exp.month=dateVal.substr(0,7);exp.items=getEI();exp.paidBy=document.getElementById('ePaidBy').value;sched();closeM();renderTab();toast('✅ Updated'+(exp.paidBy==='Preeti'?' · Visible in Cash Tab':''));}
-function delExp(id){if(!confirm('Delete?'))return;const exp=(S.expenses||[]).find(x=>x.id===id);actLog('Deleted expense — '+((exp&&exp.date)||'')+'');S.expenses=(S.expenses||[]).filter(x=>x.id!==id);sched();renderTab();toast('🗑 Deleted');}
+function updExp(id){const exp=(S.expenses||[]).find(x=>x.id===id);if(!exp)return;if(!_cashLockOK(exp.paidBy,exp.date))return;if(!_cashLockOK(document.getElementById('ePaidBy').value,document.getElementById('eMo').value))return;const own=_expOwnerRead(id);if(own===null)return;if(own)exp.ownerRent=own;else if(document.getElementById('eOwn'))delete exp.ownerRent;{const el=own?undefined:_expElecRead();if(el)exp.elecPay=el;else if(document.getElementById('eElec'))delete exp.elecPay;}const dateVal=document.getElementById('eMo').value;exp.propertyId=document.getElementById('eP').value;exp.date=dateVal;exp.month=dateVal.substr(0,7);exp.items=getEI();exp.paidBy=document.getElementById('ePaidBy').value;sched();closeM();renderTab();toast('✅ Updated'+(exp.paidBy==='Preeti'?' · Visible in Cash Tab':''));}
+function delExp(id){const exp=(S.expenses||[]).find(x=>x.id===id);if(exp&&!_cashLockOK(exp.paidBy,exp.date))return;if(!confirm('Delete?'))return;actLog('Deleted expense — '+((exp&&exp.date)||'')+'');S.expenses=(S.expenses||[]).filter(x=>x.id!==id);sched();renderTab();toast('🗑 Deleted');}
 
 // ══ CASH & EXPENSES (single tab) ══════════════════════════════════════════
 // One passbook per staff member. Built on the existing data — nothing is migrated:
@@ -5447,6 +5456,7 @@ function saveCbEntry(){
   if(!date){toast('❌ Pick a date');return;} if(!(amt>0)){toast('❌ Enter the amount');return;}
   if(!S.cash)S.cash=[]; if(!S.expenses)S.expenses=[];
   const k=_cbKind;
+  { const st=(_cbEdit&&_cbEdit.staff)||v('cbS')||v('cbBy'); if(!_cashLockOK(st,date))return; if(_cbEdit&&_cbEdit.date&&String(_cbEdit.date).slice(0,7)!==date.slice(0,7)&&!_cashLockOK(st,_cbEdit.date))return; }
   if(_cbEdit){
     const x=(S.cash||[]).find(c=>c.id===_cbEdit.id);   // the live record (data may have refreshed while the form was open)
     if(!x){ toast('⚠️ This entry was deleted on another phone — nothing saved'); closeM(); renderTab(); return; }
@@ -5485,6 +5495,7 @@ function saveCbEntry(){
 }
 function delCbEntry(id){
   const x=(S.cash||[]).find(c=>c.id===id); if(!x)return;
+  if(!_cashLockOK(x.staff||'Preeti',x.date))return;
   if(!confirm('Delete this entry ('+fm(x.amount)+')?'))return;
   S.cash=S.cash.filter(c=>c.id!==id);
   if(x.type==='spent') S.expenses=(S.expenses||[]).filter(e=>e.cashId!==id);
@@ -5502,6 +5513,15 @@ function openCashClose(){
     <div class="frow1"><label class="flabel">Note <span style="color:var(--muted);font-weight:400;text-transform:none;">optional</span></label><input class="finput" id="ccN" placeholder="e.g. ₹200 bill missing, will add"/></div>`,
     `<button class="btn btn-ghost" onclick="closeM()">Cancel</button><button class="btn btn-green" onclick="saveCashClose(${d.closing})">✅ Mark reconciled</button>`);
 }
+/* A month whose cash has been reconciled is locked for that staff member: staff can't change it,
+   KD is asked first (and will need to reconcile that month again). */
+function _cashLockOK(staff,date){
+  if(!staff||!date||!staffList().includes(staff))return true;
+  const m=String(date).slice(0,7), c=(S.cashCloses||[]).find(x=>x.staff===staff&&x.month===m); if(!c)return true;
+  if(!isAdmin){ toast('🔒 '+ml(m)+' cash is reconciled — ask KD to change it',5000); return false; }
+  return confirm('🔒 '+staff+'\'s cash for '+ml(m)+' is reconciled (counted '+fm(c.actual)+').\n\nChange it anyway? You will need to reconcile '+ml(m)+' again.');
+}
+function _payLockOK(mode,rcv,date){ return mode!=='Cash'?true:_cashLockOK(rcv,date); }
 function saveCashClose(expected){
   const staff=_cbStaff(), actual=Number(document.getElementById('ccA').value||0);
   if(!S.cashCloses)S.cashCloses=[];
@@ -6338,6 +6358,8 @@ let _driveDone={}; try{_driveDone=JSON.parse(localStorage.getItem('rentdesk_driv
 function _driveDoneSave(){ try{localStorage.setItem('rentdesk_drive_done',JSON.stringify(_driveDone));}catch(e){} }
 function _pdDiff(a,b){ if(!a||!b)return ''; const ks=[]; Object.keys({...a,...b}).forEach(k=>{ if(JSON.stringify(a[k])!==JSON.stringify(b[k]))ks.push(k); }); return ks.join(', '); }
 function _driveSaveQ(){ try{localStorage.setItem(DRIVE_Q_KEY,JSON.stringify(_driveQ));}catch(e){} }
+/* backup files carry the data without the Drive script link and key */
+function _backupData(){ const {driveCfg,...rest}=S; return rest; }
 function driveOn(){ return !!(S.driveCfg&&S.driveCfg.url&&S.driveCfg.key); }
 function _mon(d){ if(!d)return ''; const x=new Date(String(d).slice(0,10)+'T00:00:00'); return isNaN(x)?'':x.toLocaleDateString('en-IN',{month:'short',year:'numeric'}); }
 function _ensureTkey(h){ if(h&&!h.tkey)h.tkey='t'+uid(); return h&&h.tkey; }
@@ -6565,7 +6587,7 @@ function driveAutoJobs(){
 async function _driveRunOther(job){
   if(job.type==='backup'){
     const stamp=new Date().toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}).replace(/:/g,'.');
-    await _drivePost({action:'backup',fileName:'RentDesk backup '+stamp+'.json',year:String(new Date().getFullYear()),data:_b64json({exportedAt:new Date().toISOString(),tab:'Full Backup',data:S})});
+    await _drivePost({action:'backup',fileName:'RentDesk backup '+stamp+'.json',year:String(new Date().getFullYear()),data:_b64json({exportedAt:new Date().toISOString(),tab:'Full Backup',data:_backupData()})});
     S.driveLastBackup=Date.now(); return true;
   }
   if(job.type==='report'){
@@ -6889,12 +6911,17 @@ function saveEditPayment(pid, rid, payId){
   if(!py)return;
   { const _m=document.getElementById('epyMd').value, _rf=refRead('epyRef',_m,py.id); if(_rf===null)return; if(_rf)py.ref=_rf; else delete py.ref; }
   const oldMonth=py.month; // remember in case the month itself was changed
+  const _was={amount:py.amount,month:py.month,mode:py.mode,date:py.date,rcv:py.receivedBy};
+  if(!_payLockOK(_was.mode,_was.rcv,_was.date))return;
+  { const nm=document.getElementById('epyMd').value, nr=nm==='Cash'?((document.getElementById('epyRcv')||{}).value||''):''; if(!_payLockOK(nm,nr,document.getElementById('epyD').value))return; }
   py.month=document.getElementById('epyM').value;
   py.amount=Number(amt);
   py.mode=document.getElementById('epyMd').value;
   py.date=document.getElementById('epyD').value;
   py.notes=document.getElementById('epyNote').value;
   if(py.mode==='Cash'){ const _rv=(document.getElementById('epyRcv')||{}).value; if(_rv)py.receivedBy=_rv; else delete py.receivedBy; } else delete py.receivedBy;
+  { const ch=[]; if(Number(_was.amount)!==Number(py.amount))ch.push(fm(_was.amount)+' → '+fm(py.amount)); if(_was.month!==py.month)ch.push(ml(_was.month)+' → '+ml(py.month)); if(_was.mode!==py.mode)ch.push(_was.mode+' → '+py.mode); if(_was.date!==py.date)ch.push('date '+fd(_was.date)+' → '+fd(py.date)); if((_was.rcv||'')!==(py.receivedBy||''))ch.push('received by '+(_was.rcv||'—')+' → '+(py.receivedBy||'—'));
+    actLog('Payment edited — '+((r.tenant&&r.tenant.name)||r.type)+' ('+p.name+') '+fm(py.amount)+' for '+ml(py.month)+(ch.length?': '+ch.join(', '):' (no change)')); }
   // Recalculate using the payment's own month (whichever is earlier, if it moved), not
   // today's real-world month — and match the same due formula used everywhere else:
   // prorated rent + electricity + carry-in - deductions + any pending security due.
@@ -6919,6 +6946,7 @@ function delPayment(pid, rid, payId){
   const r=((p&&p.rooms)||[]).find(x=>x.id===rid);
   if(!r)return;
   const py=((r.payments)||[]).find(x=>x.id===payId);
+  if(py&&!_payLockOK(py.mode,py.receivedBy,py.date))return;
   const payMonth=py&&py.month;
   actLog('Deleted payment — '+(r.tenant&&r.tenant.name?r.tenant.name:'tenant')+' ₹'+((py&&py.amount)||0));
   r.payments=(r.payments||[]).filter(x=>x.id!==payId);
@@ -7649,6 +7677,7 @@ function saveDeduction(pid, rid){
     note:document.getElementById('dedNote').value,
     addedBy:user,date:today()
   });
+  actLog('Deduction added — '+((r.tenant&&r.tenant.name)||r.type)+' ('+p.name+') '+fm(amt)+' for '+ml(mo)+' ('+desc+')');
   // Recalculate balance — prorated rent + security-due term, matching the formula used
   // everywhere else so this cached value stays consistent with what billing displays.
   const elec=(r.electricityReadings||[]).find(x=>x.month===mo);
@@ -7689,7 +7718,9 @@ function saveBalance(pid,rid){
   if(!r)return;
   const v=document.getElementById('bbal').value;
   const mo2=curTab==='billing'?billMo:mk();
+  const _old=getCarryIn(r,mo2);
   setBalanceAfterMonth(r,prevMonth(mo2),Number(v||0),true); _rebalance(r,mo2);
+  actLog('Carry-in balance set by hand — '+((r.tenant&&r.tenant.name)||r.type)+' ('+p.name+') into '+ml(mo2)+': '+fm(_old)+' → '+fm(Number(v||0)));
   sched();closeM();
   if(curTab==='billing')renderBilling();
   else if(vRoom)renderRoomDetail();
@@ -7708,6 +7739,7 @@ function delDeductionFromBilling(pid,rid,dedId,mo){
   if(!confirm('Remove this deduction?'))return;
   const p=S.properties.find(x=>x.id===pid);
   const r=((p&&p.rooms)||[]).find(x=>x.id===rid);
+  { const d=(r.deductions||[]).find(x=>x.id===dedId); if(d)actLog('Deduction removed — '+((r.tenant&&r.tenant.name)||r.type)+' ('+p.name+') '+fm(d.amount)+' for '+ml(d.month)+' ('+(d.desc||'')+')'); }
   r.deductions=(r.deductions||[]).filter(x=>x.id!==dedId);
   // Recalculate balance for that month — prorated rent + security-due term
   const elec=(r.electricityReadings||[]).find(x=>x.month===mo);
@@ -7731,7 +7763,8 @@ function delDeduction(pid, rid, dedId){
   if(!confirm('Remove this deduction?'))return;
   const p=S.properties.find(x=>x.id===pid);
   const r=((p&&p.rooms)||[]).find(x=>x.id===rid);
-  const _dm=((r.deductions||[]).find(x=>x.id===dedId)||{}).month;
+  const _dd=(r.deductions||[]).find(x=>x.id===dedId)||{}, _dm=_dd.month;
+  if(_dd.id)actLog('Deduction removed — '+((r.tenant&&r.tenant.name)||r.type)+' ('+p.name+') '+fm(_dd.amount)+' for '+ml(_dm)+' ('+(_dd.desc||'')+')');
   r.deductions=(r.deductions||[]).filter(x=>x.id!==dedId);
   if(_dm)_rebalance(r,_dm);
   sched();renderRoomDetail();toast('🗑 Deduction removed');
@@ -8488,7 +8521,7 @@ function renderSettings(){
   <div style="font-family:'Space Grotesk';font-size:18px;font-weight:700;margin-bottom:18px;">⚙️ Settings</div>
   ${dataSizeCardH()}
   ${docsStorageCardH()}
-  ${driveCardH()}
+  ${isAdmin?driveCardH():''}
   ${staffSettingsH()}
   <div class="card" style="margin-bottom:16px;">
     <div class="card-head"><div class="card-title">🛠 Data Tools</div></div>
@@ -8529,8 +8562,9 @@ function renderSettings(){
   </div>`;
 }
 function clearActivityLog(){
+  if(!isAdmin){toast('Only KD can clear the log');return;}
   if(!confirm('Clear all activity log entries? This cannot be undone.'))return;
-  S.activityLog=[];
+  const n=(S.activityLog||[]).length; S.activityLog=[]; actLog('Activity log cleared ('+n+' entries)');
   sched();renderSettings();toast('🗑 Activity log cleared');
 }
 function resetAllCarryInBalances(){
@@ -10524,10 +10558,10 @@ function exportRentData(tab){
         totalLeases:(S.leases||[]).length,leases:S.leases||[]};
       filename='rentdesk-leases-'+dateStr+'.json'; break;
     case 'full':
-      payload={exportedAt:new Date().toISOString(),tab:'Full Backup',data:S};
+      payload={exportedAt:new Date().toISOString(),tab:'Full Backup',data:_backupData()};
       filename='rentdesk-full-backup-'+dateStr+'.json'; break;
     default:
-      payload={exportedAt:new Date().toISOString(),tab:'Full Backup',data:S};
+      payload={exportedAt:new Date().toISOString(),tab:'Full Backup',data:_backupData()};
       filename='rentdesk-full-backup-'+dateStr+'.json';
   }
   const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
