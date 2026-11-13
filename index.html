@@ -205,9 +205,9 @@ button{cursor:pointer;}
 .lease-status-closed{background:#F3F4F6;color:var(--muted);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;}
 @keyframes urgentPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.55);}50%{box-shadow:0 0 0 6px rgba(239,68,68,0);}}
 .urgent-card{background:#fff;border:1px solid #FECACA;border-left:4px solid var(--red);border-radius:14px;margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow);}
-.urgent-head{background:#fff;color:#B91C1C;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;font-family:'Space Grotesk';font-weight:700;font-size:14px;}
+.urgent-head{background:#fff;color:#B91C1C;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;font-family:inherit;font-weight:700;font-size:14px;line-height:1.3;}
 .soon-card{background:#fff;border:1px solid #FDE68A;border-left:4px solid var(--amber);border-radius:14px;margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow);}
-.soon-head{background:#fff;color:#92400E;padding:11px 14px;font-family:'Space Grotesk';font-weight:700;font-size:13.5px;}
+.soon-head{background:#fff;color:#92400E;padding:12px 14px;font-family:inherit;font-weight:700;font-size:14px;line-height:1.3;}
 .tap-row{cursor:pointer;transition:background .12s}.tap-row:hover{background:rgba(15,23,42,.035)}.tap-row:active{background:rgba(15,23,42,.06)}.tap-hint{color:var(--muted);font-weight:700;margin-left:4px;font-size:13px}
 .urgent-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 14px;border-bottom:1px solid #F0F1F3;flex-wrap:wrap;}
 .urgent-row:last-child{border-bottom:none;}
@@ -401,9 +401,9 @@ button{cursor:pointer;}
 .dft-more{display:block;width:100%;border:none;border-top:1px solid #F0F1F3;background:#fff;color:var(--orange2);font-family:inherit;font-weight:700;font-size:12.5px;padding:10px;cursor:pointer;}
 .dfh{display:flex;align-items:center;gap:10px;}
 .dfh-ic{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex:none;}
-.dfh-t{min-width:0;flex:1;}.dfh-t b{display:block;font-size:14.5px;}.dfh-t small{display:block;font-family:Inter,system-ui,sans-serif;font-size:11.5px;font-weight:500;color:var(--muted);margin-top:1px;}
+.dfh-t{min-width:0;flex:1;}.dfh-t b{display:block;font-size:14px;line-height:1.3;}.dfh-t small{display:block;font-family:Inter,system-ui,sans-serif;font-size:11.5px;font-weight:500;color:var(--muted);margin-top:1px;}
 .dfh-n{font-weight:800;font-size:12.5px;border-radius:20px;padding:3px 10px;flex:none;}
-.ar{display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border-bottom:1px solid #F0F1F3;}
+.ar{display:flex;flex-wrap:wrap;align-items:flex-start;gap:10px;padding:11px 14px;border-bottom:1px solid #F0F1F3;}.ar>.ar-btns{flex-basis:100%;margin-top:0;}
 .ar:last-child{border-bottom:none;}
 .ar-av{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;flex:none;}
 .ar-tx{flex:1;min-width:0;}.ar-tx>b{display:block;font-size:14px;color:var(--ink);}.ar-sub{font-size:11.5px;color:var(--muted);line-height:1.4;}
@@ -412,7 +412,7 @@ button{cursor:pointer;}
 .ar-tag.r{background:#FEF2F2;color:#DC2626;}.ar-tag.g{background:#ECFDF5;color:#047857;}.ar-tag.a{background:#FFFBEB;color:#B45309;}.ar-tag.b{background:#EEF2FF;color:#4338CA;}
 .ar-up{width:40px;height:40px;border-radius:12px;border:none;background:var(--orange);color:#fff;font-size:17px;flex:none;cursor:pointer;align-self:center;}
 .ar-btns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:8px;}
-.ar-btns button{font-family:inherit;font-size:11.5px;font-weight:700;border-radius:9px;padding:8px 2px;border:1px solid var(--border);background:#fff;color:var(--ink2);cursor:pointer;}
+.ar-btns button{font-family:inherit;font-size:12.5px;font-weight:700;border-radius:10px;padding:9px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border:1px solid var(--border);background:#fff;color:var(--ink2);cursor:pointer;}
 .ar-btns .s{border-color:#BBF7D0;background:#F0FDF4;color:#15803D;}.ar-btns .p{border-color:#C7D2FE;background:#EEF2FF;color:#4338CA;}
 .ar-btns button:disabled{opacity:.35;cursor:default;}
 .ar-note{font-size:11px;color:var(--ink2);margin-top:4px;}
@@ -2916,7 +2916,7 @@ function dashMeterReminderH(){
   }).join('');
   const pend=open.length;
   return dfBox('meter',late?'urgent-card':'soon-card','',late?'urgent-head':'soon-head','justify-content:space-between;',
-    `<span>⚡ Main Meter Readings — ${ml(cm)}</span><span style="font-size:12px;flex:none;">${pend} of ${props.length} pending</span>`,
+    `<span>⚡ Main meter readings · ${ml(cm).split(' ')[0]}</span><span style="font-size:11.5px;flex:none;border-radius:20px;padding:3px 9px;background:${late?'#FEE2E2':'#FEF3C7'};">${pend} of ${props.length} pending</span>`,
     `${rows}
     <div style="padding:8px 16px;font-size:11px;color:var(--muted);">Done when the reading is saved. "Mark Taken" if you've noted it and will enter it later.${late?'':' Turns red after the '+METER_DUE_DAY+'th.'}</div>`);
 }
@@ -9000,15 +9000,16 @@ function _agrRowH(a){
   const notes=(oldSg?`<div class="ar-note">📎 Lease Deed copy on file${oldSg.on?' from '+fd(oldSg.on):''} (before this agreement)${useBtn('sign',oldSg.on)}</div>`:'')
     +(oldPv?`<div class="ar-note">📎 Police Verification copy on file${oldPv.on?' from '+fd(oldPv.on):''}${useBtn('police',oldPv.on)}</div>`:'');
   const isL=a.kind==='lease', stop='event.stopPropagation();';
-  const btns=`<div class="ar-btns" style="${isL?'':'grid-template-columns:minmax(0,1fr);'}">`
-    +(isL?`<button class="s" ${a.sg.done?'disabled':''} onclick="${stop}openAgrSigned('${a.id}')">✅ Signed</button>`:'')
-    +`<button class="p" ${a.pv.done?'disabled':''} onclick="${stop}openPoliceDone(${arg})">🚔 Police done</button>`
-    +(isL?`<button ${!a.sg.done&&!a.pv.done?'':'disabled'} onclick="${stop}agrBothDone('${a.id}')">Both done</button>`:'')+`</div>`;
+  const B=[]; if(isL&&!a.sg.done)B.push(`<button class="s" onclick="${stop}openAgrSigned('${a.id}')">✅ Mark signed</button>`);
+  if(!a.pv.done)B.push(`<button class="p" onclick="${stop}openPoliceDone(${arg})">🚔 Police done</button>`);
+  if(isL&&!a.sg.done&&!a.pv.done)B.push(`<button onclick="${stop}agrBothDone('${a.id}')">Both done</button>`);
+  const btns=B.length?`<div class="ar-btns" style="grid-template-columns:repeat(${B.length},minmax(0,1fr));">${B.join('')}</div>`:'';
   const sub=[_escHtml(a.unit||''),a.rent?fm(a.rent):'',(a.start||a.end)?_mY(a.start)+' → '+_mY(a.end):''].filter(Boolean).join(' · ');
   return`<div class="ar tap-row" ${a.kind==='room'?`data-room="${a.pid}|${a.rid}"`:`data-lease="${a.id}"`}>
     <div class="ar-av" style="background:${a.sg.done?'#EEF2FF':'#FEF3C7'};color:${a.sg.done?'#4338CA':'#B45309'};">${_ini(a.name)}</div>
     <div class="ar-tx"><b>${_escHtml(a.name)}<span class="tap-hint">›</span></b><div class="ar-sub">${sub}</div>
-      <div class="ar-tags">${tags}</div>${notes}${btns}</div>
+      <div class="ar-tags">${tags}</div>${notes}</div>
+    ${btns}
   </div>`;
 }
 function dashAgreementsH(){
@@ -9076,7 +9077,7 @@ function dashLeaseUrgentH(){
   let h='';
   const drafted=g=>{ const d=g.filter(a=>a.draftId).length; return d?d+' renewal'+(d>1?'s':'')+' drafted':''; };
   if(ex.length)h+=dfBox('exp','urgent-card','','urgent-head','',
-    `<span>🚨 ${ex.length} Lease${ex.length>1?'s':''} Expired — Action Needed</span><button class="btn btn-sm" style="background:#FEF2F2;color:var(--red);flex:none;" onclick="event.stopPropagation();goTab('lease')">View All</button>`,
+    `<span>🚨 ${ex.length} lease${ex.length>1?'s':''} expired — action needed</span><button class="btn btn-sm" style="background:#FEF2F2;color:var(--red);flex:none;" onclick="event.stopPropagation();goTab('lease')">View All</button>`,
     dfSites('exp',ex,a=>a.prop,g=>g.map(_alertRowH).join(''),drafted));
   if(soon.length)h+=dfBox('soon','soon-card','','soon-head','',
     `<span>⏳ ${soon.length} lease${soon.length>1?'s':''} ending within 30 days</span>`,
@@ -9358,7 +9359,8 @@ function _lsCard(l,drafts){
       <div class="ls-acts"><button class="btn btn-ghost btn-xs" onclick="openLeaseDeed('${dr.id}')">🖨️ Print / Edit</button><button class="btn btn-green btn-xs" onclick="finalizeDraft('${dr.id}')">✅ Mark Signed</button>${_policeDone(dr)?'<span style="font-size:11px;color:#3730A3;font-weight:700;align-self:center;">🚔 Police done</span>':`<button class="btn btn-xs" style="background:#EEF2FF;color:#3730A3;border:1.5px solid #C7D2FE;" onclick="openPoliceDone('lease','${dr.id}')">🚔 Police Done</button>`}</div></div>`:'';
   const _sg=leaseSignInfo(l), _pv=leasePoliceInfo(l), _cur=((l.status||'active')==='active'||l.status==='expired')&&leaseIsCurrent(l);
   const polBox=_cur&&!dr?`<div class="ar-tags" style="margin-top:8px;">${_sg.done?`<span class="ar-tag g">✓ Signed${_sg.on?' '+fd(_sg.on):''}</span>`:`<span class="ar-tag a">⏳ Not signed yet</span>`}${_pv.done?`<span class="ar-tag g">🚔 Police verified</span>`:`<span class="ar-tag b">🚔 Police pending</span>`}</div>`
-      +((!_sg.done||!_pv.done)?`<div class="ar-btns">${`<button class="s" ${_sg.done?'disabled':''} onclick="openAgrSigned('${l.id}')">✅ Signed</button>`}<button class="p" ${_pv.done?'disabled':''} onclick="openPoliceDone('lease','${l.id}')">🚔 Police done</button><button ${!_sg.done&&!_pv.done?'':'disabled'} onclick="agrBothDone('${l.id}')">Both done</button></div>`:''):'';
+      +(()=>{ const B=[]; if(!_sg.done)B.push(`<button class="s" onclick="openAgrSigned('${l.id}')">✅ Mark signed</button>`); if(!_pv.done)B.push(`<button class="p" onclick="openPoliceDone('lease','${l.id}')">🚔 Police done</button>`); if(!_sg.done&&!_pv.done)B.push(`<button onclick="agrBothDone('${l.id}')">Both done</button>`);
+        return B.length?`<div class="ar-btns" style="grid-template-columns:repeat(${B.length},minmax(0,1fr));">${B.join('')}</div>`:''; })():'';
   const acts=[main,
     `<button class="lsb" onclick="openLeaseDeed('${l.id}')">📄 View</button>`,
     `<button class="lsb" onclick="shareLeaseWhatsApp('${l.id}')">📤 Share</button>`].filter(Boolean);
