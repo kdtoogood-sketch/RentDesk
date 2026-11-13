@@ -1786,7 +1786,7 @@ function bankItems(){
   const from=S.bankVerifyFrom||BANK_FROM_DEFAULT, out=[];
   (S.properties||[]).forEach(p=>{ if(!bankOn(p))return; (p.rooms||[]).forEach(r=>{
     const who=(r.tenant&&r.tenant.name)||(r.token&&r.token.name)||'';
-    (r.payments||[]).forEach(py=>{ if(!py||!py.id||py.mode==='Cash'||py.mode==='Advance Rent'||(py.date||'')<from||py.bankOk)return;
+    (r.payments||[]).forEach(py=>{ if(!py||!py.id||py.mode==='Cash'||py.mode==='Advance Rent'||py.mode==='Salary adjustment'||(py.date||'')<from||py.bankOk)return;
       out.push({p,r,x:py,kind:'pay',who,what:'Rent '+ml(py.month)}); });
     (r.depositLedger||[]).forEach(d=>{ if(!d||!d.id||d.mode==='Cash'||(d.date||'')<from||d.bankOk)return;
       out.push({p,r,x:d,kind:'dep',who,what:d.kind==='security'?'Security deposit':d.kind==='advance'?'Advance rent':'Token'}); });
@@ -2017,7 +2017,8 @@ function dashBankCheckH(){
 }
 
 // ── Compulsory reference for every non-cash payment (UPI ref / UTR / cheque no.) ──
-function refNeeded(m){ return !!m&&m!=='Cash'&&m!=='Advance Rent'; }
+function refNeeded(m){ return !!m&&m!=='Cash'&&m!=='Advance Rent'&&m!=='Salary adjustment'; }
+// 'Salary adjustment' = rent settled against staff salary (e.g. Preeti's 307 rent: the owner keeps it as KD's caretaking fee, KD cuts it from her salary). No money moves: counts as rent paid, never as cash in hand, never needs a bank / owner confirmation.
 function refLabel(m){ return m==='Cheque'?'Cheque no.':'UPI ref / UTR no.'; }
 function refPh(m){ return m==='Cheque'?'Cheque number':'12-digit UPI ref, or bank UTR'; }
 function refFieldH(id,mode,val){
@@ -4097,7 +4098,7 @@ function openPayment(pid,rid,defaultMonth){
   </div>
   <div class="frow"><div><label class="flabel">Month</label><input class="finput" id="pyM" type="month" value="${cm}" onchange="pyMonthChange()"/></div><div><label class="flabel">Amount Received (₹) *</label><input class="finput" id="pyA" type="number" placeholder="${due}" data-due="${due}" oninput="pyCheck()"/></div></div>
   <div id="pyStatus" style="margin-bottom:12px;display:none;"></div>
-  <div class="frow"><div><label class="flabel">Payment Mode</label><select class="fselect" id="pyMd" onchange="document.getElementById('pyRcvW').style.display=this.value==='Cash'?'block':'none';refModeChange('pyRef',this.value);{const w=document.getElementById('pyIntoW');if(w)w.style.display=this.value==='Cash'?'none':'block';}"><option>Bank Transfer</option><option>UPI</option><option>Cash</option><option>Cheque</option></select></div><div><label class="flabel">Date</label><input class="finput" id="pyD" type="date" value="${today()}"/></div></div>
+  <div class="frow"><div><label class="flabel">Payment Mode</label><select class="fselect" id="pyMd" onchange="document.getElementById('pyRcvW').style.display=this.value==='Cash'?'block':'none';refModeChange('pyRef',this.value);{const w=document.getElementById('pyIntoW');if(w)w.style.display=(this.value==='Cash'||this.value==='Salary adjustment')?'none':'block';}"><option>Bank Transfer</option><option>UPI</option><option>Cash</option><option>Cheque</option><option>Salary adjustment</option></select></div><div><label class="flabel">Date</label><input class="finput" id="pyD" type="date" value="${today()}"/></div></div>
   ${refFieldH('pyRef','Bank Transfer')}
   ${bankOn(p)?`<div class="frow1" id="pyIntoW"><label class="flabel">Paid into</label><select class="fselect" id="pyInto"><option value="">Not sure</option>${BANK_INTO.map(o=>`<option>${o}</option>`).join('')}</select></div>`:''}
   <div class="frow1" id="pyRcvW" style="display:none;"><label class="flabel">Cash received by *</label><select class="fselect" id="pyRcv">${[...staffList(),'KD Taneja'].map(o=>`<option ${o===(staffList().includes(user)?user:'KD Taneja')?'selected':''}>${o}</option>`).join('')}</select><div class="fhint">Cash with staff is added to their cash in hand automatically</div></div>
@@ -5030,6 +5031,7 @@ function cashBookEntries(staff){
     out.push(e);
     const p=siteById(e.site); if(!isOwnerSite(p))return;
     const charge=Number(p.maintCharge||0); if(!charge)return;
+    if(p.maintFrom&&(e.date||'')<p.maintFrom+'-01')return;   // auto fee only from the month it was switched on
     const key=e.site+'|'+(e.date||'').slice(0,7);
     const t=Math.min(charge-(taken[key]||0),e.amount); if(t<=0)return;
     taken[key]=(taken[key]||0)+t;
@@ -5059,13 +5061,15 @@ function openCbSites(){
       <strong style="flex:1;min-width:90px;">${p.name}</strong>
       <select class="fselect" style="width:auto;" id="cm_${p.id}" onchange="document.getElementById('mcw_${p.id}').style.display=this.value==='owner'?'flex':'none'">
         <option value="kd" ${!isOwnerSite(p)?'selected':''}>Cash is KD's</option><option value="owner" ${isOwnerSite(p)?'selected':''}>Cash goes to owner</option></select>
-      <span id="mcw_${p.id}" style="display:${isOwnerSite(p)?'flex':'none'};align-items:center;gap:6px;font-size:12px;">Auto maintenance ₹<input class="finput" type="number" style="width:90px;" id="mc_${p.id}" value="${p.maintCharge||''}" placeholder="blank = manual"/>/month</span></div>`).join('')}
-    <div style="font-size:11px;color:var(--muted);margin-top:10px;">Leave "Auto maintenance" blank to enter your share yourself (nothing moves automatically). If you fill it, that amount moves to KD's account automatically from the first cash collected each month.</div>`,
+      <span id="mcw_${p.id}" style="display:${isOwnerSite(p)?'flex':'none'};align-items:center;gap:6px;font-size:12px;">Auto maintenance ₹<input class="finput" type="number" style="width:90px;" id="mc_${p.id}" value="${p.maintCharge||''}" placeholder="blank = manual"/>/month from <input class="finput" type="month" style="width:140px;" id="mf_${p.id}" value="${p.maintFrom||mk()}"/></span></div>`).join('')}
+    <div style="font-size:11px;color:var(--muted);margin-top:10px;">Leave "Auto maintenance" blank to enter your share yourself (nothing moves automatically). If you fill it, that amount moves to KD's account automatically from the first cash collected each month, starting from the month you pick (earlier months are not touched).</div>`,
     `<button class="btn btn-ghost" onclick="closeM()">Cancel</button><button class="btn btn-orange" onclick="saveCbSites()">Save</button>`);
 }
 function saveCbSites(){
   S.properties.forEach(p=>{ const m=(document.getElementById('cm_'+p.id)||{}).value; if(!m)return;
-    if(m==='owner'){ p.cashMode='owner'; p.maintCharge=Number((document.getElementById('mc_'+p.id)||{}).value||0); } else { delete p.cashMode; } });
+    if(m==='owner'){ const was=JSON.stringify([p.cashMode,p.maintCharge||0,p.maintFrom||'']); p.cashMode='owner'; p.maintCharge=Number((document.getElementById('mc_'+p.id)||{}).value||0); p.maintFrom=(document.getElementById('mf_'+p.id)||{}).value||mk();
+      if(was!==JSON.stringify([p.cashMode,p.maintCharge,p.maintFrom]))actLog('Cash book — '+p.name+': cash goes to owner'+(p.maintCharge?', '+fm(p.maintCharge)+'/month to KD from '+ml(p.maintFrom):', no auto fee')); }
+    else { if(p.cashMode)actLog('Cash book — '+p.name+': cash is KD\'s'); delete p.cashMode; } });
   actLog('Cash book site settings updated'); sched(); closeM(); renderTab(); toast('✅ Saved');
 }
 
@@ -6940,6 +6944,7 @@ function editPayment(pid, rid, payId){
           <option ${py.mode==='UPI'?'selected':''}>UPI</option>
           <option ${py.mode==='Cash'?'selected':''}>Cash</option>
           <option ${py.mode==='Cheque'?'selected':''}>Cheque</option>
+          <option ${py.mode==='Salary adjustment'?'selected':''}>Salary adjustment</option>
         </select>
       </div>
       <div><label class="flabel">Date</label><input class="finput" id="epyD" type="date" value="${py.date}"/></div>
