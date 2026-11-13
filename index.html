@@ -1606,7 +1606,7 @@ function renderDash(){
           <span style="font-size:13.5px;font-weight:800;color:${x.net<0?'var(--red)':'var(--ink)'};white-space:nowrap;"><span style="font-size:11px;font-weight:600;color:var(--muted);">Net </span>${_sv(x.net)}</span></div>
         <div style="font-size:12px;color:var(--ink2);margin-top:3px;line-height:1.5;">${x.general?'Expenses not linked to a site':`<span style="white-space:nowrap;">Due ${fm(x.exp)}</span> · <span style="color:var(--green);font-weight:700;white-space:nowrap;">Collected ${fm(x.col)}</span> · ${pend}`}</div></div>
       <div class="df-body" style="font-size:11.5px;color:var(--muted);padding:0 2px 9px;line-height:1.6;">
-        ${x.general?'':`Rent ${fm(x.rent)} · Electricity ${fm(x.eb)}${x.bal?' · Carry-in '+fm(x.bal):''}${x.ded?' · Deductions −'+fm(x.ded):''}${x.sec?' · Security due '+fm(x.sec):''}<br/>`}Expenses ${fm(x.spent)}${x.me?' · Main electricity bill '+fm(x.me):''}${x.secAdj?'<br/>Collected includes '+fm(x.secAdj)+' adjusted from security (not counted in Net)':''}</div></div>`; }).join('')}
+        ${x.general?'':`Rent ${fm(x.rent)} · Electricity ${fm(x.eb)}${x.bal>0?' · Carry-in '+fm(x.bal):x.bal<0?' · Credit −'+fm(-x.bal):''}${x.ded?' · Deductions −'+fm(x.ded):''}${x.sec?' · Security due '+fm(x.sec):''}<br/>`}Expenses ${fm(x.spent)}${x.me?' · Main electricity bill '+fm(x.me):''}${x.secAdj?'<br/>Collected includes '+fm(x.secAdj)+' adjusted from security (not counted in Net)':''}</div></div>`; }).join('')}
     <div style="font-size:10.5px;color:var(--muted);margin-top:6px;">Tap a site for details. Same figures as Billing. Net = money received − expenses − main electricity bill.</div>
   </div>`;
 
@@ -1673,7 +1673,7 @@ function renderDash(){
       <div class="card-body df-body">
         <div class="irow"><span class="irow-label">Rent (this month)</span><span class="irow-value">${fm(_T('rent'))}</span></div>
         <div class="irow"><span class="irow-label">Electricity Billed</span><span class="irow-value" style="color:var(--blue)">${fm(_T('elec'))}</span></div>
-        ${_T('bal')?`<div class="irow"><span class="irow-label">Carry-in from last month</span><span class="irow-value" style="color:var(--red)">${fm(_T('bal'))}</span></div>`:''}
+        ${_T('bal')?`<div class="irow"><span class="irow-label">${_T('bal')<0?'Credit':'Carry-in'} from last month</span><span class="irow-value" style="color:${_T('bal')<0?'var(--green)':'var(--red)'}">${fm(Math.abs(_T('bal')))}</span></div>`:''}
         ${_T('sec')?`<div class="irow"><span class="irow-label">Security due (move-in)</span><span class="irow-value" style="color:var(--amber)">${fm(_T('sec'))}</span></div>`:''}
         ${_T('ded')?`<div class="irow"><span class="irow-label">Deductions</span><span class="irow-value" style="color:var(--purple)">− ${fm(_T('ded'))}</span></div>`:''}
         <div class="irow" style="background:var(--bg);padding:6px 8px;border-radius:6px;margin:4px 0;"><span class="irow-label" style="font-weight:600;">Total Due</span><span class="irow-value" style="font-weight:700;">${fm(monDue)}</span></div>
@@ -1907,7 +1907,7 @@ function waSend(kind,pid,rid){
     const {elec,bal,due}=_calcDue(r,mo), paid=(r.payments||[]).filter(x=>x.month===mo).reduce((a,x)=>a+Number(x.amount||0),0), left=Math.max(0,due-paid);
     const R=v=>'₹'+Math.round(v).toLocaleString('en-IN');
     const _c=_billCalc(r,mo);
-    msg=`Dear ${name},\n\nA gentle reminder for your rent for *${ml(mo)}*.\nProperty: ${p.name} · ${unit}\n\nRent: ${R(_c.rentAmt)}`+(elec?`\nElectricity (${elec.units} units): ${R(elec.amount)}`:'')+(bal>0?`\nPrevious balance: ${R(bal)}`:'')+(_c.secOnlyPending>0?`\nSecurity deposit: ${R(_c.secOnlyPending)}`:'')+(_c.dedTotal>0?`\nDeductions: −${R(_c.dedTotal)}`:'')+`\n*Total: ${R(due)}*`+(paid>0?`\nPaid so far: ${R(paid)}\n*Balance: ${R(left)}*`:'')+`\n\nKindly pay at the earliest. Please ignore if already paid.`+WA_SIGN;
+    msg=`Dear ${name},\n\nA gentle reminder for your rent for *${ml(mo)}*.\nProperty: ${p.name} · ${unit}\n\nRent: ${R(_c.rentAmt)}`+(elec?`\nElectricity (${elec.units} units): ${R(elec.amount)}`:'')+(bal>0?`\nPrevious balance: ${R(bal)}`:bal<0?`\nCredit from last month: −${R(-bal)}`:'')+(_c.secOnlyPending>0?`\nSecurity deposit: ${R(_c.secOnlyPending)}`:'')+(_c.dedTotal>0?`\nDeductions: −${R(_c.dedTotal)}`:'')+`\n*Total: ${R(due)}*`+(paid>0?`\nPaid so far: ${R(paid)}\n*Balance: ${R(left)}*`:'')+`\n\nKindly pay at the earliest. Please ignore if already paid.`+WA_SIGN;
   } else if(kind==='docs'){
     const miss=(docsPendingRows().find(x=>x.r.id===rid)||{}).miss||[];
     msg=`Dear ${name},\n\nWe still need the following documents for your stay at ${p.name} (${unit}):\n`+miss.map(m=>'• '+m).join('\n')+`\n\nKindly share them on WhatsApp at the earliest. Thank you!`+WA_SIGN;
@@ -2990,7 +2990,7 @@ function renderRoomDetail(){
         <span style="font-size:12px;">Rent: <strong>${fm(_rc.rentAmt)}</strong>${_rc.isProrated?' <span style="font-size:10px;color:var(--blue);">pro-rata</span>':''}</span>
         ${curElec?`<span style="font-size:12px;">Elec: <strong style="color:var(--blue)">${fm(curElec.amount)}</strong></span>`:''}
         ${_rc.secOnlyPending>0?`<span style="font-size:12px;">Security: <strong style="color:var(--amber)">${fm(_rc.secOnlyPending)}</strong></span>`:''}
-        ${bal>0?`<span style="font-size:12px;">Bal: <strong style="color:var(--red)">${fm(bal)}</strong></span>`:''}
+        ${bal>0?`<span style="font-size:12px;">Bal: <strong style="color:var(--red)">${fm(bal)}</strong></span>`:bal<0?`<span style="font-size:12px;">Credit: <strong style="color:var(--green)">${fm(-bal)}</strong></span>`:''}
         ${(r.deductions||[]).filter(d=>d.month===cm).length>0?`<span style="font-size:12px;">Deductions: <strong style="color:var(--purple)">${fm((r.deductions||[]).filter(d=>d.month===cm).reduce((s,d)=>s+Number(d.amount||0),0))}</strong></span>`:''}
         <span style="font-size:12px;">Due: <strong style="color:var(--orange)">${fm(totalDue)}</strong></span>
         <span style="font-size:12px;">Paid: <strong style="color:var(--green)">${fm(curPaid)}</strong></span>
@@ -3032,7 +3032,7 @@ function renderRoomDetail(){
         <div class="irow"><span class="irow-label">Lock-in Period</span><span class="irow-value">${(r.lease&&r.lease.lockIn)?r.lease.lockIn+' months':'—'}</span></div>
         <div class="irow"><span class="irow-label">Escalation</span><span class="irow-value">${(r.lease&&r.lease.escalation)?r.lease.escalation+'%':'—'}</span></div>
         <div class="irow"><span class="irow-label">Notice Period</span><span class="irow-value">${(r.lease&&r.lease.noticePeriod)?r.lease.noticePeriod+' month(s)':'—'}</span></div>
-        ${bal>0?`<div class="irow"><span class="irow-label">Balance Fwd</span><span class="irow-value" style="color:var(--red);font-weight:700;">${fm(bal)}</span></div>`:''}
+        ${bal>0?`<div class="irow"><span class="irow-label">Balance Fwd</span><span class="irow-value" style="color:var(--red);font-weight:700;">${fm(bal)}</span></div>`:bal<0?`<div class="irow"><span class="irow-label">Credit from last month</span><span class="irow-value" style="color:var(--green);font-weight:700;">−${fm(-bal)}</span></div>`:''}
       </div>
     </div>
   </div>
@@ -3376,7 +3376,7 @@ function openCombinedBill(pid,rid,month){
       <div class="rrow"><span>Rate per Unit</span><span>₹${elec.rate}/unit</span></div>
       <div class="rrow"><span>Electricity Bill</span><span style="font-weight:700;">${fm(elecAmt)}</span></div>
     </div>`:'<div class="rrow"><span>Electricity</span><span style="color:var(--muted)">Not added</span></div>'}
-    ${bal>0?`<div class="rrow"><span>Previous Balance</span><span style="color:var(--red)">${fm(bal)}</span></div>`:''}
+    ${bal>0?`<div class="rrow"><span>Previous Balance</span><span style="color:var(--red)">${fm(bal)}</span></div>`:bal<0?`<div class="rrow"><span>Credit from last month</span><span style="color:var(--green)">−${fm(-bal)}</span></div>`:''}
     <div class="rtotal"><span>Total Amount Due</span><span>${fm(total)}</span></div>
     ${paidSoFar>0?`<div class="rrow"><span>Paid so far</span><span style="color:var(--green)">${fm(paidSoFar)}</span></div>
     <div class="rrow" style="font-weight:700;"><span>${left>0?'Balance to pay':'Fully paid'}</span><span style="color:${left>0?'var(--red)':'var(--green)'}">${left>0?fm(left):'✓'}</span></div>`:''}
@@ -3406,7 +3406,7 @@ function openReceipt(pid,rid,mo){
     <div style="border-top:2px dashed rgba(249,115,22,0.25);margin:10px 0;"></div>
     <div class="rrow"><span>Monthly Rent${c.isProrated?' (from '+fd(c.activeStart)+')':''}</span><span>${fm(c.rentAmt)}</span></div>
     ${elec?`<div class="rrow"><span>Electricity (${elec.units} units)</span><span>${fm(elec.amount)}</span></div>`:''}
-    ${c.bal>0?`<div class="rrow"><span>Balance Forward</span><span style="color:var(--red)">${fm(c.bal)}</span></div>`:''}
+    ${c.bal>0?`<div class="rrow"><span>Balance Forward</span><span style="color:var(--red)">${fm(c.bal)}</span></div>`:c.bal<0?`<div class="rrow"><span>Credit from last month</span><span style="color:var(--green)">−${fm(-c.bal)}</span></div>`:''}
     ${c.secOnlyPending>0?`<div class="rrow"><span>Security Deposit</span><span>${fm(c.secOnlyPending)}</span></div>`:''}
     ${(r.deductions||[]).filter(d=>d.month===cm).map(d=>`<div class="rrow"><span style="color:var(--purple);">➖ ${_escHtml(d.desc||'Deduction')}</span><span style="color:var(--purple);">-${fm(d.amount)}</span></div>`).join('')}
     <div class="rrow" style="font-weight:700;"><span>Total Due</span><span>${fm(c.total)}</span></div>
@@ -3927,7 +3927,7 @@ function waCombinedBill(pid,rid,month){
   const unit=r.type+(r.unitNo?' #'+r.unitNo:'');
   const dedBlock=deds.length?'\n\n➖ *Deductions*\n'+deds.map(d=>`${d.desc}: -₹${Number(d.amount).toLocaleString('en-IN')}`).join('\n'):'';
   const elecBlock=elec&&elecAmt>0?`\n\n⚡ *Electricity Breakdown*\nPrev Reading : ${elec.oldReading} units\nNew Reading  : ${elec.reading} units\nUnits Used   : ${elec.units} units\nRate         : ₹${elec.rate}/unit\nElec Bill    : ₹${elecAmt.toLocaleString('en-IN')}`:'';
-  const balLine=(bal>0?`\nPrev Balance : ₹${bal.toLocaleString('en-IN')}`:'')+(_c.secOnlyPending>0?`\nSecurity Deposit : ₹${_c.secOnlyPending.toLocaleString('en-IN')}`:'');
+  const balLine=(bal>0?`\nPrev Balance : ₹${bal.toLocaleString('en-IN')}`:bal<0?`\nCredit from last month : −₹${(-bal).toLocaleString('en-IN')}`:'')+(_c.secOnlyPending>0?`\nSecurity Deposit : ₹${_c.secOnlyPending.toLocaleString('en-IN')}`:'');
   const paidLine=_c.paid>0?`\nPaid so far : ₹${_c.paid.toLocaleString('en-IN')}\n*${_c.pend>0?'Balance to pay : ₹'+_c.pend.toLocaleString('en-IN'):'Fully paid ✓'}*`:'';
   const msg=encodeURIComponent(`Dear ${r.tenant.name},\n\n📄 *Monthly Bill — ${ml(month)}*\nProperty: ${p.name} | Unit: ${unit}\n\n🏠 Monthly Rent : ₹${rentAmt.toLocaleString('en-IN')}${elecBlock}${dedBlock}${balLine}\n\n*Total Due: ₹${total.toLocaleString('en-IN')}*${paidLine}\n\n${_c.pend>0||!_c.paid?'Kindly pay at the earliest.':'Thank you for your payment.'}`);
   const w=window.open(`https://wa.me/91${phone}?text=${msg}`,'_blank');
@@ -3975,9 +3975,23 @@ function calcClosingBalance(r,mo){
   const secPending=(secAdvDue&&isMoveInMonth)?secAdvDue.secPending:0;
   const due=rentAmt+Number((elec&&elec.amount)||0)+carryIn-dedTotal+secPending;
   const paid=(r.payments||[]).filter(x=>x.month===mo).reduce((s,x)=>s+Number(x.amount||0),0);
-  return Math.max(0,due-paid);
+  return _keepBal(mo,due-paid);
 }
 const TRACKING_START_MONTH='2026-05';
+// Rules that start with December 2026 (everything up to November 2026 is reconciled and stays exactly as it was):
+//  • extra paid in a month carries into the next month as credit
+//  • tenants who leave still show in Billing / reports for the months before they left
+const B3_FROM='2026-12';
+const _keepBal=(mo,v)=>mo>=B3_FROM?v:Math.max(0,v);   // closing balance after a month: credit (below 0) kept from Dec 2026
+/* A balance typed by hand (✏️ Edit carry-in) is stored with the payments/deductions it was typed against,
+   so later payments for that month reduce it instead of wiping it, and clearing the cache never loses it. */
+function _manualClose(r,mo){
+  const m=r.balanceManual&&r.balanceManual[mo]; if(m===undefined||m===null)return undefined;
+  if(typeof m==='number')return m;
+  const paid=(r.payments||[]).filter(x=>x.month===mo).reduce((s,x)=>s+Number(x.amount||0),0);
+  const ded=(r.deductions||[]).filter(d=>d.month===mo).reduce((s,d)=>s+Number(d.amount||0),0);
+  return _keepBal(mo,Number(m.v||0)-(paid-Number(m.paid||0))-(ded-Number(m.ded||0)));
+}
 function getCarryIn(r,mo,_depth){
   _depth=_depth||0;
   if(!r.balanceByMonth)r.balanceByMonth={};
@@ -3990,6 +4004,7 @@ function getCarryIn(r,mo,_depth){
   // date individually.
   if(mo<=TRACKING_START_MONTH)return 0;
   const pm=prevMonth(mo);
+  { const mc=_manualClose(r,pm); if(mc!==undefined)return mc; }   // typed by hand — survives any cache reset
   // First check stored history for previous month
   if(r.balanceByMonth[pm]!==undefined)return r.balanceByMonth[pm];
   // Safety guard against runaway recursion on malformed data (e.g. a corrupted date that
@@ -4026,16 +4041,20 @@ function getCarryIn(r,mo,_depth){
     const pmSecPending=(pmSecAdvDue&&pmIsMoveInMonth)?pmSecAdvDue.secPending:0;
     const pmDue=pmRentAmt+Number((pmElec&&pmElec.amount)||0)+pmCarryIn-pmDed+pmSecPending;
     const pmPaid=pmPayments.reduce((s,x)=>s+Number(x.amount||0),0);
-    return Math.max(0,pmDue-pmPaid);
+    return _keepBal(pm,pmDue-pmPaid);
   }
   // No payments for prev month and nothing cached — nothing owed from before tracking began.
   return 0;
 }
 function setBalanceAfterMonth(r,mo,val,manual){
   if(!r.balanceByMonth)r.balanceByMonth={};
-  if(manual){ if(!r.balanceManual)r.balanceManual={}; r.balanceManual[mo]=Math.max(0,val); }
-  else if(r.balanceManual)delete r.balanceManual[mo];
-  r.balanceByMonth[mo]=Math.max(0,val);
+  if(manual){
+    if(!r.balanceManual)r.balanceManual={};
+    r.balanceManual[mo]={v:_keepBal(mo,val),paid:(r.payments||[]).filter(x=>x.month===mo).reduce((s,x)=>s+Number(x.amount||0),0),
+      ded:(r.deductions||[]).filter(d=>d.month===mo).reduce((s,d)=>s+Number(d.amount||0),0),on:today(),by:user};
+  }
+  const mc=_manualClose(r,mo); if(mc!==undefined)val=mc;   // a typed balance stays — adjusted for payments made since
+  r.balanceByMonth[mo]=_keepBal(mo,val);
   r.balance=Math.max(0,val);
 }
 function _calcDue(r,mo){ const c=_billCalc(r,mo); return {...c,due:c.total}; }   // same figures as Billing
@@ -4046,7 +4065,7 @@ function _pyBannerH(r,mo){
     <div style="display:flex;gap:6px 14px;flex-wrap:wrap;">
       <span>Rent: <strong>${fm(c.rentAmt)}</strong>${c.isProrated?' <span style="font-size:10px;color:var(--blue);">pro-rata</span>':''}</span>
       ${c.elec?`<span>Elec: <strong style="color:var(--blue)">${fm(c.elec.amount)}</strong></span>`:''}
-      ${c.bal>0?`<span>Carry-in: <strong style="color:var(--red)">${fm(c.bal)}</strong></span>`:''}
+      ${c.bal>0?`<span>Carry-in: <strong style="color:var(--red)">${fm(c.bal)}</strong></span>`:c.bal<0?`<span>Credit: <strong style="color:var(--green)">${fm(-c.bal)}</strong></span>`:''}
       ${c.secOnlyPending>0?`<span>Security: <strong style="color:var(--amber)">${fm(c.secOnlyPending)}</strong></span>`:''}
       ${c.dedTotal>0?`<span>Deductions: <strong style="color:var(--purple)">−${fm(c.dedTotal)}</strong></span>`:''}
       <span style="color:var(--orange);font-weight:700;">Total: ${fm(c.total)}</span>
@@ -4156,12 +4175,30 @@ function _vacCalc(t,mo){
   const netRefund=Number((t.settlement&&t.settlement.netRefund)||0);
   return {elecRec,elecAmt,deds,dedAmt,cashPaid,secAdj,totalPaid,rentDue,total,pend,netRefund};
 }
-// Who is billed at a site in a month: current tenants who had moved in by then (Billing's rule).
+// Who is billed at a site in a month: current tenants who had moved in by then (Billing's rule),
+// plus — from Dec 2026 — tenants who have since left, for the months before the month they left.
 function _liveRoomsFor(p,mo){
   return sortRooms(p.rooms||[]).filter(r=>{ if(!isRoomOccupied(r))return false;
     const mi=(r.tenant&&(r.tenant.activeFrom||r.tenant.moveInDate))||(r.lease&&r.lease.startDate)||'';
-    return !(mi&&mi.slice(0,7)>mo); });
+    return !(mi&&mi.slice(0,7)>mo); }).concat(_pastRoomsFor(p,mo));
 }
+/* A tenant who left keeps a copy of their room as it was on the day they left (roomSnap, saved from Nov 2026).
+   For months from Dec 2026 before the month they left, that copy is billed exactly as it was — read-only
+   (its id starts with 'past:'; payment / bill buttons on it just say the tenant has left). */
+function _pastRoomsFor(p,mo){
+  if(!mo||mo<B3_FROM)return [];
+  return (S.pastTenants||[]).filter(t=>t&&t.roomSnap&&t.propertyId===p.id&&mo<String(t.vacatingDate||'').slice(0,7)).map(t=>{
+    const r=t.roomSnap; const mi=(r.tenant&&(r.tenant.activeFrom||r.tenant.moveInDate))||(r.lease&&r.lease.startDate)||'';
+    if(!r.tenant||(mi&&mi.slice(0,7)>mo))return null;
+    return Object.assign({},r,{id:'past:'+t.id,_past:t,_roomId:t.roomId,balanceByMonth:Object.assign({},r.balanceByMonth||{})});
+  }).filter(Boolean);
+}
+const _isPastRid=rid=>String(rid||'').startsWith('past:');
+// payment / bill / edit buttons on a left tenant's row: point to Past tenants instead of acting on the room
+['openPayment','openDepositEntry','openElecBill','openEditBalance','openManageDeductions','openCombinedBill','openReceipt','openApplyAdvance','openElec','editPayment','openDeduction','goRoom','dashOpenRoom'].forEach(n=>{
+  const f=window[n]; if(typeof f!=='function')return;
+  window[n]=function(pid,rid,...a){ if(_isPastRid(rid)){ try{closeM();}catch(e){} toast('This tenant has left — open 🚪 Past Tenants for their record',4500); return; } return f.call(this,pid,rid,...a); };
+});
 // Everything billed and collected at one site in one month — exactly Billing's numbers.
 // pend = what is still owed (a tenant who paid extra counts 0, the extra is shown separately).
 // cash = money actually received (security kept against dues of a vacated tenant is not new cash).
@@ -4181,8 +4218,9 @@ function _moveInMonth(r){ return ((r.tenant&&(r.tenant.activeFrom||r.tenant.move
 function _rebalance(r,from){
   if(!r||!from||!r.balanceByMonth)return;
   const man=r.balanceManual||{};
-  Object.keys(r.balanceByMonth).filter(k=>k>=from&&!Object.prototype.hasOwnProperty.call(man,k)).sort().forEach(k=>{
-    const v=Math.max(0,_billCalc(r,k).pend); r.balanceByMonth[k]=v; r.balance=v; });
+  Object.keys(r.balanceByMonth).filter(k=>k>=from).sort().forEach(k=>{
+    const mc=Object.prototype.hasOwnProperty.call(man,k)?_manualClose(r,k):undefined;
+    const v=mc!==undefined?mc:_keepBal(k,_billCalc(r,k).pend); r.balanceByMonth[k]=v; r.balance=Math.max(0,v); });
 }
 
 function renderBilling(){
@@ -4228,13 +4266,13 @@ function renderBilling(){
       const moveInDate=(r.tenant&&(r.tenant.activeFrom||r.tenant.moveInDate))||(r.lease&&r.lease.startDate)||'';
       if(moveInDate&&moveInDate.slice(0,7)>billMo)return false;
       return true;
-    });
+    }).concat(_pastRoomsFor(p,billMo));
     const vacatedThisMonth=(S.pastTenants||[]).filter(t=>t.propertyId===p.id&&sameMonthDate(t.vacatingDate,billMo));
     // Rooms that were genuinely vacant for this specific month — either a room with no
     // current occupant at all, or a currently-occupied room whose tenant hadn't moved in
     // yet during this month. Shown as a visible vacant row (₹0 everywhere) rather than
     // silently missing from the list, so the room count stays accurate at a glance.
-    const liveIds=new Set(liveTenants.map(r=>r.id));
+    const liveIds=new Set(liveTenants.map(r=>r._roomId||r.id));
     const vacatedIds=new Set(vacatedThisMonth.map(t=>t.roomId));
     const vacantRooms=allSortedRooms.filter(r=>!liveIds.has(r.id)&&!vacatedIds.has(r.id));
     const hasAny=liveTenants.length||vacatedThisMonth.length;
@@ -4256,8 +4294,8 @@ function renderBilling(){
       const depositLabel={token:'🔑 Token',security:'🔐 Security',advance:'💸 Advance'};
       const depositBreakdown=[cumToken>0?`🔑${fm(cumToken)}`:null,cumSec>0?`🔐${fm(cumSec)}`:null].filter(Boolean).join(' + ');
       cLive.push({kind:'live',p,r,elec,paid,bal,dedTotal,rentAmt,isProrated,secAdvDue,secOnlyPending,total,pend,monthDepositsTotal});
-      return`<tr>
-        <td><strong>${r.type}${r.unitNo?' #'+r.unitNo:''}</strong></td>
+      return`<tr${r._past?' style="background:#F8FAFC;"':''}>
+        <td><strong>${r.type}${r.unitNo?' #'+r.unitNo:''}</strong>${r._past?`<br/><span style="font-size:10px;color:var(--muted);font-weight:700;">LEFT ${fd(r._past.vacatingDate)}</span>`:''}</td>
         <td>${r.tenant.name}<br/><span style="font-size:11px;color:var(--muted)">${r.tenant.phone||''}</span></td>
         <td style="font-weight:600">${fm(rentAmt)}${isProrated?`<div style="font-size:10px;color:var(--blue);font-weight:400;">pro-rata</div>`:''}${secOnlyPending>0?`<div style="font-size:10px;color:var(--amber);font-weight:600;">+ ${fm(secOnlyPending)} security</div>`:''}</td>
         <td style="font-size:11px;">
@@ -4274,7 +4312,7 @@ function renderBilling(){
         <td style="font-size:12px;color:var(--muted)">${elec?elec.oldReading+'→'+elec.reading:'—'}</td>
         <td style="color:var(--blue);font-weight:600">${elec?elec.units:'—'}</td>
         <td>${elec?`<span style="color:var(--green);font-weight:600">${fm(elec.amount)}</span> <button class="btn btn-orange btn-xs" onclick="openElecBill('${p.id}','${r.id}','${billMo}')">Bill</button> <button class="btn btn-ghost btn-xs" onclick="openElec('${p.id}','${r.id}','${billMo}')" title="Edit reading">✏</button>`:`<button class="btn btn-ghost btn-xs" onclick="openElec('${p.id}','${r.id}','${billMo}')">+Add</button>`}</td>
-        <td>${bal>0?`<span style="color:var(--red);font-weight:600">${fm(bal)}</span> <button class="btn btn-ghost btn-xs" onclick="openEditBalance('${p.id}','${r.id}')" title="Edit balance">✏</button>`:`<span style="color:var(--muted);">—</span> <button class="btn btn-ghost btn-xs" onclick="openEditBalance('${p.id}','${r.id}')" title="Edit balance">✏</button>`}</td>
+        <td>${bal<0?`<span style="color:var(--green);font-weight:600">Credit ${fm(-bal)}</span> `:''}${bal>0?`<span style="color:var(--red);font-weight:600">${fm(bal)}</span> <button class="btn btn-ghost btn-xs" onclick="openEditBalance('${p.id}','${r.id}')" title="Edit balance">✏</button>`:`<span style="color:var(--muted);">—</span> <button class="btn btn-ghost btn-xs" onclick="openEditBalance('${p.id}','${r.id}')" title="Edit balance">✏</button>`}</td>
         <td>${dedTotal>0?`<span style="color:var(--purple);font-weight:600">-${fm(dedTotal)}</span> <button class="btn btn-ghost btn-xs" onclick="openManageDeductions('${p.id}','${r.id}','${billMo}')" title="Manage deductions">✏</button>`:`<button class="btn btn-ghost btn-xs" onclick="openDeduction('${p.id}','${r.id}','${billMo}')">+Add</button>`}</td>
         <td style="color:var(--orange);font-weight:700">${fm(total)}
           <div style="margin-top:4px;"><button class="btn btn-orange btn-xs" onclick="openCombinedBill('${p.id}','${r.id}','${billMo}')">📄 Send Bill</button></div>
@@ -4343,8 +4381,10 @@ function renderBilling(){
     let orderedRows=allSortedRooms.map(r=>{ const x=_rowFor[r.id]; if(!x)return''; _seen.add(r.id); return (x.vac||[]).join('')+(x.live||'')+((x.vac&&x.vac.length)||x.live?'':(x.vacant||'')); }).join('');
     vacatedThisMonth.forEach((t,i)=>{ if(!_seen.has(t.roomId))orderedRows+=vacatedArr[i]; }); // room since deleted
     { const cards=[], liveBy={}, vacBy={}; liveTenants.forEach((r,i)=>liveBy[r.id]=cLive[i]); vacatedThisMonth.forEach((t,i)=>(vacBy[t.roomId]=vacBy[t.roomId]||[]).push(cVac[i]));
-      const seen=new Set(); allSortedRooms.forEach(r=>{ seen.add(r.id); (vacBy[r.id]||[]).forEach(c=>cards.push(c)); if(liveBy[r.id])cards.push(liveBy[r.id]); });
+      const pastBy={}; liveTenants.forEach((r,i)=>{ if(r._past)(pastBy[r._roomId]=pastBy[r._roomId]||[]).push(cLive[i]); });   // tenants who left later, shown in their old room's place
+      const seen=new Set(); allSortedRooms.forEach(r=>{ seen.add(r.id); (pastBy[r.id]||[]).forEach(c=>cards.push(c)); (vacBy[r.id]||[]).forEach(c=>cards.push(c)); if(liveBy[r.id])cards.push(liveBy[r.id]); });
       vacatedThisMonth.forEach((t,i)=>{ if(!seen.has(t.roomId))cards.push(cVac[i]); });
+      Object.keys(pastBy).forEach(k=>{ if(!seen.has(k))pastBy[k].forEach(c=>cards.push(c)); });
       _sites.push({p,cards,vacant:vacantRooms,pDue,pPaid,pPend,pElec}); }
     return`<div style="margin-bottom:16px;">
       <div style="background:var(--orange);color:#fff;padding:8px 12px;border-radius:8px 8px 0 0;font-weight:700;font-size:13px;display:flex;justify-content:space-between;align-items:center;">
@@ -4444,7 +4484,7 @@ function _bcLiveH(c){
   const parts=[`Rent <b>${fm(c.rentAmt)}</b>${c.isProrated?' <i>(pro-rata)</i>':''}`];
   if(elec)parts.push(`⚡ <b>${fm(elec.amount)}</b> <i>(${elec.units}u)</i>`);
   else if(needElec)parts.push(`⚡ <span style="color:var(--red);font-weight:700;">no reading</span>`);
-  if(c.bal>0)parts.push(`Carry-in <b style="color:var(--red);">${fm(c.bal)}</b>`);
+  if(c.bal>0)parts.push(`Carry-in <b style="color:var(--red);">${fm(c.bal)}</b>`); else if(c.bal<0)parts.push(`Credit <b style="color:var(--green);">−${fm(-c.bal)}</b>`);
   if(c.secOnlyPending>0)parts.push(`Security <b style="color:var(--amber);">${fm(c.secOnlyPending)}</b>`);
   let line=parts.join(' + ');
   if(c.dedTotal>0)line+=` − Ded <b style="color:var(--purple);">${fm(c.dedTotal)}</b>`;
@@ -4456,7 +4496,7 @@ function _bcLiveH(c){
   if(c.monthDepositsTotal>0)extra.push(`<span style="color:var(--purple);">🔐 ${fm(c.monthDepositsTotal)} deposit received this month</span>`);
   const q=[t.name,t.phone,r.type,r.unitNo,p.name].join(' ').toLowerCase();
   return `<div class="bc ${_bcMatch(c)?'':'bc-hid'} ${c.pend>0?(c.paid>0?'st-amb':'st-red'):'st-grn'}" data-q="${_escHtml(q)}" onclick="billCardTap(event,'${p.id}','${r.id}')" style="cursor:pointer;">
-    <div class="bc-top"><div style="min-width:0;"><div class="bc-unit">${_escHtml(r.type+(r.unitNo?' #'+r.unitNo:''))}</div><div class="bc-name">${_escHtml(t.name||'—')}</div></div>${pill}</div>
+    <div class="bc-top"><div style="min-width:0;"><div class="bc-unit">${_escHtml(r.type+(r.unitNo?' #'+r.unitNo:''))}${r._past?` · <span style="color:var(--muted);">LEFT ${fd(r._past.vacatingDate)}</span>`:''}</div><div class="bc-name">${_escHtml(t.name||'—')}</div></div>${pill}</div>
     <div class="bc-line">${line}</div>
     <div class="bc-tot"><span>Due <b>${fm(c.total)}</b></span><span>Paid <b style="color:var(--green);">${fm(c.paid)}</b></span>${c.pend>0?`<span>Balance <b style="color:var(--red);">${fm(c.pend)}</b></span>`:''}</div>
     ${extra.length?`<div class="bc-extra">${extra.join('<br/>')}</div>`:''}
@@ -4602,8 +4642,9 @@ function openDepositEntry(pid,rid,defaultMonth){
     <div class="frow"><div><label class="flabel">Date *</label>
       <input class="finput" type="date" id="dep_date" value="${defaultMonth?defaultMonth+'-01':today()}"/></div>
     <div><label class="flabel">Payment Mode</label>
-      <select class="fselect" id="dep_mode" onchange="refModeChange('dep_ref',this.value);{const w=document.getElementById('dep_intoW');if(w)w.style.display=this.value==='Cash'?'none':'block';}"><option>Cash</option><option>UPI</option><option>Bank Transfer</option><option>Cheque</option></select></div></div>
+      <select class="fselect" id="dep_mode" onchange="refModeChange('dep_ref',this.value);{const w=document.getElementById('dep_intoW');if(w)w.style.display=this.value==='Cash'?'none':'block';}{const c=document.getElementById('dep_rcvW');if(c)c.style.display=this.value==='Cash'?'block':'none';}"><option>Cash</option><option>UPI</option><option>Bank Transfer</option><option>Cheque</option></select></div></div>
     ${refFieldH('dep_ref','Cash')}
+    <div class="frow1" id="dep_rcvW"><label class="flabel">Cash received by</label><select class="fselect" id="dep_rcv">${['KD Taneja',...staffList()].map(w=>`<option>${w}</option>`).join('')}</select><div style="font-size:11px;color:var(--muted);margin-top:3px;">If ${staffList().join(' / ')} receives it, it's added to their cash in Cash &amp; Exp.</div></div>
     ${bankOn(p)?`<div class="frow1" id="dep_intoW" style="display:none;"><label class="flabel">Paid into</label><select class="fselect" id="dep_into"><option value="">Not sure</option>${BANK_INTO.map(o=>`<option>${o}</option>`).join('')}</select></div>`:''}
     <div class="frow1"><label class="flabel">Notes <span style="color:var(--muted);font-weight:400;text-transform:none;">optional</span></label>
       <input class="finput" id="dep_notes" placeholder="e.g. Full security paid on move-in"/></div>`,
@@ -4630,7 +4671,9 @@ function saveDepositEntry(pid,rid){
   if(!amt){toast('❌ Enter amount');return;}
   const ref=refRead('dep_ref',mode); if(ref===null)return;
   const into=mode!=='Cash'?((document.getElementById('dep_into')||{}).value||''):'';
-  addDepositEntry(r,kind,amt,date,mode,notes,{...(ref?{ref}:{}),...(into?{into}:{})});
+  const rcvBy=mode==='Cash'?((document.getElementById('dep_rcv')||{}).value||''):'';
+  if(rcvBy&&!_cashLockOK(rcvBy,date))return;
+  addDepositEntry(r,kind,amt,date,mode,notes,{...(ref?{ref}:{}),...(into?{into}:{}),...(rcvBy?{receivedBy:rcvBy,inCash:staffList().includes(rcvBy)}:{})});
   syncBalancesFromLedger(r); _rebalance(r,_moveInMonth(r));
   sched();closeM();renderBilling();
   actLog('Deposit logged — '+kind+' ₹'+amt.toLocaleString('en-IN')+' for '+((r.tenant&&r.tenant.name)||'tenant'));
@@ -4974,6 +5017,13 @@ function cashBookEntries(staff){
         text:'Cash rent — '+(t.name||t.roomType)+' ('+(t.roomType||'')+(t.unitNo?' #'+t.unitNo:'')+', vacated) for '+ml(py.month),src:'pastpay',id:py.id,pid:p.id,pastId:t.id});
     });
   });
+  // Security / token / advance taken in cash by staff (entries saved with "Cash received by", from Nov 2026) —
+  // from the room, or from a past tenant's record once they've left (never both).
+  const depSeen=new Set();
+  const depAdd=(p,who,e)=>{ if(!e||!e.inCash||e.receivedBy!==staff||depSeen.has(e.id))return; depSeen.add(e.id);
+    out.push({kind:'deposit',fund:'kd',dir:1,date:e.date||'',amount:Number(e.amount||0),site:p.id,siteName:p.name||'',text:({security:'Security',token:'Token',advance:'Advance rent'}[e.type||e.kind]||'Deposit')+' in cash — '+who,src:'auto',id:'dep_'+e.id}); };
+  (S.properties||[]).forEach(p=>(p.rooms||[]).forEach(r=>(r.depositLedger||[]).forEach(e=>depAdd(p,(r.tenant&&r.tenant.name)||r.type,e))));
+  (S.pastTenants||[]).filter(t=>t&&t.cashInBook).forEach(t=>{ const p=(S.properties||[]).find(x=>x.id===t.propertyId)||{id:t.propertyId,name:t.propertyName}; (t.depositLedger||[]).forEach(e=>depAdd(p,(t.name||'')+' (left)',e)); });
   rents.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
   const taken={};
   rents.forEach(e=>{
@@ -5021,7 +5071,7 @@ function saveCbSites(){
 
 function sortSitesForCash(keys){ const idx=id=>S.properties.findIndex(p=>p.id===id); return keys.sort((a,b)=>idx(a)-idx(b)); }
 function chCb(d){ const[y,m]=cbMo.split('-').map(Number);const step=cbPer==='3m'?3:cbPer==='6m'?6:cbPer==='fy'?12:1;const dt=new Date(y,m-1+d*step);cbMo=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');renderCashBook(); }
-const CB_KIND={refund:['💸','Security refund','var(--purple)'],rent:['💵','Cash rent','var(--green)'],given:['➕','Cash received','var(--green)'],expense:['🧾','Expense','var(--amber)'],handover:['🤝','To owner','var(--purple)'],returned:['↩️','Returned to KD','var(--blue)'],maint:['🔁','Maintenance charge','var(--blue)'],maintin:['🔁','Maintenance charge','var(--green)']};
+const CB_KIND={deposit:['🔐','Security / advance (cash)','var(--purple)'],refund:['💸','Security refund','var(--purple)'],rent:['💵','Cash rent','var(--green)'],given:['➕','Cash received','var(--green)'],expense:['🧾','Expense','var(--amber)'],handover:['🤝','To owner','var(--purple)'],returned:['↩️','Returned to KD','var(--blue)'],maint:['🔁','Maintenance charge','var(--blue)'],maintin:['🔁','Maintenance charge','var(--green)']};
 // A site is treated as an "owner's account" if it's set that way in ⚙️ Sites OR if cash has ever been handed to its owner.
 function ownerLike(pid){ const p=siteById(pid); if(!p)return false; return isOwnerSite(p)||(S.cash||[]).some(c=>c.type==='handover'&&c.propertyId===pid); }
 function _secKey(e){ return (e.kind==='given'||e.kind==='returned'||e.kind==='maintin')?'_kd':(e.site||'_misc'); }
@@ -7172,7 +7222,7 @@ function openMonthlyReport(month, filterPropId=''){
               <td>${fm(r.rent)}${r.secDue>0?`<div style="font-size:10px;color:var(--amber);font-weight:700;">+ ${fm(r.secDue)} security</div>`:''}</td>
               <td style="font-size:11px;color:var(--muted);">${r.elecOld!=null?r.elecOld+'→'+r.elecNew+' ('+r.elecUnits+'u)':'—'}</td>
               <td style="color:var(--blue);">${r.elec>0?fm(r.elec):'—'}</td>
-              <td style="color:var(--red);font-weight:600;">${r.carryIn>0?fm(r.carryIn):'—'}</td>
+              <td style="color:${r.carryIn<0?'var(--green)':'var(--red)'};font-weight:600;">${r.carryIn>0?fm(r.carryIn):r.carryIn<0?'Credit '+fm(-r.carryIn):'—'}</td>
               <td style="color:var(--purple);">${r.dedAmt>0?'-'+fm(r.dedAmt):'—'}</td>
               <td style="font-weight:700;">${fm(r.total)}</td>
               <td style="color:var(--green);font-weight:600;">${fm(r.paid)}</td>
@@ -7252,8 +7302,12 @@ function buildMonthlyReportData(month, filterPropId=''){
   let moveInRent=0,moveOutDue=0,moveOutCollected=0;
 
   S.properties.filter(p=>!filterPropId||p.id===filterPropId).forEach(p=>{
-    const rooms=sortRooms(p.rooms||[]);
-    totalRooms+=rooms.length;
+    const _pastR=_pastRoomsFor(p,month), _pastIds=new Set(_pastR.map(x=>x._roomId));
+    // a room whose old tenant was still there this month is not "vacant" — the old tenant's copy is billed instead
+    const rooms=sortRooms(p.rooms||[]).map(r=>{ if(!_pastIds.has(r.id))return r;
+      const mi=(r.tenant&&(r.tenant.activeFrom||r.tenant.moveInDate))||(r.lease&&r.lease.startDate)||'';
+      return (isRoomOccupied(r)&&!(mi&&mi.slice(0,7)>month))?r:null; }).filter(Boolean).concat(_pastR);
+    totalRooms+=(p.rooms||[]).length;
     const propRooms=[],propExpenses=[];
     let propRent=0,propElec=0,propDed=0,propDue=0,propPaid=0,propPend=0;
     let vacantCount=0;
@@ -7461,7 +7515,7 @@ async function printMonthlyReport(month, filterPropId='', shareMode=false){
         +'<td style="font-size:11px;text-align:right;font-weight:600;">'+(r.elecNew!=null?r.elecNew:'—')+'</td>'
         +'<td style="font-size:11px;text-align:right;">'+(r.elecRate?'&#8377;'+r.elecRate+'/u':'—')+'</td>'
         +'<td style="color:#3B82F6;font-weight:600;">'+(r.elec>0?'&#8377;'+r.elec.toLocaleString('en-IN'):'—')+'</td>'
-        +'<td style="color:#EF4444;font-weight:600;">'+(r.carryIn>0?'&#8377;'+r.carryIn.toLocaleString('en-IN'):'—')+'</td>'
+        +'<td style="color:'+(r.carryIn<0?'#059669':'#EF4444')+';font-weight:600;">'+(r.carryIn>0?'&#8377;'+r.carryIn.toLocaleString('en-IN'):r.carryIn<0?'Credit &#8377;'+(-r.carryIn).toLocaleString('en-IN'):'—')+'</td>'
         +'<td style="color:#8B5CF6;">'+dedCell+'</td>'
         +'<td style="font-weight:700;font-size:13px;">&#8377;'+r.total.toLocaleString('en-IN')+'</td>'
         +'<td style="color:#10B981;font-weight:600;">&#8377;'+r.paid.toLocaleString('en-IN')+secAdjLine+netRefLine+'</td>'
@@ -8157,6 +8211,7 @@ function confirmVacating(pid,rid){
       refundNote:''
     },
     paymentHistory:[...(r.payments||[])],
+    roomSnap:(()=>{ try{ const c=JSON.parse(JSON.stringify(r)); delete c.docs; delete c.token; if(c.tenant)delete c.tenant.docs; return c; }catch(e){ return null; } })(),
     cashInBook:true,   // this tenant's cash rent stays in the cash book after the room is cleared
     electricityHistory:[...(r.electricityReadings||[])],
     deductionHistory:[...(r.deductions||[])],
@@ -8328,7 +8383,8 @@ function onboardNewTenant(pid,rid){
     <div class="frow"><div><label class="flabel">Payment Date</label>
       <input class="finput" type="date" id="nt_pay_date" value="${today()}"/></div>
     <div><label class="flabel">Payment Mode</label>
-      <select class="fselect" id="nt_pay_mode" onchange="refModeChange('nt_pay_ref',this.value)"><option>Cash</option><option>UPI</option><option>Bank Transfer</option><option>Cheque</option></select></div></div>
+      <select class="fselect" id="nt_pay_mode" onchange="refModeChange('nt_pay_ref',this.value);{const c=document.getElementById('nt_rcvW');if(c)c.style.display=this.value==='Cash'?'block':'none';}"><option>Cash</option><option>UPI</option><option>Bank Transfer</option><option>Cheque</option></select></div></div>
+      <div class="frow1" id="nt_rcvW"><label class="flabel">Cash received by</label><select class="fselect" id="nt_pay_rcv">${['KD Taneja',...staffList()].map(w=>`<option>${w}</option>`).join('')}</select><div style="font-size:11px;color:var(--muted);margin-top:3px;">If ${staffList().join(' / ')} receives it, it's added to their cash in Cash &amp; Exp.</div></div>
     ${refFieldH('nt_pay_ref','Cash')}`,
     `<button class="btn btn-ghost" onclick="closeM();renderRoomDetail();renderDash()">Cancel</button>
      <button class="btn btn-orange" onclick="saveNewTenant('${pid}','${rid}')">Save Pre-booking</button>`);
@@ -8380,8 +8436,10 @@ function saveNewTenant(pid,rid){
   const payMode=document.getElementById('nt_pay_mode').value||'Cash';
   const secPaidNow=Number(document.getElementById('nt_sec_paid').value||0);
   const advPaidNow=Number(document.getElementById('nt_adv_paid').value||0);
-  if(secPaidNow>0)addDepositEntry(r,'security',secPaidNow,payDate,payMode,'Collected at pre-booking',_ntRef?{ref:_ntRef}:null);
-  if(advPaidNow>0)addDepositEntry(r,'advance',advPaidNow,payDate,payMode,'Collected at pre-booking',_ntRef?{ref:_ntRef}:null);
+  const _ntRcv=payMode==='Cash'?((document.getElementById('nt_pay_rcv')||{}).value||''):'';
+  const _ntX=Object.assign({},_ntRef?{ref:_ntRef}:{},_ntRcv?{receivedBy:_ntRcv,inCash:staffList().includes(_ntRcv)}:{});
+  if(secPaidNow>0)addDepositEntry(r,'security',secPaidNow,payDate,payMode,'Collected at pre-booking',_ntX);
+  if(advPaidNow>0)addDepositEntry(r,'advance',advPaidNow,payDate,payMode,'Collected at pre-booking',_ntX);
   if(tokenAmt>0&&!depositLedgerTotal(r,'token'))addDepositEntry(r,'token',tokenAmt,(r.token&&r.token.tokenDate)||today(),'Cash','Token amount');
   syncBalancesFromLedger(r);
   sched();closeM();renderRoomDetail();renderDash();
