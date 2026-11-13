@@ -715,7 +715,7 @@ function mk(d){const dt=d||new Date();return dt.getFullYear()+'-'+String(dt.getM
 function ml(k){if(!k)return'—';const[y,m]=k.split('-');return new Date(y,m-1).toLocaleString('en-IN',{month:'long',year:'numeric'});}
 function fd(s){if(!s)return'—';return new Date(s).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});}
 function fm(n){return'₹'+Number(n||0).toLocaleString('en-IN');}
-function today(){return new Date().toISOString().split('T')[0];}
+function today(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}   // phone's local date (India time) — was UTC, which gave yesterday's date between 12:00 and 5:30 AM
 function dl(s){if(!s)return null;return Math.ceil((new Date(s)-new Date())/86400000);}
 function sameOrBeforeToday(s){return !!s&&s<=today();}
 function tenantIsActive(t){const d=(t&& (t.activeFrom||t.moveInDate))||'';return !!(t&&t.name&&sameOrBeforeToday(d||today()));}
@@ -1128,6 +1128,7 @@ async function loadData(){
           dataLoadedFromFirebase = true;
           // Cache a deep copy as our safety net
           lastKnownFirebaseData = JSON.parse(JSON.stringify(S));
+          _saveBase();
         }
       }
     }
@@ -1141,6 +1142,9 @@ async function loadData(){
         const parsed=JSON.parse(backup);
         if(parsed){
           S={...S,...parsed};
+          // Remember what the server had when this phone last synced, so anything typed while offline
+          // can be merged in (not thrown away) when the connection returns.
+          try{ const b=localStorage.getItem('rentdesk_base'); window._offlineBase=b?JSON.parse(b):JSON.parse(JSON.stringify(parsed)); }catch(e){ window._offlineBase=JSON.parse(JSON.stringify(parsed)); }
           const mins=Math.round((Date.now()-Number(backupTime))/60000);
           toast('⚠️ Loaded local backup ('+mins+'m ago) — check connection',5000);
         }
@@ -1197,51 +1201,7 @@ async function loadData(){
   syncDueBookings();
   renderTab();
   setTimeout(maybePromptExpiredLeases,700);
-  // Safe poll — only syncs if no local edits in last 30s
-  setInterval(async()=>{
-    if(saveT||_saving)return;
-    if(window._lastEdit&&Date.now()-window._lastEdit<30000)return;
-    { const ae=document.activeElement, mcEl=document.getElementById('mc'); if(ae&&/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)&&mcEl&&mcEl.contains(ae))return; }  // don't refresh while typing
-    try{
-      const r=await fetch(FB_URL);
-      if(r.ok){
-        const d=await r.json();
-        if((d.fields&&d.fields.data)){
-          const remote=JSON.parse(d.fields.data.stringValue);
-          if(!remote)return;
-          // Only accept if remote has at least as much data
-          // Count ALL major data arrays — not just properties/expenses/cash.
-          // This ensures leases and pastTenants can't be silently wiped
-          // by a poll that only checks three of the six data stores.
-          const lc=((S.properties&&S.properties.length)||0)
-                  +((S.expenses&&S.expenses.length)||0)
-                  +((S.cash&&S.cash.length)||0)
-                  +((S.leases&&S.leases.length)||0)
-                  +((S.pastTenants&&S.pastTenants.length)||0);
-          const rc=((remote.properties&&remote.properties.length)||0)
-                  +((remote.expenses&&remote.expenses.length)||0)
-                  +((remote.cash&&remote.cash.length)||0)
-                  +((remote.leases&&remote.leases.length)||0)
-                  +((remote.pastTenants&&remote.pastTenants.length)||0);
-          if(rc>=lc){
-            S={...S,...remote};
-            if(!S.properties)S.properties=[];
-            if(!S.expenses)S.expenses=[];
-            if(!S.cash)S.cash=[];
-            if(!S.tasks)S.tasks=[];
-            if(!S.reminders)S.reminders=[];
-            if(!S.leases)S.leases=[];
-            if(!S.pastTenants)S.pastTenants=[];
-            // Update safety flag and cache since this is a confirmed pull
-            remoteUpdateTime=d.updateTime||remoteUpdateTime;
-            dataLoadedFromFirebase=true;
-            lastKnownFirebaseData=JSON.parse(JSON.stringify(S));
-            renderTab();
-          }
-        }
-      }
-    }catch(e){}
-  },20000);
+  startPoll();   // background refresh (see POLL below)
 }
 function setSaveIndicator(state){
   const el=document.getElementById('saveIndicator');
@@ -1284,6 +1244,64 @@ function mergeState3(b,l,r){
   return l===undefined?r:l;                 // both changed the same single value — this phone's edit wins
 }
 let _saving=false;
+function _saveBase(){ try{ localStorage.setItem('rentdesk_base',JSON.stringify(lastKnownFirebaseData)); }catch(e){ try{ localStorage.removeItem('rentdesk_base'); }catch(e2){} } }
+/* Back online after an offline start: merge server + this phone (base = what the server had at the last sync). */
+async function _reconnect(){
+  try{
+    const r=await fetch(FB_URL,{cache:'no-store'}); if(!r.ok)return false;
+    const d=await r.json(); const remote=(d.fields&&d.fields.data)?JSON.parse(d.fields.data.stringValue):null; if(!remote)return false;
+    // base = server copy at this phone's last sync. With no saved copy at all (fresh phone, no internet) use an empty
+    // base, so nothing on the server is treated as 'deleted here' — server entries and offline entries are both kept.
+    const base=window._offlineBase||{};
+    const local=JSON.parse(JSON.stringify(S));
+    S=mergeState3(base,local,remote);
+    ['properties','expenses','cash','tasks','reminders','attendance','leases','pastTenants','activityLog'].forEach(k=>{ if(!S[k])S[k]=[]; });
+    remoteUpdateTime=d.updateTime||null; lastKnownFirebaseData=JSON.parse(JSON.stringify(remote)); _saveBase();
+    dataLoadedFromFirebase=true; window._offlineBase=null;
+    if(!_jeq(S,remote)){ toast('✅ Back online — entries made offline are being saved',4000); sched(); }
+    try{ renderTab(); }catch(e){}
+    return true;
+  }catch(e){ return false; }
+}
+/* ── POLL: pick up other phones' changes ──
+   Only while the app is on screen, every 30 s (and straight away when it comes back on screen).
+   First asks the server only for the save time (tiny download); the full data comes down only if it changed.
+   Skips while anything is being typed or a pop-up form is open, so an open form never works on stale data. */
+let _pollT=null,_polling=false;
+function startPoll(){
+  if(_pollT)return;   // one timer only, however many times you sign in
+  _pollT=setInterval(pollOnce,30000);
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible')pollOnce(); });
+}
+async function pollOnce(){
+  if(_polling||!user)return;
+  if(document.visibilityState&&document.visibilityState!=='visible')return;
+  if(saveT||_saving)return;
+  if(window._lastEdit&&Date.now()-window._lastEdit<30000)return;
+  const ae=document.activeElement; if(ae&&/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName))return;   // typing anywhere
+  const ov=document.getElementById('ov'); if(ov&&ov.classList.contains('open'))return;              // a pop-up form is open
+  _polling=true;
+  try{
+    if(!dataLoadedFromFirebase){ await _reconnect(); return; }
+    try{ const h=await fetch(FB_URL+'&mask.fieldPaths=_t',{cache:'no-store'}); if(h.ok){ const j=await h.json(); if(j.updateTime&&j.updateTime===remoteUpdateTime)return; } }catch(e){}
+    const r=await fetch(FB_URL,{cache:'no-store'});
+    if(!r.ok)return;
+    const d=await r.json();
+    if(!(d.fields&&d.fields.data))return;
+    if(saveT||_saving||(window._lastEdit&&Date.now()-window._lastEdit<30000))return;   // an edit started while downloading
+    if(ov&&ov.classList.contains('open'))return;
+    const remote=JSON.parse(d.fields.data.stringValue); if(!remote)return;
+    // Only accept if remote has at least as much data (guards against a bad/empty copy wiping this phone)
+    const cnt=x=>['properties','expenses','cash','leases','pastTenants'].reduce((a,k)=>a+((x[k]&&x[k].length)||0),0);
+    if(cnt(remote)<cnt(S))return;
+    S={...S,...remote};
+    ['properties','expenses','cash','tasks','reminders','leases','pastTenants'].forEach(k=>{ if(!S[k])S[k]=[]; });
+    remoteUpdateTime=d.updateTime||remoteUpdateTime;
+    lastKnownFirebaseData=JSON.parse(JSON.stringify(S)); _saveBase();
+    renderTab();
+  }catch(e){}
+  finally{ _polling=false; }
+}
 async function _pushState(){
   const pre=remoteUpdateTime?'&currentDocument.updateTime='+encodeURIComponent(remoteUpdateTime):'';
   return fetch(FB_URL+'&updateMask.fieldPaths=data'+pre,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:{data:{stringValue:JSON.stringify(S)}}})});
@@ -1294,6 +1312,7 @@ async function _safePush(){
     if(r.ok){
       try{const j=await r.json();remoteUpdateTime=j.updateTime||remoteUpdateTime;}catch(e){}
       lastKnownFirebaseData=JSON.parse(JSON.stringify(S));
+      _saveBase();
       return true;
     }
     if(r.status!==400&&r.status!==409&&r.status!==412)return false;
@@ -1322,36 +1341,10 @@ async function save(){
   // from Firebase in this session. If not, we protect Firebase by 
   // refusing the push — the local backup above keeps data safe locally.
   if(!dataLoadedFromFirebase){
-    console.warn('SAFETY: Firebase push blocked — data not yet confirmed from Firebase this session. Local backup saved.');
-    setSaveIndicator('error');
-    // Try to load from Firebase one more time before giving up
-    try{
-      const r=await fetch(FB_URL);
-      if(r.ok){
-        const d=await r.json();
-        if(d.fields&&d.fields.data){
-          const parsed=JSON.parse(d.fields.data.stringValue);
-          if(parsed){
-            // Safely merge without losing local data
-            const merged={...S};
-            for(const key of Object.keys(parsed)){
-              if(Array.isArray(parsed[key])){
-                if(parsed[key].length>0||!merged[key]||merged[key].length===0) merged[key]=parsed[key];
-              } else { merged[key]=parsed[key]; }
-            }
-            S=merged;
-            dataLoadedFromFirebase=true;
-            remoteUpdateTime=d.updateTime||null;
-            lastKnownFirebaseData=JSON.parse(JSON.stringify(S));
-            // Now safe to push
-            const r2=await fetch(FB_URL+'&updateMask.fieldPaths=data',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:{data:{stringValue:JSON.stringify(S)}}})});
-            if(r2.ok){setSaveIndicator('saved');try{const j2=await r2.json();remoteUpdateTime=j2.updateTime||remoteUpdateTime;}catch(e){}}
-            else{setSaveIndicator('error');}
-          }
-        }
-      }
-    }catch(e2){console.warn('SAFETY recovery fetch failed:',e2);}
-    return;
+    // Started without the server (weak internet). Fetch the server copy and MERGE this phone's entries into it
+    // (3-way merge, same as two phones saving) — nothing typed offline is thrown away.
+    const ok=await _reconnect();
+    if(!ok){ setSaveIndicator('error'); setTimeout(()=>{if(!saveT)sched();},15000); return; }
   }
 
   // Normal save path — data confirmed from Firebase. Saved with a version check and merged if needed.
@@ -4954,12 +4947,24 @@ function cashBookEntries(staff){
   (S.expenses||[]).filter(e=>e.paidBy===staff&&!e.fromCash).forEach(e=>{
     out.push({kind:'expense',fund:fundOfSite(e.propertyId),dir:-1,date:e.date||'',amount:_expAmt(e),site:e.propertyId||'',siteName:_pName(e.propertyId),text:(e.items||[]).map(i=>i.desc).join(', ')||'Expense',src:'exp',id:e.id,raw:e});
   });
-  const rents=[];
+  const rents=[], seen=new Set();
   (S.properties||[]).forEach(p=>(p.rooms||[]).forEach(r=>(r.payments||[]).forEach(py=>{
     if(py.mode!=='Cash'||py.receivedBy!==staff)return;
+    seen.add(py.id);
     rents.push({kind:'rent',fund:isOwnerSite(p)?p.id:'kd',dir:1,date:py.date||((py.month||'')+'-01'),amount:Number(py.amount||0),site:p.id,siteName:p.name,
       text:'Cash rent — '+((r.tenant&&r.tenant.name)||r.type)+' ('+r.type+(r.unitNo?' #'+r.unitNo:'')+') for '+ml(py.month),src:'pay',id:py.id,pid:p.id,rid:r.id});
   })));
+  // Tenants who vacate after Nov 2026 keep their cash rent in the cash book (it used to vanish when the room was cleared).
+  // Only records marked cashInBook — tenants who left earlier were already reconciled by hand and are not touched.
+  (S.pastTenants||[]).filter(t=>t&&t.cashInBook).forEach(t=>{
+    const p=(S.properties||[]).find(x=>x.id===t.propertyId)||{id:t.propertyId,name:t.propertyName};
+    (t.paymentHistory||[]).forEach(py=>{
+      if(!py||py.mode!=='Cash'||py.receivedBy!==staff||seen.has(py.id))return;
+      seen.add(py.id);
+      rents.push({kind:'rent',fund:isOwnerSite(p)?p.id:'kd',dir:1,date:py.date||((py.month||'')+'-01'),amount:Number(py.amount||0),site:p.id,siteName:p.name||t.propertyName||'',
+        text:'Cash rent — '+(t.name||t.roomType)+' ('+(t.roomType||'')+(t.unitNo?' #'+t.unitNo:'')+', vacated) for '+ml(py.month),src:'pastpay',id:py.id,pid:p.id,pastId:t.id});
+    });
+  });
   rents.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
   const taken={};
   rents.forEach(e=>{
@@ -5366,6 +5371,7 @@ function printCashBook(){
 
 function cbRowActions(e){
   if(e.src==='refund')return e.raw&&e.raw.pastId?`<button class="btn btn-ghost btn-xs" title="Open refund" onclick="openRefundForm('${e.raw.pastId}')">🧾</button>`:'';
+  if(e.src==='pastpay'||e.src==='auto')return'';   // vacated tenant's rent / automatic lines — not edited here
   if(e.src==='pay')return`<button class="btn btn-ghost btn-xs" title="Change who received" onclick="openPayReceiver('${e.pid}','${e.rid}','${e.id}')">👤</button>`;
   if(e.src==='exp')return`<button class="btn btn-ghost btn-xs" onclick="editExp('${e.id}')">✏️</button>${isAdmin?`<button class="btn btn-red btn-xs" onclick="delExp('${e.id}')">🗑</button>`:''}`;
   return`<button class="btn btn-ghost btn-xs" onclick="openCbAdd('${e.id}')">✏️</button>${isAdmin||e.raw.by===user?`<button class="btn btn-red btn-xs" onclick="delCbEntry('${e.id}')">🗑</button>`:''}`;
@@ -5442,7 +5448,9 @@ function saveCbEntry(){
   if(!S.cash)S.cash=[]; if(!S.expenses)S.expenses=[];
   const k=_cbKind;
   if(_cbEdit){
-    const x=_cbEdit; x.date=date; x.amount=amt; x.note=note;
+    const x=(S.cash||[]).find(c=>c.id===_cbEdit.id);   // the live record (data may have refreshed while the form was open)
+    if(!x){ toast('⚠️ This entry was deleted on another phone — nothing saved'); closeM(); renderTab(); return; }
+    x.date=date; x.amount=amt; x.note=note;
     if(document.getElementById('cbP')){ x.propertyId=v('cbP'); x.propertyLabel=_pName(x.propertyId)||'Other / General'; }
     if(document.getElementById('cbS')) x.staff=v('cbS');
     if(document.getElementById('cbSrc')) x.source=v('cbSrc');
@@ -6632,7 +6640,7 @@ function getDistanceMetres(lat1, lng1, lat2, lng2){
   return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
 
-function todayDate(){return new Date().toISOString().split('T')[0];}
+function todayDate(){return today();}
 function nowTime(){return new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});}
 function nowISO(){return new Date().toISOString();}
 
@@ -7919,6 +7927,9 @@ function startVacating(pid,rid){
       <div><label class="flabel">Payment Mode</label>
         <select class="fselect" id="vs_mode"><option>Cash</option><option>UPI</option><option>Bank Transfer</option><option>Cheque</option></select></div>
     </div>
+    <div class="frow1"><label class="flabel">Money paid today received by</label>
+      <select class="fselect" id="vs_by">${['KD Taneja',...staffList()].map(w=>`<option>${w}</option>`).join('')}</select>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px;">If ${staffList().join(' / ')} receives it, it's added to their cash in Cash &amp; Exp automatically.</div></div>
 
     <div id="vs_result" style="background:#F9FAFB;border:1.5px solid var(--border);border-radius:8px;padding:14px;margin:12px 0;font-size:13px;">
       <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
@@ -8047,6 +8058,7 @@ function confirmVacating(pid,rid){
   const secAdj=Number(document.getElementById('vs_secadj').value||0);
   const cashPaid=Number(document.getElementById('vs_cashpaid').value||0);
   const payMode=document.getElementById('vs_mode').value;
+  const paidTo=(document.getElementById('vs_by')||{}).value||'KD Taneja';
   const totalDed=dues+clean+damage+other;
   const netRefund=sec-totalDed+cashPaid; // positive=we owe tenant, negative=tenant owes us
   const reason=document.getElementById('vs_reason').value;
@@ -8103,6 +8115,7 @@ function confirmVacating(pid,rid){
       totalDeductions:totalDed,
       securityAdjusted:secAdj,
       cashPaidOnDay:cashPaid,
+      cashPaidTo:paidTo,
       paymentMode:payMode,
       netRefund,
       balanceStatus:netRefund>0?'refund_pending':netRefund<0?'payment_pending':'settled',
@@ -8111,6 +8124,7 @@ function confirmVacating(pid,rid){
       refundNote:''
     },
     paymentHistory:[...(r.payments||[])],
+    cashInBook:true,   // this tenant's cash rent stays in the cash book after the room is cleared
     electricityHistory:[...(r.electricityReadings||[])],
     deductionHistory:[...(r.deductions||[])],
     notes:note,
@@ -8129,6 +8143,15 @@ function confirmVacating(pid,rid){
   );
   if(dupIdx>=0)S.pastTenants[dupIdx]={...S.pastTenants[dupIdx],...pastRecord,id:S.pastTenants[dupIdx].id||pastRecord.id};
   else S.pastTenants.push(pastRecord);
+  // Money handed over on the vacating day goes into that staff member's cash (KD = not part of staff cash)
+  if(cashPaid>0&&staffList().includes(paidTo)){
+    const pastId=dupIdx>=0?S.pastTenants[dupIdx].id:pastRecord.id;
+    if(!S.cash)S.cash=[];
+    if(!S.cash.some(c=>c.pastId===pastId&&c.vacateDay)){
+      S.cash.push({id:uid(),type:'tenantpay',staff:paidTo,date:vDate,amount:cashPaid,propertyId:pid,propertyLabel:p.name,
+        note:'Paid on vacating day — '+(pastRecord.name||'tenant')+' ('+payMode+')',by:user,pastId,vacateDay:true});
+    }
+  }
 
   // Close this tenant's lease so it doesn't keep showing as "expired / urgent" after they've left.
   // Matched by room + tenant name so a lease already made for an incoming pre-booked tenant is untouched.
@@ -9814,7 +9837,7 @@ async function _migrateInlineStamps(){ // older leases kept the image inside the
     }
   }
 }
-function dataSizeKB(){ try{ return Math.round(JSON.stringify(S).length/1024); }catch(e){ return 0; } }
+function dataSizeKB(){ try{ return Math.round(new Blob([JSON.stringify(S)]).size/1024); }catch(e){ return 0; } }   // bytes, not characters: ₹, emoji and Hindi take 3–4 bytes each
 function dataSizeCardH(){
   const kb=dataSizeKB(), pct=Math.min(100,Math.round(kb/1000*100));
   const col=pct>=90?'var(--red)':pct>=70?'var(--orange)':'var(--green)';
