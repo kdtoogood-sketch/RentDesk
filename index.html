@@ -5031,7 +5031,7 @@ function cashBookEntries(staff){
     out.push(e);
     const p=siteById(e.site); if(!isOwnerSite(p))return;
     const charge=Number(p.maintCharge||0); if(!charge)return;
-    if(p.maintFrom&&(e.date||'')<p.maintFrom+'-01')return;   // auto fee only from the month it was switched on
+    if((e.date||'')<(p.maintFrom||'2026-11')+'-01')return;   // auto fee only from the month it was switched on (set before 'from' existed = Nov 2026)
     const key=e.site+'|'+(e.date||'').slice(0,7);
     const t=Math.min(charge-(taken[key]||0),e.amount); if(t<=0)return;
     taken[key]=(taken[key]||0)+t;
@@ -5061,7 +5061,7 @@ function openCbSites(){
       <strong style="flex:1;min-width:90px;">${p.name}</strong>
       <select class="fselect" style="width:auto;" id="cm_${p.id}" onchange="document.getElementById('mcw_${p.id}').style.display=this.value==='owner'?'flex':'none'">
         <option value="kd" ${!isOwnerSite(p)?'selected':''}>Cash is KD's</option><option value="owner" ${isOwnerSite(p)?'selected':''}>Cash goes to owner</option></select>
-      <span id="mcw_${p.id}" style="display:${isOwnerSite(p)?'flex':'none'};align-items:center;gap:6px;font-size:12px;">Auto maintenance ₹<input class="finput" type="number" style="width:90px;" id="mc_${p.id}" value="${p.maintCharge||''}" placeholder="blank = manual"/>/month from <input class="finput" type="month" style="width:140px;" id="mf_${p.id}" value="${p.maintFrom||mk()}"/></span></div>`).join('')}
+      <span id="mcw_${p.id}" style="display:${isOwnerSite(p)?'flex':'none'};align-items:center;gap:6px;font-size:12px;">Auto maintenance ₹<input class="finput" type="number" style="width:90px;" id="mc_${p.id}" value="${p.maintCharge||''}" placeholder="blank = manual"/>/month from <input class="finput" type="month" style="width:140px;" id="mf_${p.id}" value="${p.maintFrom||'2026-11'}"/></span></div>`).join('')}
     <div style="font-size:11px;color:var(--muted);margin-top:10px;">Leave "Auto maintenance" blank to enter your share yourself (nothing moves automatically). If you fill it, that amount moves to KD's account automatically from the first cash collected each month, starting from the month you pick (earlier months are not touched).</div>`,
     `<button class="btn btn-ghost" onclick="closeM()">Cancel</button><button class="btn btn-orange" onclick="saveCbSites()">Save</button>`);
 }
