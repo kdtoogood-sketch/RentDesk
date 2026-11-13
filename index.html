@@ -1754,7 +1754,7 @@ function renderPropDetail(){
   const mc=document.getElementById('mc'),rooms=sortRooms(p.rooms||[]),occ=rooms.filter(r=>isRoomOccupied(r)).length,cm=mk();
   const curMain=(p.mainMeter||[]).find(x=>x.month===cm);
   mc.innerHTML=`
-  ${_dashBack&&!vRoom?`<button class="back" onclick="dashBack()">← Dashboard</button>`:`<button class="back" onclick="backProps()">← Properties</button>`}
+  ${_dashBack&&!vRoom?`<button class="back" onclick="dashBack()">← ${_backLabel()}</button>`:`<button class="back" onclick="backProps()">← Properties</button>`}
   <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;">
     <div><div style="font-family:'Space Grotesk';font-size:20px;font-weight:700;">${p.name}</div><div style="font-size:12px;color:var(--muted);">${p.address||''}${p.electricityRate?' · ₹'+p.electricityRate+'/unit':''}</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">👤 Lease owner: <strong style="color:var(--ink2);">${(p.lessor&&p.lessor.name)||DEFAULT_LESSOR.name}</strong>${p.lessor&&p.lessor.name?'':' (default)'} · <a href="#" onclick="editProp('${p.id}');return false;" style="color:var(--orange);">change</a></div></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-ghost btn-sm" onclick="editProp('${p.id}')">✏️ Edit</button><button class="btn btn-sm" style="background:#DCFCE7;color:#15803D;" onclick="openGroupMsg('${p.id}')">📢 Group message</button>${p.noMainMeter?`<button class="btn btn-ghost btn-sm" onclick="toggleNoMainMeter('${p.id}')">⚡ Turn on main meter</button>`:`<button class="btn btn-blue btn-sm" onclick="openMainMeter('${p.id}')">⚡ Main Meter</button><button class="btn btn-ghost btn-sm" title="This site has no main meter" onclick="toggleNoMainMeter('${p.id}')">🚫 No meter</button>`}<button class="btn btn-orange btn-sm" onclick="openAddRoom('${p.id}')">+ Add Unit</button></div>
@@ -2898,6 +2898,8 @@ let _dashBack=null;
 function _scrollEl(){ const mc=document.getElementById('mc'); return (mc&&mc.scrollHeight>mc.clientHeight+4&&getComputedStyle(mc).overflowY!=='visible')?mc:document.scrollingElement||document.documentElement; }
 function dashOpenRoom(pid,rid){ const back={tab:curTab,y:_scrollEl().scrollTop}; vProp=pid;vRoom=rid;_dashBack=back; renderRoomDetail(); _scrollEl().scrollTop=0; }
 function dashOpenProp(pid){ const back={tab:curTab,y:_scrollEl().scrollTop}; vRoom=null;vProp=pid;_dashBack=back; renderPropDetail(); _scrollEl().scrollTop=0; }
+const _BACK_NAME={dash:'Dashboard',billing:'Billing',cash:'Cash & Exp',expenses:'Expenses',owners:'Owners',lease:'Lease',past:'Past Tenants',reminders:'Reminders',planner:'Planner',attendance:'Attendance',settings:'Settings',props:'Properties'};
+function _backLabel(){ return _BACK_NAME[(_dashBack&&_dashBack.tab)||'dash']||'Back'; }
 function dashBack(){ const b=_dashBack; _dashBack=null; vProp=null;vRoom=null; curTab=(b&&b.tab)||'dash'; renderTab(); if(b)setTimeout(()=>{ _scrollEl().scrollTop=b.y||0; },0); }
 // a lease deed → the tenant's room (by room link, else same site + same name); null if the tenant has no room
 function _leaseRoomRef(id){
@@ -2967,7 +2969,7 @@ function renderRoomDetail(){
       :`<div style="text-align:center;padding:16px;color:var(--muted);">No tenant</div>`;
 
   mc.innerHTML=`
-  ${_dashBack?`<button class="back" onclick="dashBack()">← Dashboard</button>`:`<button class="back" onclick="backProp()">← ${p.name}</button>`}
+  ${_dashBack?`<button class="back" onclick="dashBack()">← ${_backLabel()}</button>`:`<button class="back" onclick="backProp()">← ${p.name}</button>`}
   <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
     <div><div style="font-family:'Space Grotesk';font-size:20px;font-weight:700;">${r.type}${r.unitNo?' — #'+r.unitNo:''}</div><div style="font-size:12px;color:var(--muted);">${p.name}</div></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -4297,7 +4299,7 @@ function renderBilling(){
       cLive.push({kind:'live',p,r,elec,paid,bal,dedTotal,rentAmt,isProrated,secAdvDue,secOnlyPending,total,pend,monthDepositsTotal});
       return`<tr${r._past?' style="background:#F8FAFC;"':''}>
         <td><strong>${r.type}${r.unitNo?' #'+r.unitNo:''}</strong>${r._past?`<br/><span style="font-size:10px;color:var(--muted);font-weight:700;">LEFT ${fd(r._past.vacatingDate)}</span>`:''}</td>
-        <td>${r.tenant.name}<br/><span style="font-size:11px;color:var(--muted)">${r.tenant.phone||''}</span></td>
+        <td><a href="#" onclick="dashOpenRoom('${p.id}','${r.id}');return false;" style="color:var(--ink);font-weight:700;text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:3px;">${_escHtml(r.tenant.name)}</a><br/><span style="font-size:11px;color:var(--muted)">${r.tenant.phone||''}</span></td>
         <td style="font-weight:600">${fm(rentAmt)}${isProrated?`<div style="font-size:10px;color:var(--blue);font-weight:400;">pro-rata</div>`:''}${secOnlyPending>0?`<div style="font-size:10px;color:var(--amber);font-weight:600;">+ ${fm(secOnlyPending)} security</div>`:''}</td>
         <td style="font-size:11px;">
           ${secAdvDue?`<div style="background:${secAdvDue.pending>0?'#FEF3C7':'#F0FDF4'};border-radius:6px;padding:5px 7px;margin-bottom:5px;">
@@ -4567,9 +4569,10 @@ function openBillSheet(pid,rid,mo){
     B('btn-ghost',ded?'➖ Deductions':'➖ Deduction',ded?`openManageDeductions(${args})`:`openDeduction(${args})`),
     B('btn-ghost','💬 WhatsApp',`openWaMenu('${pid}','${rid}')`),
     B('btn-ghost','🧾 Receipt',`openReceipt('${pid}','${rid}')`),
-    B('btn-ghost','🏠 Room',`goRoom('${pid}','${rid}')`)].join('');
+    B('btn-ghost','👤 Tenant page',`closeM();dashOpenRoom('${pid}','${rid}')`)].join('');
   openM((t.name||'Tenant')+' — '+ml(mo),`
-    <div style="font-size:12px;color:var(--muted);margin:-6px 0 10px;">${_escHtml(p.name)} · ${_escHtml(unit)}</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin:-6px 0 10px;"><div style="font-size:12px;color:var(--muted);">${_escHtml(p.name)} · ${_escHtml(unit)}</div>
+      <button class="btn btn-ghost btn-xs" style="white-space:nowrap;font-weight:700;" onclick="closeM();dashOpenRoom('${pid}','${rid}')">👤 Open tenant page ›</button></div>
     <div class="ms-info">${info.map(x=>'<span style="white-space:nowrap;">'+x+'</span>').join(' · ')}<br/>${flags.map(x=>'<span style="white-space:nowrap;">'+x+'</span>').join(' · ')}</div>
     <div class="ms-sec"><div class="ms-st">Bill</div>${bill}</div>
     <div class="ms-sec"><div class="ms-st">Payments</div>${pays||'<div style="font-size:12.5px;color:var(--muted);padding:4px 0;">No payment yet this month</div>'}</div>
