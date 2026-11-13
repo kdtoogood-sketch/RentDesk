@@ -204,12 +204,12 @@ button{cursor:pointer;}
 .tbl tr.row-draft td{background:#EFF6FF;}
 .lease-status-closed{background:#F3F4F6;color:var(--muted);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;}
 @keyframes urgentPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.55);}50%{box-shadow:0 0 0 6px rgba(239,68,68,0);}}
-.urgent-card{background:#FEF2F2;border:2px solid var(--red);border-radius:var(--r);margin-bottom:16px;overflow:hidden;box-shadow:0 4px 18px rgba(239,68,68,.15);}
-.urgent-head{background:var(--red);color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;font-family:'Space Grotesk';font-weight:700;font-size:14px;}
-.soon-card{background:#FFFBEB;border:1.5px solid var(--amber);border-radius:var(--r);margin-bottom:16px;overflow:hidden;}
-.soon-head{background:var(--amber);color:#fff;padding:10px 16px;font-family:'Space Grotesk';font-weight:700;font-size:13px;}
+.urgent-card{background:#fff;border:1px solid #FECACA;border-left:4px solid var(--red);border-radius:14px;margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow);}
+.urgent-head{background:#fff;color:#B91C1C;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;font-family:'Space Grotesk';font-weight:700;font-size:14px;}
+.soon-card{background:#fff;border:1px solid #FDE68A;border-left:4px solid var(--amber);border-radius:14px;margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow);}
+.soon-head{background:#fff;color:#92400E;padding:11px 14px;font-family:'Space Grotesk';font-weight:700;font-size:13.5px;}
 .tap-row{cursor:pointer;transition:background .12s}.tap-row:hover{background:rgba(15,23,42,.035)}.tap-row:active{background:rgba(15,23,42,.06)}.tap-hint{color:var(--muted);font-weight:700;margin-left:4px;font-size:13px}
-.urgent-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid rgba(239,68,68,.18);flex-wrap:wrap;}
+.urgent-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 14px;border-bottom:1px solid #F0F1F3;flex-wrap:wrap;}
 .urgent-row:last-child{border-bottom:none;}
 /* dashboard: every box folds, lists inside are grouped by site */
 .df-head{cursor:pointer;user-select:none;-webkit-user-select:none;display:flex;align-items:center;gap:8px;}
@@ -217,9 +217,9 @@ button{cursor:pointer;}
 .df-chev{flex:none;font-size:12px;line-height:1;transition:transform .15s;transform:rotate(-90deg);opacity:.85;}
 [data-fold].df-open>.df-head>.df-chev{transform:none;}
 [data-fold]:not(.df-open)>.df-body{display:none;}
-.df-site{border-bottom:1px solid rgba(0,0,0,.08);}
+.df-site{border-top:1px solid #F0F1F3;}
 .df-site:last-child{border-bottom:none;}
-.df-site-head{padding:10px 16px;background:rgba(0,0,0,.035);font-size:13.5px;font-weight:800;color:var(--ink);}
+.df-site-head{padding:10px 14px;background:#F7F8FA;font-size:13.5px;font-weight:800;color:var(--ink);}
 .df-site.df-open>.df-site-head{background:rgba(0,0,0,.06);}
 .df-count{display:inline-block;min-width:20px;padding:1px 7px;margin-left:6px;border-radius:10px;background:var(--ink);color:#fff;font-size:11px;text-align:center;}
 .df-sum{display:block;font-size:11.5px;font-weight:600;color:var(--ink2);margin-top:2px;}
@@ -377,7 +377,7 @@ button{cursor:pointer;}
 .bc-tot{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;padding-top:6px;border-top:1px dashed var(--border);}
 .bc-extra{font-size:12px;line-height:1.6;}
 .bc-pays{display:flex;flex-direction:column;gap:4px;}
-.bc-pay{display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;font-size:11.5px;color:var(--ink2);background:var(--bg);border-radius:6px;padding:4px 8px;}
+.bc-pay{display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px;color:var(--ink2);background:#F7F8FA;border-radius:10px;padding:6px 10px;}
 .bc-tick{border:1px solid var(--border);background:#fff;border-radius:14px;padding:2px 8px;font-size:11px;font-weight:700;cursor:pointer;color:var(--muted);}
 .bc-tick.on{background:var(--green-dim);color:var(--green);border-color:rgba(16,185,129,.35);}
 .bc-ok{color:var(--green);font-weight:700;}.bc-bad{color:var(--red);font-weight:700;}.bc-wait{color:var(--blue);font-weight:700;}
@@ -390,6 +390,99 @@ button{cursor:pointer;}
 .ms-hist{display:flex;gap:6px;}.ms-hm{flex:1;text-align:center;border-radius:9px;padding:6px 2px;font-size:11.5px;font-weight:700;}.ms-hm div{font-size:10.5px;font-weight:600;color:var(--muted);}
 .act-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px;width:100%;}.act-grid .btn{width:100%;justify-content:center;text-align:center;white-space:nowrap;margin:0;}
 @media(min-width:900px){.act-grid{width:auto;grid-template-columns:repeat(5,minmax(112px,auto));}}
+.sg3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:7px;}.sg3>div{background:#F9FAFB;border-radius:10px;padding:6px 8px;min-width:0;}.sg3 small{display:block;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;}.sg3 b{font-size:13.5px;white-space:nowrap;}.sg3 em{display:block;font-style:normal;font-size:10px;color:var(--green);font-weight:700;}
+.sgbar{height:5px;background:#F3F4F6;border-radius:9px;margin-top:7px;overflow:hidden;}.sgbar div{height:100%;background:var(--green);border-radius:9px;}
+.dft-tabs{display:flex;gap:6px;flex-wrap:wrap;padding:2px 14px 10px;}
+.dft-tab{border:none;border-radius:20px;padding:5px 12px;background:#F3F4F6;color:var(--ink2);font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;}
+.dft-tab i{font-style:normal;opacity:.65;margin-left:5px;}
+.dft-tab.on{background:var(--ink);color:#fff;}
+.dft-pane{display:none;border-top:1px solid #F0F1F3;}.dft-pane.on{display:block;}
+.dft-extra{display:none;}.dft-pane.all .dft-extra{display:block;}
+.dft-more{display:block;width:100%;border:none;border-top:1px solid #F0F1F3;background:#fff;color:var(--orange2);font-family:inherit;font-weight:700;font-size:12.5px;padding:10px;cursor:pointer;}
+.dfh{display:flex;align-items:center;gap:10px;}
+.dfh-ic{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex:none;}
+.dfh-t{min-width:0;flex:1;}.dfh-t b{display:block;font-size:14.5px;}.dfh-t small{display:block;font-family:Inter,system-ui,sans-serif;font-size:11.5px;font-weight:500;color:var(--muted);margin-top:1px;}
+.dfh-n{font-weight:800;font-size:12.5px;border-radius:20px;padding:3px 10px;flex:none;}
+.ar{display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border-bottom:1px solid #F0F1F3;}
+.ar:last-child{border-bottom:none;}
+.ar-av{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;flex:none;}
+.ar-tx{flex:1;min-width:0;}.ar-tx>b{display:block;font-size:14px;color:var(--ink);}.ar-sub{font-size:11.5px;color:var(--muted);line-height:1.4;}
+.ar-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;}
+.ar-tag{font-size:10.5px;font-weight:700;border-radius:6px;padding:2px 7px;}
+.ar-tag.r{background:#FEF2F2;color:#DC2626;}.ar-tag.g{background:#ECFDF5;color:#047857;}.ar-tag.a{background:#FFFBEB;color:#B45309;}.ar-tag.b{background:#EEF2FF;color:#4338CA;}
+.ar-up{width:40px;height:40px;border-radius:12px;border:none;background:var(--orange);color:#fff;font-size:17px;flex:none;cursor:pointer;align-self:center;}
+.ar-btns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:8px;}
+.ar-btns button{font-family:inherit;font-size:11.5px;font-weight:700;border-radius:9px;padding:8px 2px;border:1px solid var(--border);background:#fff;color:var(--ink2);cursor:pointer;}
+.ar-btns .s{border-color:#BBF7D0;background:#F0FDF4;color:#15803D;}.ar-btns .p{border-color:#C7D2FE;background:#EEF2FF;color:#4338CA;}
+.ar-btns button:disabled{opacity:.35;cursor:default;}
+.ar-note{font-size:11px;color:var(--ink2);margin-top:4px;}
+.ls-bar{display:grid;gap:7px;margin-top:10px;}
+.lsb{font-family:inherit;font-size:12.5px;font-weight:700;border-radius:10px;padding:8px 2px;border:1.5px solid #F6C7A6;background:#FFF4EC;color:#C2410C;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.lsb-or{background:var(--orange);border-color:var(--orange);color:#fff;}.lsb-gr{background:#ECFDF5;border-color:#A7F3D0;color:#047857;}
+.lsb-del{background:#fff;border-color:#FECACA;color:var(--red);}
+.docg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+.docc{display:flex;align-items:center;gap:7px;border-radius:12px;padding:9px 10px;font-size:12.5px;font-weight:700;border:1.5px solid;cursor:pointer;min-width:0;}
+.docc-l{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.docc i{font-style:normal;margin-left:auto;flex:none;}
+.docc.ok{background:#ECFDF5;border-color:#A7F3D0;color:#047857;}
+.docc.req{background:#fff;border-color:#FECACA;border-style:dashed;color:#DC2626;}
+.docc.opt{background:#fff;border-color:var(--border);border-style:dashed;color:var(--muted);}
+.bc{border-radius:16px!important;padding:12px 14px!important;gap:8px!important;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+.bc.st-vac{border-left-color:#CBD5E1!important;border-style:dashed;border-left-style:solid;background:#FAFAFB!important;}
+.bc-top{align-items:center!important;}
+.bc-who{flex:1;min-width:0;}.bc-who .bc-unit{font-weight:500;}
+.bc-av{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13.5px;flex:none;}
+.av-grn{background:#DCFCE7;color:#15803D;}.av-amb{background:#FEF3C7;color:#B45309;}.av-red{background:#FEE2E2;color:#B91C1C;}.av-vac{background:#E5E7EB;color:#6B7280;}
+.bc-amt{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;}
+.bc-amt>div{background:#F7F8FA;border-radius:10px;padding:6px 9px;min-width:0;}
+.bc-amt small{display:block;font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;}
+.bc-amt b{font-size:14.5px;white-space:nowrap;}
+.bc-prog{height:6px;background:#EEF0F3;border-radius:4px;overflow:hidden;}.bc-prog div{height:100%;border-radius:4px;}.bc-prog .amb{background:var(--amber);}.bc-prog .red{background:var(--red);}
+.bc-chips{display:flex;flex-wrap:wrap;gap:5px;}
+.bc-chips span{font-size:11.5px;background:#fff;border:1px solid #E6E8EC;border-radius:8px;padding:3px 8px;color:var(--ink2);white-space:nowrap;}
+.bc-chips i{color:var(--muted);font-style:normal;font-size:11px;}
+.bc-note{font-size:12px;border-radius:10px;padding:7px 10px;background:#F3F4F6;color:var(--ink2);}.bc-note.g{background:#ECFDF5;color:#047857;}.bc-note.r{background:#FFF1F2;color:#BE123C;}
+.bc-tiles{margin-top:2px;}.bc-tiles .tl{min-height:50px;padding:6px 2px;font-size:11.5px;}.bc-tiles .tl i{font-size:16px;}
+.pd-card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:14px;box-shadow:var(--shadow);}
+.pd-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:12px;}
+.pd-stats>div{background:#F7F8FA;border-radius:10px;padding:8px 4px;text-align:center;min-width:0;}
+.pd-stats small{display:block;font-size:9.5px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;}.pd-stats b{font-size:15px;white-space:nowrap;}
+.pd-meter{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12px;background:#EFF6FF;color:#1E40AF;border-radius:10px;padding:8px 10px;margin-top:10px;}
+.pd-tiles{margin-top:10px;}.pd-tiles .tl{min-height:52px;font-size:11.5px;}
+.room-card .rc-top{display:flex;justify-content:space-between;align-items:center;}
+.rc-unit{font-size:11.5px;color:var(--ink2);font-weight:700;background:#F3F4F6;border-radius:6px;padding:2px 7px;}
+.rc-dot{width:9px;height:9px;border-radius:50%;flex:none;}
+.rc-who{display:flex;align-items:center;gap:8px;margin:10px 0 6px;min-width:0;}.rc-who b{font-size:13.5px;line-height:1.2;min-width:0;overflow-wrap:anywhere;}
+.rc-rent{font-size:16px;font-weight:800;color:var(--orange2);}.rc-rent small{font-size:11px;color:var(--muted);font-weight:500;}
+.room-card{border-radius:16px!important;padding:12px!important;}
+.room-card.rc-vac{border:1.5px dashed #CBD5E1;background:#FAFAFB;box-shadow:none;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:var(--muted);min-height:130px;}
+.cbs{margin:10px 14px;background:#F7F8FA;border-radius:12px;padding:4px 12px;}
+.cbs-r{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:5px 0;}.cbs-r b{white-space:nowrap;}
+.cbs-c{border-top:1.5px solid #D9DCE2;margin-top:2px;padding-top:7px;font-weight:800;font-size:14.5px;}
+.cbe{display:flex;align-items:center;gap:10px;padding:9px 14px;border-top:1px solid #F0F1F3;}
+.cbe-blue{background:#F5F9FF;}
+.cbe-d{width:40px;text-align:center;flex:none;background:#F3F4F6;border-radius:9px;padding:3px 0;}
+.cbe-d b{display:block;font-size:14px;line-height:1.15;}.cbe-d span{font-size:9.5px;color:var(--muted);font-weight:700;text-transform:uppercase;}
+.cbe-t{flex:1;min-width:0;font-size:12.5px;line-height:1.35;overflow-wrap:anywhere;}.cbe-k{font-size:11px;font-weight:700;}
+.cbe-a{font-weight:800;font-size:13.5px;white-space:nowrap;text-align:right;}
+.cbe-x{display:flex;flex-direction:column;gap:3px;flex:none;}.cbe-x .btn{margin:0;}
+.cbe-auto{font-size:10px;color:var(--muted);}
+.cbdir{margin:8px 14px 12px;background:#F7F8FA;border-radius:12px;overflow:hidden;}
+.cbdir summary{display:flex;justify-content:space-between;gap:8px;padding:10px 12px;font-size:13px;font-weight:700;color:var(--ink2);cursor:pointer;list-style:none;}
+.cbdir summary::-webkit-details-marker{display:none;}
+.cbdir-n{font-size:11px;color:var(--muted);padding:0 12px 6px;}
+.cbdir .cbe{border-top:1px solid #E9EBEF;padding:8px 12px;}
+.tl-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;width:100%;}.tl-grid.c3{grid-template-columns:repeat(3,minmax(0,1fr));}
+@media(max-width:330px){.tl-grid{grid-template-columns:repeat(3,minmax(0,1fr));}}
+.tl{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:58px;padding:8px 3px 7px;margin:0;border-radius:12px;border:1.5px solid #F6C7A6;background:#FFF4EC;color:#C2410C;font-family:inherit;font-size:12px;font-weight:700;line-height:1.15;cursor:pointer;text-align:center;overflow-wrap:anywhere;-webkit-tap-highlight-color:transparent;}
+.tl i{font-style:normal;font-size:19px;line-height:1;}
+.tl:active{transform:scale(.97);}
+.tl.solid{background:var(--orange);border-color:var(--orange);color:#fff;}
+.tl.blue{background:#EFF6FF;border-color:#BFDBFE;color:#2563EB;}.tl.pu{background:#F5F3FF;border-color:#DDD6FE;color:#7C3AED;}
+.tl.gr{background:#ECFDF5;border-color:#A7F3D0;color:#059669;}.tl.rd{background:#FEF2F2;border-color:#FECACA;color:#DC2626;}
+.tl.am{background:#FFFBEB;border-color:#FDE68A;color:#B45309;}.tl.gh{background:#fff;border-color:var(--border);color:var(--ink2);}
+.tl.ghost-slot{visibility:hidden;}
+.tl:disabled{opacity:.4;cursor:default;}
 .ms-act{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:8px;margin-top:14px;}.ms-act .btn{width:100%;justify-content:center;text-align:center;white-space:nowrap;margin:0;}.bc-act .btn{flex:0 0 auto;}.bc-more{font-weight:900;letter-spacing:1px;}
 .ow-card{margin-bottom:12px;}
 .ow-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border);}
@@ -1552,6 +1645,27 @@ function dfSites(boxKey,items,siteOf,groupH,sumFn){
     return `<div class="df-site${open?' df-open':''}" data-fold="${_escHtml(key)}"><div class="df-site-head df-head" onclick="dashFold(this)"><span>🏢 ${_escHtml(n)}<span class="df-count">${g.length}</span>${sm?`<span class="df-sum">${sm}</span>`:''}</span><span class="df-chev">▾</span></div><div class="df-body">${groupH(g)}</div></div>`; }).join('');
 }
 
+// site tabs inside a dashboard box: one site shown at a time, first few rows then "Show N more" (display only — nothing is saved)
+function _ini(n){ const w=String(n||'').replace(/^(mr|mrs|ms|dr)\.?\s+/i,'').trim().split(/\s+/).filter(Boolean); return _escHtml(((w[0]||'?')[0]+(w.length>1?w[w.length-1][0]:'')).toUpperCase()); }
+function dfTabs(boxKey,items,siteOf,rowH,limit){
+  limit=limit||3;
+  const groups=new Map();
+  items.forEach(it=>{ const k=String(siteOf(it)||'').trim()||'Other'; if(!groups.has(k))groups.set(k,[]); groups.get(k).push(it); });
+  const names=[...groups.keys()].sort((a,b)=>_siteIdx(a)-_siteIdx(b)||a.localeCompare(b));
+  let sel=_dfLoad()['tab:'+boxKey]; if(!names.includes(sel))sel=names[0];
+  const tabs=names.length>1?`<div class="dft-tabs">${names.map(n=>`<button class="dft-tab${n===sel?' on':''}" data-tab="${_escHtml(n)}" onclick="dfTab(this)">${_escHtml(n)}<i>${groups.get(n).length}</i></button>`).join('')}</div>`:'';
+  const panes=names.map(n=>{ const g=groups.get(n), more=g.length-limit;
+    return `<div class="dft-pane${n===sel?' on':''}" data-tab="${_escHtml(n)}">${g.map((it,i)=>i<limit?rowH(it):`<div class="dft-extra">${rowH(it)}</div>`).join('')}${more>0?`<button class="dft-more" onclick="dfMore(this)">Show ${more} more in ${_escHtml(n)} ▾</button>`:''}</div>`; }).join('');
+  return `<div class="dft" data-box="${_escHtml(boxKey)}">${tabs}${panes}</div>`;
+}
+function dfTab(btn){
+  const box=btn.closest('.dft'); if(!box)return; const n=btn.dataset.tab;
+  box.querySelectorAll('.dft-tab').forEach(b=>b.classList.toggle('on',b===btn));
+  box.querySelectorAll('.dft-pane').forEach(p=>p.classList.toggle('on',p.dataset.tab===n));
+  _dfLoad()['tab:'+box.dataset.box]=n; try{ localStorage.setItem('rd_dash_fold',JSON.stringify(_dashFold)); }catch(e){}
+}
+function dfMore(btn){ const p=btn.closest('.dft-pane'); if(!p)return; p.classList.add('all'); btn.remove(); }
+
 function renderDash(){
   if(!isAdmin){renderStaffDash();return;}
   const mc=document.getElementById('mc');
@@ -1600,13 +1714,14 @@ function renderDash(){
   const _sv=v=>(v<0?'−':'')+fm(Math.abs(v));
   const siteGlanceH=`<div style="margin-top:14px;">
     <div style="font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;padding:0 2px 6px;border-bottom:1px solid var(--border);">Site-wise</div>
-    ${siteRows.map(x=>{ const pend=(x.pend>0?`<span style="color:var(--red);font-weight:700;white-space:nowrap;">Pending ${fm(x.pend)}</span>`:`<span style="color:var(--green);font-weight:700;white-space:nowrap;">Nil pending ✓</span>`)+(x.extra>0?` · <span style="color:var(--green);font-weight:700;white-space:nowrap;">+${fm(x.extra)} extra</span>`:'');
+    ${siteRows.map(x=>{
       return `<div class="${_dfIsOpen('sum:'+x.name,false)?'df-open':''}" data-fold="${_escHtml('sum:'+x.name)}" style="border-bottom:1px solid var(--border);">
       <div class="df-head" onclick="dashFold(this)" style="display:block;padding:9px 2px;">
         <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;">
           <span style="font-weight:800;font-size:14px;color:var(--ink);">${_escHtml(x.name)}</span>
           <span style="font-size:13.5px;font-weight:800;color:${x.net<0?'var(--red)':'var(--ink)'};white-space:nowrap;"><span style="font-size:11px;font-weight:600;color:var(--muted);">Net </span>${_sv(x.net)}</span></div>
-        <div style="font-size:12px;color:var(--ink2);margin-top:3px;line-height:1.5;">${x.general?'Expenses not linked to a site':`<span style="white-space:nowrap;">Due ${fm(x.exp)}</span> · <span style="color:var(--green);font-weight:700;white-space:nowrap;">Collected ${fm(x.col)}</span> · ${pend}`}</div></div>
+        ${x.general?'<div style="font-size:12px;color:var(--ink2);margin-top:3px;">Expenses not linked to a site</div>':`<div class="sg3"><div><small>Due</small><b>${fm(x.exp)}</b></div><div><small>Collected</small><b style="color:var(--green);">${fm(x.col)}</b></div><div><small>Pending</small><b style="color:${x.pend>0?'var(--red)':'var(--green)'};">${x.pend>0?fm(x.pend):'Nil ✓'}</b>${x.extra>0?`<em>+${fm(x.extra)} extra</em>`:''}</div></div>
+        <div class="sgbar"><div style="width:${x.exp>0?Math.max(0,Math.min(100,Math.round(x.col/x.exp*100))):100}%;"></div></div>`}</div>
       <div class="df-body" style="font-size:11.5px;color:var(--muted);padding:0 2px 9px;line-height:1.6;">
         ${x.general?'':`Rent ${fm(x.rent)} · Electricity ${fm(x.eb)}${x.bal>0?' · Carry-in '+fm(x.bal):x.bal<0?' · Credit −'+fm(-x.bal):''}${x.ded?' · Deductions −'+fm(x.ded):''}${x.sec?' · Security due '+fm(x.sec):''}<br/>`}Expenses ${fm(x.spent)}${x.me?' · Main electricity bill '+fm(x.me):''}${x.secAdj?'<br/>Collected includes '+fm(x.secAdj)+' adjusted from security (not counted in Net)':''}</div></div>`; }).join('')}
     <div style="font-size:10.5px;color:var(--muted);margin-top:6px;">Tap a site for details. Same figures as Billing. Net = money received − expenses − main electricity bill.</div>
@@ -1757,23 +1872,42 @@ function renderPropDetail(){
   const curMain=(p.mainMeter||[]).find(x=>x.month===cm);
   mc.innerHTML=`
   ${_dashBack&&!vRoom?`<button class="back" onclick="dashBack()">← ${_backLabel()}</button>`:`<button class="back" onclick="backProps()">← Properties</button>`}
-  <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;">
-    <div><div style="font-family:'Space Grotesk';font-size:20px;font-weight:700;">${p.name}</div><div style="font-size:12px;color:var(--muted);">${p.address||''}${p.electricityRate?' · ₹'+p.electricityRate+'/unit':''}</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">👤 Lease owner: <strong style="color:var(--ink2);">${(p.lessor&&p.lessor.name)||DEFAULT_LESSOR.name}</strong>${p.lessor&&p.lessor.name?'':' (default)'} · <a href="#" onclick="editProp('${p.id}');return false;" style="color:var(--orange);">change</a></div></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-ghost btn-sm" onclick="editProp('${p.id}')">✏️ Edit</button><button class="btn btn-sm" style="background:#DCFCE7;color:#15803D;" onclick="openGroupMsg('${p.id}')">📢 Group message</button>${p.noMainMeter?`<button class="btn btn-ghost btn-sm" onclick="toggleNoMainMeter('${p.id}')">⚡ Turn on main meter</button>`:`<button class="btn btn-blue btn-sm" onclick="openMainMeter('${p.id}')">⚡ Main Meter</button><button class="btn btn-ghost btn-sm" title="This site has no main meter" onclick="toggleNoMainMeter('${p.id}')">🚫 No meter</button>`}<button class="btn btn-orange btn-sm" onclick="openAddRoom('${p.id}')">+ Add Unit</button></div>
+  <div class="pd-card">
+    <div style="font-family:'Space Grotesk';font-size:21px;font-weight:700;">${p.name}</div>
+    <div style="font-size:12px;color:var(--muted);margin-top:2px;">${p.address||''}${p.electricityRate?' · ₹'+p.electricityRate+'/unit':''}</div>
+    <div style="font-size:11.5px;color:var(--muted);margin-top:2px;">👤 Lease owner: <strong style="color:var(--ink2);">${(p.lessor&&p.lessor.name)||DEFAULT_LESSOR.name}</strong>${p.lessor&&p.lessor.name?'':' (default)'} · <a href="#" onclick="editProp('${p.id}');return false;" style="color:var(--orange);">change</a></div>
+    <div class="pd-stats"><div><small>Units</small><b>${rooms.length}</b></div><div><small>Occupied</small><b style="color:var(--green);">${occ}</b></div><div><small>Vacant</small><b style="color:var(--amber);">${rooms.length-occ}</b></div><div style="cursor:pointer;" onclick="showPropRentRoll('${p.id}')"><small>Rent roll ›</small><b style="color:var(--orange2);">${fm(rooms.filter(r=>isRoomOccupied(r)).reduce((s,r)=>s+Number(r.rent||0),0))}</b></div></div>
+    ${curMain?`<div class="pd-meter"><span>⚡ Main meter · ${ml(cm).split(' ')[0]}</span><span>${curMain.oldReading} → ${curMain.reading} · <b>${curMain.units}</b> units · <b>${fm(curMain.bill)}</b></span></div>`:''}
+    <div class="tl-grid pd-tiles" style="grid-template-columns:repeat(${p.noMainMeter?4:5},minmax(0,1fr));">
+      <button class="tl solid" onclick="openAddRoom('${p.id}')"><i>＋</i>Add unit</button>
+      <button class="tl gh" onclick="editProp('${p.id}')"><i>✏️</i>Edit</button>
+      <button class="tl gr" onclick="openGroupMsg('${p.id}')"><i>📢</i>Message</button>
+      ${p.noMainMeter?`<button class="tl gh" onclick="toggleNoMainMeter('${p.id}')"><i>⚡</i>Meter on</button>`:`<button class="tl blue" onclick="openMainMeter('${p.id}')"><i>⚡</i>Main meter</button><button class="tl gh" title="This site has no main meter" onclick="toggleNoMainMeter('${p.id}')"><i>🚫</i>No meter</button>`}
+    </div>
   </div>
-  ${curMain?`<div class="status-bar"><div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;"><span style="font-size:11px;color:var(--muted);">⚡ Main Meter — ${ml(cm)}</span><div style="display:flex;gap:16px;flex-wrap:wrap;"><span style="font-size:12px;">Prev: <strong>${curMain.oldReading}</strong></span><span style="font-size:12px;">New: <strong>${curMain.reading}</strong></span><span style="font-size:12px;">Units: <strong style="color:var(--blue)">${curMain.units}</strong></span><span style="font-size:12px;">Bill: <strong style="color:var(--orange)">${fm(curMain.bill)}</strong></span></div></div></div>`:''}
-  <div class="g4" style="margin-bottom:18px;"><div class="stat"><div class="stat-label">Total Units</div><div class="stat-value">${rooms.length}</div></div><div class="stat"><div class="stat-label">Occupied</div><div class="stat-value grn">${occ}</div></div><div class="stat"><div class="stat-label">Vacant</div><div class="stat-value" style="color:var(--amber)">${rooms.length-occ}</div></div><div class="stat" style="cursor:pointer;" onclick="showPropRentRoll('${p.id}')"><div class="stat-label">Rent Roll</div><div class="stat-value ora">${fm(rooms.filter(r=>isRoomOccupied(r)).reduce((s,r)=>s+Number(r.rent||0),0))}</div><div class="stat-sub">Tap for details</div></div></div>
   ${rooms.length?`<div class="room-grid">${rooms.map(r=>roomCardH(r,p.id)).join('')}</div>`:`<div class="empty"><div class="empty-icon">🚪</div><div class="empty-text">No units yet</div><button class="btn btn-orange" onclick="openAddRoom('${p.id}')">Add Unit</button></div>`}`;
 }
 function roomCardH(r,pid){
   const status=roomStatus(r),ht=status==='occupied',bk=roomBookingInfo(r),_le=ht?roomLeaseEndDate(r):'',d=_le?dl(_le):null;
-  const alert=d!==null&&d<=30?`<div style="font-size:11px;color:var(--red);margin-top:4px;">⚠️ ${d<=0?'Lease expired':d+'d left'}</div>`:'';
   const dc=ht?docCompleteness(r):{missingRequired:0,uploaded:0};
-  const docBadge=ht?(dc.missingRequired>0?`<div style="font-size:11px;color:var(--red);margin-top:4px;font-weight:600;">🔴 ${dc.missingRequired} doc${dc.missingRequired>1?'s':''} missing</div>`:`<div style="font-size:11px;color:var(--green);margin-top:4px;">✅ Docs complete</div>`):'';
-  const noticeBadge=(r.notice&&!r.notice.cleared)?`<div style="font-size:11px;color:var(--red);margin-top:4px;font-weight:600;">📢 Vacating ${fd(r.notice.vacateDate)}</div>`:'';
   const secBal=bk?((bk.securityBalance!=null)?bk.securityBalance:Math.max(0,Number(bk.securityDeposit||0)-Number(bk.amount||0))):null;
-  const tokenBadge=bk?`<div style="font-size:11px;color:var(--purple,#7c3aed);margin-top:4px;font-weight:600;">🔑 Booked: ${bk.name} from ${fd(bk.moveInDate)}</div>${bk.advanceRentStatus==='pending'?`<div style="font-size:11px;color:var(--amber);margin-top:4px;font-weight:600;">💸 Advance rent pending</div>`:''}${secBal!=null?`<div style="font-size:11px;color:var(--blue);margin-top:4px;font-weight:600;">🔐 Security balance: ${fm(secBal)}</div>`:''}`:'';
-  return`<div class="room-card" onclick="goRoom('${pid}','${r.id}')"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px;"><div class="room-type">${r.type}${r.unitNo?' #'+r.unitNo:''}</div><span class="badge ${status==='occupied'?'badge-grn':status==='prebooked'?'badge-pur':'badge-amb'}">${status==='occupied'?'Occupied':status==='prebooked'?'Pre-booked':'Vacant'}</span></div><div class="room-rent">${fm(r.rent)}/mo</div><div class="room-tenant">${ht?'👤 '+r.tenant.name:bk?'🔑 '+bk.name+' ('+fd(bk.moveInDate)+')':'No tenant'}</div>${r.balance>0?`<div style="font-size:11px;color:var(--red);margin-top:4px;font-weight:600;">Bal: ${fm(r.balance)}</div>`:''}${docBadge}${alert}${noticeBadge}${tokenBadge}</div>`;
+  const notice=r.notice&&!r.notice.cleared;
+  const tags=[];
+  if(r.balance>0)tags.push(`<span class="ar-tag a">Bal ${fm(r.balance)}</span>`);
+  if(ht)tags.push(dc.missingRequired>0?`<span class="ar-tag r">${dc.missingRequired} doc${dc.missingRequired>1?'s':''} missing</span>`:`<span class="ar-tag g">Docs ✓</span>`);
+  if(d!==null&&d<=30)tags.push(`<span class="ar-tag r">${d<=0?'Lease expired':'Lease '+d+'d left'}</span>`);
+  if(notice)tags.push(`<span class="ar-tag r">📢 Vacating ${fd(r.notice.vacateDate)}</span>`);
+  if(bk){ tags.push(`<span class="ar-tag b">🔑 Booked ${_escHtml(bk.name)} · ${fd(bk.moveInDate)}</span>`); if(bk.advanceRentStatus==='pending')tags.push(`<span class="ar-tag a">💸 Advance pending</span>`); if(secBal!=null)tags.push(`<span class="ar-tag b">🔐 Security bal ${fm(secBal)}</span>`); }
+  const unit=_escHtml(r.type+(r.unitNo?' #'+r.unitNo:''));
+  if(!ht&&!bk)return`<div class="room-card rc-vac" onclick="goRoom('${pid}','${r.id}')"><div style="font-size:22px;">🚪</div><div style="font-weight:700;color:var(--ink2);margin:4px 0 2px;">${unit} · Vacant</div><div style="font-size:11.5px;">${fm(r.rent)}/mo · tap to add tenant</div></div>`;
+  const dot=(d!==null&&d<=0)||notice?'var(--red)':(r.balance>0||dc.missingRequired>0||(d!==null&&d<=30)||bk)?'var(--amber)':'var(--green)';
+  const nm=ht?r.tenant.name:(bk&&bk.name)||'';
+  return`<div class="room-card" onclick="goRoom('${pid}','${r.id}')">
+    <div class="rc-top"><span class="rc-unit">${unit}</span><span class="rc-dot" style="background:${dot};" title="${status==='occupied'?'Occupied':'Pre-booked'}"></span></div>
+    <div class="rc-who"><div class="bc-av ${ht?(dot==='var(--green)'?'av-grn':dot==='var(--red)'?'av-red':'av-amb'):'av-vac'}" style="width:32px;height:32px;border-radius:10px;font-size:12px;">${_ini(nm)}</div><b>${_escHtml(nm)}${status==='prebooked'?' <span style="font-size:10.5px;color:var(--purple);font-weight:700;">(pre-booked)</span>':''}</b></div>
+    <div class="rc-rent">${fm(r.rent)}<small>/mo</small></div>
+    ${tags.length?`<div class="ar-tags">${tags.join('')}</div>`:''}
+  </div>`;
 }
 function backProps(){vProp=null;vRoom=null;renderProps();}
 // ══════════════════════════════════════════════════════
@@ -2013,7 +2147,7 @@ function dashBankCheckH(){
       <div style="display:flex;gap:6px;">
         <button class="btn btn-green btn-sm" onclick="bankTick(${args})">✓ Received</button>
         <button class="btn btn-ghost btn-sm" title="${x.bankFlag?'Undo':'Not in bank'}" onclick="bankFlag(${args})">${x.bankFlag?'↩':'✗'}</button></div></div>`; }).join('');
-  return dfBox('bank','urgent-card','border-color:var(--blue);box-shadow:0 4px 18px rgba(59,130,246,.15);background:#F5F9FF;','urgent-head','background:var(--blue);',
+  return dfBox('bank','urgent-card','border-color:#BFDBFE;border-left-color:var(--blue);','urgent-head','color:#1D4ED8;',
     `<span>🏦 ${items.length} payment${items.length>1?'s':''} to check in bank · ${fm(total)}</span><span style="font-size:11px;font-weight:600;opacity:.9;">${flagged?flagged+' not received':'Tick when seen'}</span>`,
     dfSites('bank',items,i=>i.p.name,grp,g=>fm(g.reduce((a,i)=>a+Number(i.x.amount||0),0))+(g.some(i=>i.x.bankFlag)?' · '+g.filter(i=>i.x.bankFlag).length+' not received':'')));
 }
@@ -2924,6 +3058,21 @@ document.addEventListener('click',e=>{
 });
 
 // ── ROOM DETAIL ──
+function _roomTiles(p,r,ht,dc){
+  const a=`'${p.id}','${r.id}'`, T=(cls,ic,lab,fn)=>`<button class="tl ${cls}" onclick="${fn}"><i>${ic}</i>${lab}</button>`, L=[];
+  if(ht)L.push(T('solid','💰','Payment',`openPayment(${a})`));
+  L.push(T('blue','⚡','Reading',`openElec(${a})`));
+  L.push(T('pu','➖','Deduction',`openDeduction(${a})`));
+  if(ht)L.push(T('','🧾','Receipt',`openReceipt(${a})`));
+  if(ht||r.token)L.push(T('gr','💬','WhatsApp',`openWaMenu(${a})`));
+  L.push(T(dc.missingRequired>0?'rd':'gr','📎',dc.missingRequired>0?'Docs ⚠️':'Docs ✓',`openDocs(${a})`));
+  const nt=r.notice&&!r.notice.cleared; L.push(T(nt?'rd':'gh','📢',nt?'Notice ⚠️':'Notice',`openNotice(${a})`));
+  L.push(T(r.token?'pu':'gh','🔑',r.token?'Token ✓':'Token',`openToken(${a})`));
+  L.push(T('gh','✏️','Edit',`editRoom(${a})`));
+  const last=ht?T('rd','🚪','Vacate',`startVacating(${a})`):T('gr','👤','Add tenant',`onboardNewTenant(${a})`);
+  while((L.length+1)%4)L.push('<span class="tl ghost-slot"></span>');
+  return L.join('')+last;
+}
 function renderRoomDetail(){
   const p=S.properties.find(x=>x.id===vProp),r=((p&&p.rooms)||[]).find(x=>x.id===vRoom);
   if(!p||!r){vRoom=null;renderPropDetail();return;}
@@ -2972,21 +3121,9 @@ function renderRoomDetail(){
 
   mc.innerHTML=`
   ${_dashBack?`<button class="back" onclick="dashBack()">← ${_backLabel()}</button>`:`<button class="back" onclick="backProp()">← ${p.name}</button>`}
-  <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
-    <div><div style="font-family:'Space Grotesk';font-size:20px;font-weight:700;">${r.type}${r.unitNo?' — #'+r.unitNo:''}</div><div style="font-size:12px;color:var(--muted);">${p.name}</div></div>
-    <div class="act-grid">
-      <button class="btn btn-ghost btn-sm" onclick="editRoom('${p.id}','${r.id}')">✏️ Edit</button>
-      <button class="btn btn-blue btn-sm" onclick="openElec('${p.id}','${r.id}')">⚡ Electricity</button>
-      ${ht?`<button class="btn btn-amber btn-sm" onclick="openPayment('${p.id}','${r.id}')">💰 Payment</button>`:''}
-      <button class="btn btn-purple btn-sm" onclick="openDeduction('${p.id}','${r.id}')">➖ Deduction</button>
-      ${ht?`<button class="btn btn-orange btn-sm" onclick="openReceipt('${p.id}','${r.id}')">🧾 Receipt</button>`:''}
-      ${(ht||r.token)?`<button class="btn btn-sm" style="background:#DCFCE7;color:#15803D;" onclick="openWaMenu('${p.id}','${r.id}')">💬 WhatsApp</button>`:''}
-      <button class="btn btn-sm ${dc.missingRequired>0?'btn-red':'btn-green'}" onclick="openDocs('${p.id}','${r.id}')">📎 Docs ${dc.missingRequired>0?'⚠️':'✅'}</button>
-      <button class="btn btn-sm ${r.notice&&!r.notice.cleared?'btn-red':'btn-ghost'}" onclick="openNotice('${p.id}','${r.id}')">📢 Notice${r.notice&&!r.notice.cleared?' ⚠️':''}</button>
-      <button class="btn btn-sm ${r.token?'btn-purple':'btn-ghost'}" onclick="openToken('${p.id}','${r.id}')">🔑 Token${r.token?' ✓':''}</button>
-      ${ht?`<button class="btn btn-sm btn-red" onclick="startVacating('${p.id}','${r.id}')">🚪 Vacate</button>`:''}
-      ${!ht?`<button class="btn btn-sm btn-green" onclick="onboardNewTenant('${p.id}','${r.id}')">👤 Add Tenant</button>`:''}
-    </div>
+  <div style="margin-bottom:16px;">
+    <div style="margin-bottom:12px;"><div style="font-family:'Space Grotesk';font-size:20px;font-weight:700;">${r.type}${r.unitNo?' — #'+r.unitNo:''}</div><div style="font-size:12px;color:var(--muted);">${p.name}${ht&&r.tenant&&r.tenant.name?' · '+_escHtml(r.tenant.name):''}</div></div>
+    <div class="tl-grid">${_roomTiles(p,r,ht,dc)}</div>
   </div>
   <div class="status-bar" style="border-left:3px solid ${pend<=0?'var(--green)':'var(--orange)'};margin-bottom:14px;">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
@@ -3084,8 +3221,8 @@ function renderRoomDetail(){
   <!-- Documents -->
   <div class="card" style="margin-bottom:14px;">
     <div class="card-head"><div class="card-title">📎 Documents</div><div style="display:flex;align-items:center;gap:8px;"><span style="font-size:12px;color:var(--muted);">${dc.uploaded}/${dc.total} uploaded</span><button class="btn btn-orange btn-sm" onclick="openDocs('${p.id}','${r.id}')">Manage</button></div></div>
-    <div class="card-body" style="padding:12px 18px;"><div style="display:flex;flex-wrap:wrap;gap:8px;">
-      ${DOC_TYPES.map(dt=>{const up=_hasDoc(_docHolder(r),'main',dt.key);return`<div style="display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;border:1px solid ${up?'var(--green)':dt.required?'var(--red)':'var(--border)'};background:${up?'var(--green-dim)':dt.required?'var(--red-dim)':'var(--bg)'};font-size:12px;"><span>${dt.icon}</span><span style="font-weight:500;color:${up?'var(--green)':dt.required?'var(--red)':'var(--muted)'};">${dt.label}</span><span style="font-size:11px;">${up?'✓':'⚠️'}</span></div>`;}).join('')}
+    <div class="card-body" style="padding:12px 14px;"><div class="docg">
+      ${DOC_TYPES.map(dt=>{const up=_hasDoc(_docHolder(r),'main',dt.key);return`<div class="docc ${up?'ok':dt.required?'req':'opt'}" onclick="openDocs('${p.id}','${r.id}')"><span>${dt.icon}</span><span class="docc-l">${dt.label.split(' /')[0]}</span><i>${up?'✓':dt.required?'⚠':'—'}</i></div>`;}).join('')}
     </div></div>
   </div>
 
@@ -3262,7 +3399,7 @@ function dashRentAskH(){
       <div style="display:flex;gap:6px;flex-wrap:wrap;">
         <button class="btn btn-orange btn-sm" onclick="openRentEffBox('${a.p.id}','${a.r.id}',${a.rent},{leaseId:'${a.leaseId}',startMonth:'${a.startMonth}'})">📅 Change rent…</button>
         <button class="btn btn-ghost btn-sm" onclick="rentBoxKeep('${a.p.id}','${a.r.id}',${a.rent},'${a.leaseId}')">Keep ${fm(a.r.rent)}</button></div></div>`;
-  return dfBox('rentask','soon-card','border-color:var(--orange);','soon-head','background:var(--orange);',
+  return dfBox('rentask','soon-card','border-color:#FED7AA;border-left-color:var(--orange);','soon-head','color:#C2410C;',
     `<span>💰 ${L.length} rent change${L.length>1?'s':''} to confirm</span>`,
     dfSites('rentask',L,a=>a.p.name,g=>g.map(row).join('')));
 }
@@ -3668,7 +3805,7 @@ function buildMonthlyReportDocDef(month,filterPropId){
 
     p.rooms.forEach(r=>{
       const tenantStack=[{text:r.tenant,bold:true,fontSize:9}];
-      if(r.phone)tenantStack.push({text:r.phone,fontSize:7,color:'#9CA3AF'});
+      if(r.phone)tenantStack.push({text:String(r.phone).replace(/[^0-9+\-()]+/g,' ').replace(/\s+/g,' ').trim(),fontSize:7,color:'#9CA3AF'});
       if(r.isVacated){ tenantStack.push({text:'VACATED '+fd(r.vacatedOn),fontSize:7,bold:true,color:'#F97316'}); if(r.refundLabel)tenantStack.push({text:r.refundLabel,fontSize:7,bold:true,color:r.refundTone||'#10B981'}); }
       const tokenCell=r.tokenAmount>0
         ?{stack:[
@@ -3696,7 +3833,7 @@ function buildMonthlyReportDocDef(month,filterPropId){
         dedCell,
         {text:fmI(r.total),bold:true,fontSize:9,alignment:'right'},
         {text:fmI(r.paid),color:'#10B981',bold:true,fontSize:9,alignment:'right'},
-        {text:r.paymentDetails||'\u2014',fontSize:7,color:'#6B7280'},
+        {text:r.paymentDetails?String(r.paymentDetails).replace(/<br\s*\/?>/gi,'\n').replace(/<[^>]+>/g,''):'\u2014',fontSize:7,color:'#6B7280'},
         {text:r.pend>0?fmI(r.pend):'Paid',color:r.pend>0?'#EF4444':'#10B981',bold:true,fontSize:9,alignment:'right'}
       ]);
     });
@@ -3721,42 +3858,11 @@ function buildMonthlyReportDocDef(month,filterPropId){
       {text:p.totalPend>0?fmI(p.totalPend):'All Paid',color:p.totalPend>0?'#EF4444':'#10B981',bold:true,fillColor:'#FFF7ED',fontSize:9,alignment:'right'}
     ]);
 
-    // Expenses rows — one row per item
-    if(p.expenses.length){
-      // Header row for expenses section
-      body.push([
-        {text:'#',bold:true,color:'#92400E',fillColor:'#FEF3C7',fontSize:8,alignment:'center'},
-        {text:'Date',bold:true,color:'#92400E',fillColor:'#FEF3C7',fontSize:8},
-        {text:'Description',colSpan:7,bold:true,color:'#92400E',fillColor:'#FEF3C7',fontSize:8},{},{},{},{},{},{},
-        {text:'Paid By',colSpan:2,bold:true,color:'#92400E',fillColor:'#FEF3C7',fontSize:8,alignment:'center'},{},
-        {text:'Amount',colSpan:2,bold:true,color:'#92400E',fillColor:'#FEF3C7',fontSize:8,alignment:'right'},{}
-      ]);
-      p.expenses.forEach((e,i)=>{
-        body.push([
-          {text:String(i+1),color:'#92400E',fillColor:'#FFFBEB',fontSize:8,alignment:'center'},
-          {text:e.date?fd(e.date):'—',color:'#92400E',fillColor:'#FFFBEB',fontSize:8},
-          {text:e.desc||'—',colSpan:7,color:'#78350F',fillColor:'#FFFBEB',fontSize:8},{},{},{},{},{},{},
-          {text:e.paidBy||'—',colSpan:2,color:'#92400E',fillColor:'#FFFBEB',fontSize:7,alignment:'center'},{},
-          {text:fmI(e.amount),colSpan:2,color:'#D97706',fillColor:'#FFFBEB',fontSize:8,bold:true,alignment:'right'},{}
-        ]);
-      });
-      const expTotal=p.expenses.reduce((s,e)=>s+(e.elec?0:e.amount),0);
-      body.push([
-        {text:'',colSpan:11,fillColor:'#FEF3C7'},{},{},{},{},{},{},{},{},{},{},
-        {text:'Total Expenses',colSpan:2,bold:true,color:'#92400E',fillColor:'#FEF3C7',fontSize:9,alignment:'right'},{},
-      ].map((cell,ci)=>ci===11?{...cell}:cell));
-      // simpler total row
-      body.push([
-        {text:'Total Expenses',colSpan:11,bold:true,color:'#92400E',fillColor:'#FEF3C7',fontSize:8,alignment:'right'},{},{},{},{},{},{},{},{},{},{},
-        {text:fmI(expTotal),colSpan:2,bold:true,color:'#D97706',fillColor:'#FEF3C7',fontSize:9,alignment:'right'},{}
-      ]);
-    }
-
     content.push({
       margin:[0,0,0,2],
       table:{
         headerRows:1,
-        widths:[28,68,54,46,34,34,38,44,54,50,48,62,52],
+        widths:[28,68,54,46,34,34,38,44,54,50,48,'*',52],
         body:body,
         dontBreakRows:true
       },
@@ -3769,6 +3875,26 @@ function buildMonthlyReportDocDef(month,filterPropId){
         paddingLeft:()=>4,paddingRight:()=>4,paddingTop:()=>4,paddingBottom:()=>4
       }
     });
+    // Expenses — own block under the tenant table: two columns, one total line, who paid
+    if(p.expenses.length){
+      const ex=p.expenses.map((e,i)=>({e,i})).sort((x,y)=>String(x.e.date||'').localeCompare(String(y.e.date||''))||x.i-y.i).map(x=>x.e);
+      const expTotal=ex.reduce((t,e)=>t+(e.elec?0:e.amount),0);
+      const byWho={}; ex.forEach(e=>{ if(e.elec)return; const k=e.paidBy||'Not set'; byWho[k]=(byWho[k]||0)+e.amount; });
+      const half=Math.ceil(ex.length/2);
+      const colT=list=>list.length?{table:{widths:[38,'*',58],body:list.map(e=>[
+          {text:e.date?fd(e.date).replace(/ \d{4}$/,''):'\u2014',fontSize:8,color:'#9CA3AF'},
+          {text:e.desc||'\u2014',fontSize:8,color:'#1A1A1A'},
+          {text:fmI(e.amount),fontSize:8,bold:true,alignment:'right',color:e.elec?'#9CA3AF':'#1A1A1A'}])},
+        layout:{hLineWidth:(i,node)=>(i===0)?0:0.4,hLineColor:()=>'#EEEEEE',vLineWidth:()=>0,paddingLeft:()=>2,paddingRight:()=>2,paddingTop:()=>3,paddingBottom:()=>3}}:{text:''};
+      content.push({margin:[0,6,0,12],unbreakable:ex.length<=40,stack:[
+        {columns:[{text:'Expenses \u2014 '+p.name+' ('+ex.length+')',bold:true,fontSize:9.5,color:'#92400E'},{text:fmI(expTotal),bold:true,fontSize:9.5,color:'#92400E',alignment:'right'}]},
+        {canvas:[{type:'line',x1:0,y1:2,x2:800,y2:2,lineWidth:1,lineColor:'#F59E0B'}],margin:[0,0,0,2]},
+        {columns:[colT(ex.slice(0,half)),colT(ex.slice(half))],columnGap:22},
+        {margin:[0,5,0,0],alignment:'right',fontSize:8.5,color:'#555555',text:[
+          ...Object.keys(byWho).flatMap(k=>[{text:'Paid by '+k+' '},{text:fmI(byWho[k]),bold:true,color:'#1A1A1A'},{text:'     '}]),
+          {text:'Total '},{text:fmI(expTotal),bold:true,color:'#1A1A1A'}]}
+      ]});
+    }
   });
 
   // 4. Net income (dark box)
@@ -4491,34 +4617,39 @@ function _bcLiveH(c){
   else if(needElec)parts.push(`⚡ <span style="color:var(--red);font-weight:700;">no reading</span>`);
   if(c.bal>0)parts.push(`Carry-in <b style="color:var(--red);">${fm(c.bal)}</b>`); else if(c.bal<0)parts.push(`Credit <b style="color:var(--green);">−${fm(-c.bal)}</b>`);
   if(c.secOnlyPending>0)parts.push(`Security <b style="color:var(--amber);">${fm(c.secOnlyPending)}</b>`);
-  let line=parts.join(' + ');
-  if(c.dedTotal>0)line+=` − Ded <b style="color:var(--purple);">${fm(c.dedTotal)}</b>`;
-  const main=needElec?`<button class="btn btn-blue btn-sm" onclick="openElec(${args})">⚡ Enter reading</button>`
-    :c.pend>0?`<button class="btn btn-orange btn-sm" onclick="openPayment(${args})">💰 Record payment</button>`
-    :`<button class="btn btn-ghost btn-sm" onclick="openReceipt('${p.id}','${r.id}')">🧾 Receipt</button>`;
+  if(c.dedTotal>0)parts.push(`− Ded <b style="color:var(--purple);">${fm(c.dedTotal)}</b>`);
+  const T=(cls,ic,lab,fn)=>`<button class="tl ${cls}" onclick="${fn}"><i>${ic}</i>${lab}</button>`;
+  const main=needElec?T('blue','⚡','Reading',`openElec(${args})`)
+    :c.pend>0?T('solid','💰','Payment',`openPayment(${args})`)
+    :T('','🧾','Receipt',`openReceipt('${p.id}','${r.id}')`);
   const extra=[];
   if(c.secAdvDue&&c.secAdvDue.pending>0)extra.push(`<span style="color:var(--amber);">🔐 Security/advance pending ${fm(c.secAdvDue.pending)}</span> <a href="#" onclick="openDepositEntry(${args});return false;" style="color:var(--purple);font-weight:700;">+ Collect</a>`);
   if(c.monthDepositsTotal>0)extra.push(`<span style="color:var(--purple);">🔐 ${fm(c.monthDepositsTotal)} deposit received this month</span>`);
   const q=[t.name,t.phone,r.type,r.unitNo,p.name].join(' ').toLowerCase();
-  return `<div class="bc ${_bcMatch(c)?'':'bc-hid'} ${c.pend>0?(c.paid>0?'st-amb':'st-red'):'st-grn'}" data-q="${_escHtml(q)}" onclick="billCardTap(event,'${p.id}','${r.id}')" style="cursor:pointer;">
-    <div class="bc-top"><div style="min-width:0;"><div class="bc-unit">${_escHtml(r.type+(r.unitNo?' #'+r.unitNo:''))}${r._past?` · <span style="color:var(--muted);">LEFT ${fd(r._past.vacatingDate)}</span>`:''}</div><div class="bc-name">${_escHtml(t.name||'—')}</div></div>${pill}</div>
-    <div class="bc-line">${line}</div>
-    <div class="bc-tot"><span>Due <b>${fm(c.total)}</b></span><span>Paid <b style="color:var(--green);">${fm(c.paid)}</b></span>${c.pend>0?`<span>Balance <b style="color:var(--red);">${fm(c.pend)}</b></span>`:''}</div>
+  const st=c.pend>0?(c.paid>0?'amb':'red'):'grn';
+  const pct=c.total>0?Math.max(0,Math.min(100,Math.round(c.paid/c.total*100))):0;
+  return `<div class="bc ${_bcMatch(c)?'':'bc-hid'} st-${st}" data-q="${_escHtml(q)}" onclick="billCardTap(event,'${p.id}','${r.id}')" style="cursor:pointer;">
+    <div class="bc-top"><div class="bc-av av-${st}">${_ini(t.name)}</div><div class="bc-who"><div class="bc-name">${_escHtml(t.name||'—')}</div><div class="bc-unit">${_escHtml(r.type+(r.unitNo?' #'+r.unitNo:''))}${r._past?` · <span style="color:var(--orange);">LEFT ${fd(r._past.vacatingDate)}</span>`:''}</div></div>${pill}</div>
+    <div class="bc-amt"><div><small>Due</small><b>${fm(c.total)}</b></div><div><small>Paid</small><b style="color:var(--green);">${fm(c.paid)}</b></div><div>${c.pend<0?`<small>Extra</small><b style="color:var(--green);">${fm(-c.pend)}</b>`:`<small>Balance</small><b style="color:${c.pend>0?'var(--red)':'var(--muted)'};">${c.pend>0?fm(c.pend):'—'}</b>`}</div></div>
+    ${c.pend>0?`<div class="bc-prog"><div class="${st}" style="width:${pct}%;"></div></div>`:''}
+    <div class="bc-chips">${parts.map(x=>`<span>${x}</span>`).join('')}</div>
     ${extra.length?`<div class="bc-extra">${extra.join('<br/>')}</div>`:''}
     ${payChipsH(p,r,mo)}
-    <div class="bc-act">${main}<button class="btn btn-ghost btn-sm" onclick="openCombinedBill(${args})">📱 Send bill</button><button class="btn btn-ghost btn-sm bc-more" onclick="billMore('${p.id}','${r.id}')" title="More">⋯</button></div>
+    <div class="tl-grid bc-tiles">${main}${T('','📱','Send bill',`openCombinedBill(${args})`)}${r._past?T('','👤','Past tenant',`goTab('past')`):T('','👤','Tenant',`dashOpenRoom('${p.id}','${r.id}')`)}${T('gh bc-more','⋯','More',`billMore('${p.id}','${r.id}')`)}</div>
   </div>`;
 }
 function _bcVacH(c){
   const {t}=c;
   const q=[t.name,t.phone,t.roomType,t.unitNo,c.p.name].join(' ').toLowerCase();
-  const line=[`Rent <b>${fm(c.rentDue)}</b>`,c.elecAmt>0?`⚡ <b>${fm(c.elecAmt)}</b>${c.elecRec?` <i>(${c.elecRec.units}u)</i>`:''}`:null].filter(Boolean).join(' + ')+(c.dedAmt>0?` − Ded <b style="color:var(--purple);">${fm(c.dedAmt)}</b>`:'');
+  const parts=[`Rent <b>${fm(c.rentDue)}</b>`,c.elecAmt>0?`⚡ <b>${fm(c.elecAmt)}</b>${c.elecRec?` <i>(${c.elecRec.units}u)</i>`:''}`:null,c.dedAmt>0?`− Ded <b style="color:var(--purple);">${fm(c.dedAmt)}</b>`:null].filter(Boolean);
+  const nr=c.netRefund;
   return `<div class="bc st-vac ${_bcMatch(c)?'':'bc-hid'}" data-q="${_escHtml(q)}">
-    <div class="bc-top"><div style="min-width:0;"><div class="bc-unit">${_escHtml((t.roomType||'')+(t.unitNo?' #'+t.unitNo:''))} · <span style="color:var(--orange);">VACATED ${fd(t.vacatingDate)}</span></div><div class="bc-name">${_escHtml(t.name||'—')}</div></div>
-      <span class="bc-pill ${c.pend<=0?'grn':'red'}">${c.pend<=0?'✓ Settled':'🔴 '+fm(c.pend)+' due'}</span></div>
-    <div class="bc-line">${line}</div>
-    <div class="bc-tot"><span>Due <b>${fm(c.total)}</b></span><span>Paid <b style="color:var(--green);">${fm(c.totalPaid)}</b>${c.secAdj>0?` <i style="font-size:11px;color:var(--muted);">(incl. ${fm(c.secAdj)} from security)</i>`:''}</span></div>
-    <div class="bc-extra">Security held ${fm(t.securityHeld||0)} · <span style="color:${c.netRefund>0?'var(--green)':c.netRefund<0?'var(--red)':'var(--muted)'};font-weight:700;">${c.netRefund>0?'Refund '+fm(c.netRefund):c.netRefund<0?'Owes '+fm(Math.abs(c.netRefund)):'Settled'}</span></div>
+    <div class="bc-top"><div class="bc-av av-vac">${_ini(t.name)}</div><div class="bc-who"><div class="bc-name" style="color:var(--ink2);">${_escHtml(t.name||'—')}</div><div class="bc-unit">${_escHtml((t.roomType||'')+(t.unitNo?' #'+t.unitNo:''))} · vacated ${fd(t.vacatingDate)}</div></div>
+      <span class="bc-pill ${c.pend<=0?'grn':'red'}">${c.pend<=0?'✓ Settled':'🚪 '+fm(c.pend)+' due'}</span></div>
+    <div class="bc-amt"><div><small>Due</small><b>${fm(c.total)}</b></div><div><small>Paid</small><b style="color:var(--green);">${fm(c.totalPaid)}</b></div><div><small>Pending</small><b style="color:${c.pend>0?'var(--red)':'var(--muted)'};">${c.pend>0?fm(c.pend):'—'}</b></div></div>
+    ${c.secAdj>0?`<div class="bc-extra" style="color:var(--muted);">Paid includes ${fm(c.secAdj)} from security</div>`:''}
+    <div class="bc-chips">${parts.map(x=>`<span>${x}</span>`).join('')}</div>
+    <div class="bc-note ${nr>0?'g':nr<0?'r':''}">🔐 Security held ${fm(t.securityHeld||0)} · <b>${nr>0?'Refund '+fm(nr):nr<0?'Owes '+fm(Math.abs(nr)):'Settled'}</b></div>
     <div class="bc-act">${refundActionH(t)}</div>
   </div>`;
 }
@@ -4564,14 +4695,14 @@ function openBillSheet(pid,rid,mo){
     const x=m===mo?c:_billCalc(r,m), lab=x.pend<=0?'✓ Paid':(x.paid>0?fm(x.pend)+' short':fm(x.pend)+' due');
     return `<div class="ms-hm" style="background:${x.pend<=0?'var(--green-dim)':'var(--amber-dim)'};color:${x.pend<=0?'var(--green)':'#B45309'};">${lab}<div>${ml(m).split(' ')[0].slice(0,3)}</div></div>`; }).join('');
   const ded=(r.deductions||[]).some(d=>d.month===mo);
-  const B=(cls,txt,fn)=>`<button class="btn ${cls} btn-sm" onclick="closeM();${fn}">${txt}</button>`;
-  const acts=[c.pend>0?B('btn-orange','💰 Record payment',`openPayment(${args})`):B('btn-ghost','💰 Record payment',`openPayment(${args})`),
-    B('btn-ghost','📱 Send bill',`openCombinedBill(${args})`),
-    B(needElec?'btn-blue':'btn-ghost',e?'⚡ Edit reading':'⚡ Enter reading',`openElec(${args})`),
-    B('btn-ghost',ded?'➖ Deductions':'➖ Deduction',ded?`openManageDeductions(${args})`:`openDeduction(${args})`),
-    B('btn-ghost','💬 WhatsApp',`openWaMenu('${pid}','${rid}')`),
-    B('btn-ghost','🧾 Receipt',`openReceipt('${pid}','${rid}')`),
-    B('btn-ghost','👤 Tenant page',`closeM();dashOpenRoom('${pid}','${rid}')`)].join('');
+  const B=(cls,ic,txt,fn)=>`<button class="tl ${cls}" onclick="closeM();${fn}"><i>${ic}</i>${txt}</button>`;
+  const acts=[B(c.pend>0?'solid':'','💰','Payment',`openPayment(${args})`),
+    B('','📱','Send bill',`openCombinedBill(${args})`),
+    B('blue','⚡',e?'Edit reading':'Reading',`openElec(${args})`),
+    B('pu','➖',ded?'Deductions':'Deduction',ded?`openManageDeductions(${args})`:`openDeduction(${args})`),
+    B('gr','💬','WhatsApp',`openWaMenu('${pid}','${rid}')`),
+    B('','🧾','Receipt',`openReceipt('${pid}','${rid}')`),
+    B('','👤','Tenant page',`closeM();dashOpenRoom('${pid}','${rid}')`)].join('');
   openM((t.name||'Tenant')+' — '+ml(mo),`
     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin:-6px 0 10px;"><div style="font-size:12px;color:var(--muted);">${_escHtml(p.name)} · ${_escHtml(unit)}</div>
       <button class="btn btn-ghost btn-xs" style="white-space:nowrap;font-weight:700;" onclick="closeM();dashOpenRoom('${pid}','${rid}')">👤 Open tenant page ›</button></div>
@@ -4580,7 +4711,7 @@ function openBillSheet(pid,rid,mo){
     <div class="ms-sec"><div class="ms-st">Payments</div>${pays||'<div style="font-size:12.5px;color:var(--muted);padding:4px 0;">No payment yet this month</div>'}</div>
     ${depH}${balH}
     <div class="ms-sec"><div class="ms-st">Last 3 months</div><div class="ms-hist">${hist}</div></div>
-    <div class="ms-act">${acts}</div>`,`<button class="btn btn-ghost" onclick="closeM()">Close</button>`);
+    <div class="ms-st" style="margin-top:14px;">Actions</div><div class="tl-grid">${acts}</div>`,`<button class="btn btn-ghost" onclick="closeM()">Close</button>`);
 }
 function _nextMonth(m){ const [y,mm]=m.split('-').map(Number), d=new Date(y,mm,1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
 function billCardsViewH(sites,G){
@@ -5159,22 +5290,29 @@ function renderCashBook(){
   const chips=[['all','All'],...S.properties.map(p=>[p.id,p.name]),['_misc','Misc'],['_kd','Cash from/to KD']];
   const filtered=fArg!=='all';
   const secH=sec=>{
-    const rows=sec.rows.map(e=>{const k=CB_KIND[e.kind];return`<tr${e.src==='auto'?' style="background:#EFF6FF;"':''}>
-      <td style="white-space:nowrap;">${fd(e.date)}</td>
-      <td><span style="font-size:11px;font-weight:700;color:${k[2]};">${k[0]} ${k[1]}</span><div style="font-size:12px;">${e.text}</div></td>
-      <td style="text-align:right;color:var(--green);font-weight:600;">${e.dir>0?fm(e.amount):''}</td>
-      <td style="text-align:right;color:var(--red);font-weight:600;">${e.dir<0?fm(e.amount):''}</td>
-      <td style="white-space:nowrap;text-align:right;">${e.src==='auto'?'<span style="font-size:10px;color:var(--muted);">auto</span>':cbRowActions(e)}</td></tr>`;}).join('');
-    const parts=cbSummaryParts(sec), st=cbSecStatus(sec,staff);
-    const dir=sec.direct.length?`<div style="padding:8px 12px;background:var(--bg);font-size:12px;"><div style="font-weight:700;color:var(--muted);margin-bottom:4px;">Paid directly (not from ${staff}'s cash) · ${fm(sec.direct.reduce((s,x)=>s+x.amount,0))}</div>
-      ${sec.direct.map(x=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:2px 0;"><span>${fd(x.date)} · ${x.text||'Expense'} <span style="color:var(--muted);">(${x.paidBy})</span></span><span style="white-space:nowrap;">${fm(x.amount)} <button class="btn btn-ghost btn-xs" onclick="editExp('${x.id}')">✏️</button>${isAdmin?`<button class="btn btn-red btn-xs" onclick="delExp('${x.id}')">🗑</button>`:''}</span></div>`).join('')}</div>`:'';
-    return`<div class="card" style="margin-bottom:12px;">
+    const rows=sec.rows.map(e=>{const k=CB_KIND[e.kind], dt=new Date((e.date||'')+'T00:00:00'), ok=!isNaN(dt), act=e.src==='auto'?'<span class="cbe-auto">auto</span>':cbRowActions(e);
+      return`<div class="cbe${e.src==='auto'?' cbe-blue':''}">
+      <div class="cbe-d">${ok?`<b>${String(dt.getDate()).padStart(2,'0')}</b><span>${dt.toLocaleString('en-IN',{month:'short'})}</span>`:'<b>—</b>'}</div>
+      <div class="cbe-t"><span class="cbe-k" style="color:${k[2]};">${k[0]} ${k[1]}</span><div>${e.text}</div></div>
+      <div class="cbe-a" style="color:${e.dir>0?'var(--green)':'var(--red)'};">${e.dir>0?'+':'−'}${fm(e.amount)}</div>
+      ${act?`<div class="cbe-x">${act}</div>`:''}</div>`;}).join('');
+    const parts=cbSummaryParts(sec), st=cbSecStatus(sec,staff), showOC=sec.owner||filtered;
+    const sline=(l,v,c,sign)=>`<div class="cbs-r"><span>${l}</span><b style="color:${c};">${sign}${fm(Math.abs(v))}</b></div>`;
+    const lines=(showOC&&sec.openAll?sline('Opening',sec.openAll,'var(--ink)',sec.openAll<0?'−':''):'')
+      +parts.filter(([l,v])=>v).map(([l,v,c])=>{ const neg=/^−\s*/.test(l); return sline(l.replace(/^−\s*/,''),v,c,neg?'− ':(sec.key==='_misc'?'':'+ ')); }).join('');
+    const stmt=(lines||showOC)?`<div class="cbs">${lines}${showOC?`<div class="cbs-r cbs-c"><span>Closing</span><span>${sec.closeAll<0?'−':''}${fm(Math.abs(sec.closeAll))}</span></div>`:''}</div>`:'';
+    const dirTot=sec.direct.reduce((s,x)=>s+x.amount,0);
+    const dir=sec.direct.length?`<details class="cbdir"${sec.direct.length<=3?' open':''}><summary><span>🤝 Paid directly · ${sec.direct.length}</span><span>${fm(dirTot)} ▾</span></summary>
+      <div class="cbdir-n">Not from ${staff}'s cash</div>
+      ${sec.direct.map(x=>{ const dt=new Date((x.date||'')+'T00:00:00'), ok=!isNaN(dt); return `<div class="cbe">
+        <div class="cbe-d">${ok?`<b>${String(dt.getDate()).padStart(2,'0')}</b><span>${dt.toLocaleString('en-IN',{month:'short'})}</span>`:'<b>—</b>'}</div>
+        <div class="cbe-t"><div style="font-weight:700;">${x.text||'Expense'}</div><span class="cbe-k" style="color:var(--muted);">${x.paidBy||''}</span></div>
+        <div class="cbe-a">${fm(x.amount)}</div>
+        <div class="cbe-x"><button class="btn btn-ghost btn-xs" onclick="editExp('${x.id}')">✏️</button>${isAdmin?`<button class="btn btn-red btn-xs" onclick="delExp('${x.id}')">🗑</button>`:''}</div></div>`; }).join('')}</details>`:'';
+    return`<div class="card cbcard" style="margin-bottom:12px;">
       <div class="card-head" style="flex-wrap:wrap;gap:6px;"><div class="card-title">${sec.key==='_kd'?'💼':sec.key==='_misc'?'🗂️':'🏢'} ${sec.name}</div>${st?`<span class="badge ${st[1]}">${st[0]}</span>`:''}</div>
-      <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:12px;padding:8px 14px;border-bottom:1px solid var(--border);">
-        ${(sec.owner||filtered)?`<span>Opening <strong>${sec.openAll<0?'−':''}${fm(Math.abs(sec.openAll))}</strong></span>`:''}
-        ${parts.map(([l,v,c])=>`<span>${l} <strong style="color:${c}">${fm(v)}</strong></span>`).join('')}
-        ${(sec.owner||filtered)?`<span>= Closing <strong>${sec.closeAll<0?'−':''}${fm(Math.abs(sec.closeAll))}</strong></span>`:''}</div>
-      <div class="card-body" style="padding:0;overflow-x:auto;">${sec.rows.length?`<table class="tbl"><thead><tr><th>Date</th><th>Entry</th><th style="text-align:right;">In</th><th style="text-align:right;">Out</th><th></th></tr></thead><tbody>${rows}</tbody></table>`:`<div style="padding:10px 14px;font-size:12px;color:var(--muted);">No ${staff} cash entries this month.</div>`}${dir}</div></div>`;
+      ${stmt}
+      <div class="card-body" style="padding:0;">${sec.rows.length?`<div class="cbe-list">${rows}</div>`:`<div style="padding:10px 14px;font-size:12px;color:var(--muted);">No ${staff} cash entries this month.</div>`}${dir}</div></div>`;
   };
   const un=d.unassigned;
   const unH=un.length?`<div style="background:var(--amber-dim);border:1.5px solid var(--amber);border-radius:var(--r);padding:10px 14px;margin-bottom:12px;">
@@ -6373,14 +6511,14 @@ function docsPendingRows(){
 }
 function dashDocsPendingH(){
   const rows=docsPendingRows(); if(!rows.length)return '';
-  const rowH=({p,r,miss})=>`<div class="urgent-row tap-row" data-room="${p.id}|${r.id}">
-      <div style="min-width:0;flex:1;"><div style="font-weight:700;font-size:14px;color:var(--ink);">${_escHtml(r.tenant.name||'')}<span class="tap-hint">›</span></div>
-        <div style="font-size:12px;color:var(--ink2);">${_escHtml(p.name)} · ${_escHtml(r.type+(r.unitNo?' #'+r.unitNo:''))}</div>
-        <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px;">${miss.map(m=>`<span class="badge" style="background:#fff;color:var(--red);border:1px solid rgba(239,68,68,.35);">${_escHtml(m)}</span>`).join('')}</div></div>
-      <button class="btn btn-orange btn-sm" onclick="openDocs('${p.id}','${r.id}')">📎 Upload</button></div>`;
+  const rowH=({p,r,miss})=>`<div class="ar tap-row" data-room="${p.id}|${r.id}">
+      <div class="ar-av" style="background:#FEE2E2;color:#B91C1C;">${_ini(r.tenant.name)}</div>
+      <div class="ar-tx"><b>${_escHtml(r.tenant.name||'')}<span class="tap-hint">›</span></b><div class="ar-sub">${_escHtml(r.type+(r.unitNo?' #'+r.unitNo:''))}</div>
+        <div class="ar-tags">${miss.map(m=>`<span class="ar-tag r">${_escHtml(m)}</span>`).join('')}</div></div>
+      <button class="ar-up" title="Upload documents" onclick="event.stopPropagation();openDocs('${p.id}','${r.id}')">📎</button></div>`;
   return dfBox('docs','urgent-card','','urgent-head','',
-    `<span>📋 ${rows.length} tenant${rows.length>1?'s':''} — documents pending</span><span style="font-size:11px;font-weight:600;opacity:.9;flex:none;">Upload to clear</span>`,
-    dfSites('docs',rows,x=>x.p.name,g=>g.map(rowH).join('')));
+    `<span class="dfh"><span class="dfh-ic" style="background:#FEE2E2;">📋</span><span class="dfh-t"><b>Documents pending</b><small>Tap 📎 to upload and clear</small></span><span class="dfh-n" style="background:#FEE2E2;color:#B91C1C;">${rows.length}</span></span>`,
+    dfTabs('docs',rows,x=>x.p.name,rowH));
 }
 
 // ── storage used by documents (Settings) ──
@@ -7535,34 +7673,16 @@ async function printMonthlyReport(month, filterPropId='', shareMode=false){
         +'</tr>';
     }).join('');
     const vacRow=p.vacantCount>0?'<tr><td colspan="15" style="color:#9CA3AF;font-style:italic;font-size:11px;padding:6px 10px;">Vacant ('+p.vacantCount+'): '+(p.vacantUnits||[]).join(', ')+'</td></tr>':'';
-    const expRow=p.expenses.length
-      ?'<tr class="t-exp"><td colspan="15" style="padding:0;">'
-        +'<table style="width:100%;border-collapse:collapse;font-size:11px;">'
-        +'<thead><tr style="background:#FEF3C7;">'
-        +'<th style="padding:5px 8px;text-align:center;color:#92400E;font-weight:700;width:30px;">#</th>'
-        +'<th style="padding:5px 8px;text-align:left;color:#92400E;font-weight:700;">Date</th>'
-        +'<th style="padding:5px 8px;text-align:left;color:#92400E;font-weight:700;">Description</th>'
-        +'<th style="padding:5px 8px;text-align:left;color:#92400E;font-weight:700;">Paid By</th>'
-        +'<th style="padding:5px 8px;text-align:right;color:#92400E;font-weight:700;">Amount</th>'
-        +'</tr></thead>'
-        +'<tbody>'
-        +p.expenses.map((e,i)=>
-          '<tr style="background:'+(i%2===0?'#FFFBEB':'#FEF9EE')+';">'
-          +'<td style="padding:5px 8px;text-align:center;color:#92400E;">'+(i+1)+'</td>'
-          +'<td style="padding:5px 8px;white-space:nowrap;color:#78350F;">'+(e.date?new Date(e.date).toLocaleDateString('en-IN',{day:'2-digit',month:'short'}):'—')+'</td>'
-          +'<td style="padding:5px 8px;color:#1F2937;">'+(e.desc||'—')+'</td>'
-          +'<td style="padding:5px 8px;color:#6B7280;font-size:10px;">'+(e.paidBy||'—')+'</td>'
-          +'<td style="padding:5px 8px;text-align:right;font-weight:700;color:#D97706;">&#8377;'+e.amount.toLocaleString('en-IN')+'</td>'
-          +'</tr>'
-        ).join('')
-        +'</tbody>'
-        +'<tfoot><tr style="background:#FEF3C7;border-top:1.5px solid #FDE68A;">'
-        +'<td colspan="4" style="padding:6px 8px;text-align:right;font-weight:700;color:#92400E;">Total Expenses</td>'
-        +'<td style="padding:6px 8px;text-align:right;font-weight:700;color:#D97706;">&#8377;'+p.expenses.reduce((s,e)=>s+(e.elec?0:e.amount),0).toLocaleString('en-IN')+'</td>'
-        +'</tr></tfoot>'
-        +'</table>'
-        +'</td></tr>'
-      :'';
+    const expRow=(()=>{ if(!p.expenses.length)return '';
+      const ex=p.expenses.map((e,i)=>({e,i})).sort((x,y)=>String(x.e.date||'').localeCompare(String(y.e.date||''))||x.i-y.i).map(x=>x.e);
+      const tot=ex.reduce((t,e)=>t+(e.elec?0:e.amount),0), byWho={};
+      ex.forEach(e=>{ if(e.elec)return; const k=e.paidBy||'Not set'; byWho[k]=(byWho[k]||0)+e.amount; });
+      const R=e=>'<div class="xr"><span class="xd">'+(e.date?new Date(e.date).toLocaleDateString('en-IN',{day:'2-digit',month:'short'}):'—')+'</span><span class="xt">'+_escHtml(e.desc||'—')+'</span><span class="xa"'+(e.elec?' style="color:#9CA3AF;"':'')+'>&#8377;'+e.amount.toLocaleString('en-IN')+'</span></div>';
+      const half=Math.ceil(ex.length/2);
+      return '<div class="xblk"><div class="xh"><span>Expenses &mdash; '+_escHtml(p.name)+' ('+ex.length+')</span><span>&#8377;'+tot.toLocaleString('en-IN')+'</span></div>'
+        +'<div class="xcols"><div>'+ex.slice(0,half).map(R).join('')+'</div><div>'+ex.slice(half).map(R).join('')+'</div></div>'
+        +'<div class="xf">'+Object.keys(byWho).map(k=>'<span>Paid by '+_escHtml(k)+' <b>&#8377;'+byWho[k].toLocaleString('en-IN')+'</b></span>').join('')+'<span>Total <b>&#8377;'+tot.toLocaleString('en-IN')+'</b></span></div></div>';
+    })();
     return '<div class="prop-section">'
       +'<div class="prop-header">'+p.name+(p.address?' &middot; '+p.address:'')+'</div>'
       +'<t'+'able class="rtbl"><th'+'ead><tr>'
@@ -7581,8 +7701,8 @@ async function printMonthlyReport(month, filterPropId='', shareMode=false){
       +'<td></td>'
       +'<td></td>'
       +'<td style="color:'+(p.totalPend>0?'#EF4444':'#10B981')+';font-weight:700;">'+(p.totalPend>0?'&#8377;'+p.totalPend.toLocaleString('en-IN'):'&#10003; All Paid')+'</td>'
-      +'</tr>'+expRow+'</tf'+'oot>'
-      +'</t'+'able></div>';
+      +'</tr></tf'+'oot>'
+      +'</t'+'able>'+expRow+'</div>';
   }).join('');
 
   const movementRows=data.movements.map(m=>{
@@ -7631,6 +7751,9 @@ async function printMonthlyReport(month, filterPropId='', shareMode=false){
     '.rtbl tbody tr:nth-child(even){background:#FAFAFA;}',
     '.t-total td{font-weight:700;border-top:2px solid #F97316;background:#FFF7ED;}',
     '.t-exp td{font-size:11px;color:#D97706;border-top:1px dashed #FCD34D;background:#FFFBEB;}',
+    '.xblk{margin:10px 0 4px;page-break-inside:auto;}.xh{display:flex;justify-content:space-between;font-weight:800;font-size:12px;color:#92400E;border-bottom:1.5px solid #F59E0B;padding-bottom:4px;margin-bottom:2px;}',
+    '.xcols{display:grid;grid-template-columns:1fr 1fr;column-gap:26px;}.xr{display:grid;grid-template-columns:48px 1fr 74px;gap:6px;padding:4px 0;border-bottom:1px solid #F1F1F1;font-size:10.5px;break-inside:avoid;}',
+    '.xd{color:#9CA3AF;}.xt{color:#1F2937;}.xa{text-align:right;font-weight:700;color:#1F2937;}.xf{display:flex;justify-content:flex-end;gap:22px;font-size:11px;color:#555;margin-top:6px;}.xf b{color:#1A1A1A;}',
     '.net{page-break-inside:avoid;background:#1A1A1A;color:#fff;padding:16px 20px;border-radius:8px;margin-top:8px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}',
     '.net-r{display:flex;justify-content:space-between;padding:4px 0;font-size:13px;}',
     '.net-total{display:flex;justify-content:space-between;padding:10px 0 0;border-top:1px solid rgba(255,255,255,.2);margin-top:6px;font-size:16px;font-weight:700;}',
@@ -8866,34 +8989,34 @@ function agreementsPending(){
       out.push({kind:'room',pid:p.id,rid:r.id,name:(r.tenant&&r.tenant.name)||'—',prop:p.name,unit:r.type+(r.unitNo?' #'+r.unitNo:''),start:r.lease.renewedStart||'',end:r.lease.endDate||'',rent:Number(r.rent||0),sg:{done:true,on:pl.since,src:''},pv:{done:false}}); }));
   return out.sort((a,b)=>(a.sg.done-b.sg.done)||String(b.start||'').localeCompare(String(a.start||'')));
 }
+function _mY(d){ if(!d)return ''; const x=new Date(String(d).slice(0,10)+'T00:00:00'); return isNaN(x)?'':x.toLocaleString('en-IN',{month:'short'})+' '+String(x.getFullYear()).slice(2); }
 function _agrRowH(a){
   const arg=a.kind==='lease'?`'lease','${a.id}'`:`'room','${a.pid}','${a.rid}'`;
   const L=a.kind==='lease'?(S.leases||[]).find(x=>x.id===a.id):null;
   const oldSg=L&&!a.sg.done?_leaseDocOld(L,'lease_deed'):null, oldPv=L&&!a.pv.done?_leaseDocOld(L,'police_ver'):null;
-  const useBtn=(what,on)=>`<button class="btn btn-ghost btn-xs" style="margin-left:4px;padding:2px 8px;" onclick="agrUseCopy('${a.id}','${what}','${on||''}')">✓ Use this copy</button>`;
-  const sgL=a.sg.done?`<div style="font-size:12px;color:var(--green);font-weight:700;margin-top:2px;">✅ Signed${a.sg.on?' '+fd(a.sg.on):''}${a.sg.src?' · '+a.sg.src:''}</div>`
-    :`<div style="font-size:12px;color:#B45309;font-weight:700;margin-top:2px;">⏳ Not signed yet</div>${oldSg?`<div style="font-size:11px;color:var(--ink2);margin-top:1px;">📎 Lease Deed copy on file${oldSg.on?' from '+fd(oldSg.on):''} (before this agreement)${useBtn('sign',oldSg.on)}</div>`:''}`;
-  const pvL=a.pv.done?`<div style="font-size:12px;color:#3730A3;font-weight:700;margin-top:1px;">🚔 Police verified${a.pv.on?' '+fd(a.pv.on):''}${a.pv.src?' · '+a.pv.src:''}</div>`
-    :`<div style="font-size:12px;color:#3730A3;font-weight:700;margin-top:1px;">🚔 Police verification pending</div>${oldPv?`<div style="font-size:11px;color:var(--ink2);margin-top:1px;">📎 Police Verification copy on file${oldPv.on?' from '+fd(oldPv.on):''}${useBtn('police',oldPv.on)}</div>`:''}`;
-  const btns=(a.kind==='lease'&&!a.sg.done?`<button class="btn btn-green btn-sm" onclick="openAgrSigned('${a.id}')">✅ Mark Signed</button>`:'')
-    +(!a.pv.done?`<button class="btn btn-sm" style="background:#EEF2FF;color:#3730A3;border:1.5px solid #C7D2FE;" onclick="openPoliceDone(${arg})">🚔 Police Verification Done</button>`:'')
-    +(a.kind==='lease'&&!a.sg.done&&!a.pv.done?`<button class="btn btn-ghost btn-sm" onclick="agrBothDone('${a.id}')">Both already done</button>`:'');
-  return`<div class="urgent-row tap-row" ${a.kind==='room'?`data-room="${a.pid}|${a.rid}"`:`data-lease="${a.id}"`} style="border-bottom-color:rgba(99,102,241,.2);">
-    <div style="min-width:0;">
-      <div style="font-weight:700;font-size:14px;color:var(--ink);">${a.name}<span class="tap-hint">›</span></div>
-      <div style="font-size:12px;color:var(--ink2);">${a.prop}${a.unit?' · '+a.unit:''}${a.rent?' · '+fm(a.rent)+'/mo':''}</div>
-      ${a.start||a.end?`<div style="font-size:11px;color:var(--muted);margin-top:1px;">Agreement ${fd(a.start)} → ${fd(a.end)}</div>`:''}
-      ${sgL}${pvL}
-    </div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;">${btns}</div>
+  const useBtn=(what,on)=>`<button class="btn btn-ghost btn-xs" style="margin-left:4px;padding:2px 8px;" onclick="event.stopPropagation();agrUseCopy('${a.id}','${what}','${on||''}')">✓ Use this copy</button>`;
+  const tags=(a.sg.done?`<span class="ar-tag g">✓ Signed${a.sg.on?' '+fd(a.sg.on):''}${a.sg.src?' · '+_escHtml(a.sg.src):''}</span>`:`<span class="ar-tag a">⏳ Not signed</span>`)
+    +(a.pv.done?`<span class="ar-tag g">🚔 Police verified${a.pv.on?' '+fd(a.pv.on):''}</span>`:`<span class="ar-tag b">🚔 Police pending</span>`);
+  const notes=(oldSg?`<div class="ar-note">📎 Lease Deed copy on file${oldSg.on?' from '+fd(oldSg.on):''} (before this agreement)${useBtn('sign',oldSg.on)}</div>`:'')
+    +(oldPv?`<div class="ar-note">📎 Police Verification copy on file${oldPv.on?' from '+fd(oldPv.on):''}${useBtn('police',oldPv.on)}</div>`:'');
+  const isL=a.kind==='lease', stop='event.stopPropagation();';
+  const btns=`<div class="ar-btns" style="${isL?'':'grid-template-columns:minmax(0,1fr);'}">`
+    +(isL?`<button class="s" ${a.sg.done?'disabled':''} onclick="${stop}openAgrSigned('${a.id}')">✅ Signed</button>`:'')
+    +`<button class="p" ${a.pv.done?'disabled':''} onclick="${stop}openPoliceDone(${arg})">🚔 Police done</button>`
+    +(isL?`<button ${!a.sg.done&&!a.pv.done?'':'disabled'} onclick="${stop}agrBothDone('${a.id}')">Both done</button>`:'')+`</div>`;
+  const sub=[_escHtml(a.unit||''),a.rent?fm(a.rent):'',(a.start||a.end)?_mY(a.start)+' → '+_mY(a.end):''].filter(Boolean).join(' · ');
+  return`<div class="ar tap-row" ${a.kind==='room'?`data-room="${a.pid}|${a.rid}"`:`data-lease="${a.id}"`}>
+    <div class="ar-av" style="background:${a.sg.done?'#EEF2FF':'#FEF3C7'};color:${a.sg.done?'#4338CA':'#B45309'};">${_ini(a.name)}</div>
+    <div class="ar-tx"><b>${_escHtml(a.name)}<span class="tap-hint">›</span></b><div class="ar-sub">${sub}</div>
+      <div class="ar-tags">${tags}</div>${notes}${btns}</div>
   </div>`;
 }
 function dashAgreementsH(){
   const list=agreementsPending(); if(!list.length)return '';
-  return dfBox('agr','soon-card','border-color:#C7D2FE;','soon-head','background:#4338CA;color:#fff;',
-    `<span>📝 ${list.length} agreement${list.length>1?'s':''} to sign &amp; verify</span>`,
-    dfSites('agr',list,a=>a.prop,g=>g.map(_agrRowH).join(''),g=>{ const ns=g.filter(a=>!a.sg.done).length, np=g.filter(a=>!a.pv.done).length;
-      return [ns?ns+' not signed':'', np?np+' police pending':''].filter(Boolean).join(' · '); }));
+  const ns=list.filter(a=>!a.sg.done).length, np=list.filter(a=>!a.pv.done).length;
+  return dfBox('agr','soon-card','border-color:#C7D2FE;border-left-color:#4338CA;','soon-head','color:#4338CA;',
+    `<span class="dfh"><span class="dfh-ic" style="background:#EEF2FF;">📝</span><span class="dfh-t"><b>Agreements to sign &amp; verify</b><small>${[ns?ns+' not signed':'',np?np+' police pending':''].filter(Boolean).join(' · ')}</small></span><span class="dfh-n" style="background:#EEF2FF;color:#4338CA;">${list.length}</span></span>`,
+    dfTabs('agr',list,a=>a.prop,_agrRowH));
 }
 // accept a copy already in the tenant's Documents (uploaded before this agreement's dates)
 function agrUseCopy(id,what,on){
@@ -8953,7 +9076,7 @@ function dashLeaseUrgentH(){
   let h='';
   const drafted=g=>{ const d=g.filter(a=>a.draftId).length; return d?d+' renewal'+(d>1?'s':'')+' drafted':''; };
   if(ex.length)h+=dfBox('exp','urgent-card','','urgent-head','',
-    `<span>🚨 ${ex.length} Lease${ex.length>1?'s':''} Expired — Action Needed</span><button class="btn btn-sm" style="background:#fff;color:var(--red);flex:none;" onclick="event.stopPropagation();goTab('lease')">View All</button>`,
+    `<span>🚨 ${ex.length} Lease${ex.length>1?'s':''} Expired — Action Needed</span><button class="btn btn-sm" style="background:#FEF2F2;color:var(--red);flex:none;" onclick="event.stopPropagation();goTab('lease')">View All</button>`,
     dfSites('exp',ex,a=>a.prop,g=>g.map(_alertRowH).join(''),drafted));
   if(soon.length)h+=dfBox('soon','soon-card','','soon-head','',
     `<span>⏳ ${soon.length} lease${soon.length>1?'s':''} ending within 30 days</span>`,
@@ -9229,24 +9352,23 @@ function _lsCard(l,drafts){
     :(st==='expiring'||st==='active')&&d!==null?`<span style="color:${d<=30?'#B45309':'var(--green)'};font-weight:600;">${d===0?'Ends today':d+'d left'}</span>`:'';
   const open=st==='expired'||st==='expiring'||st==='active';
   const dr=drafts[l.id];
-  const main=st==='draft'?`<button class="btn btn-green btn-xs" onclick="finalizeDraft('${l.id}')">✅ Mark Signed</button>`
-    :open&&!dr?`<button class="btn btn-orange btn-xs" onclick="openMarkRenewed('${l.id}')">🔄 Renew</button>`:'';
+  const main=st==='draft'?`<button class="lsb lsb-gr" onclick="finalizeDraft('${l.id}')">✅ Signed</button>`
+    :open&&!dr?`<button class="lsb lsb-or" onclick="openMarkRenewed('${l.id}')">🔄 Renew</button>`:'';
   const draftBox=dr?`<div class="ls-draft"><div>📝 <strong>Renewal drafted</strong> · ${fd(dr.leaseStart)} → ${fd(dr.leaseEnd)}${dr.rentAmt?' · ₹'+Number(dr.rentAmt).toLocaleString('en-IN'):''}<br/><span style="color:var(--muted);">Awaiting signature</span></div>
       <div class="ls-acts"><button class="btn btn-ghost btn-xs" onclick="openLeaseDeed('${dr.id}')">🖨️ Print / Edit</button><button class="btn btn-green btn-xs" onclick="finalizeDraft('${dr.id}')">✅ Mark Signed</button>${_policeDone(dr)?'<span style="font-size:11px;color:#3730A3;font-weight:700;align-self:center;">🚔 Police done</span>':`<button class="btn btn-xs" style="background:#EEF2FF;color:#3730A3;border:1.5px solid #C7D2FE;" onclick="openPoliceDone('lease','${dr.id}')">🚔 Police Done</button>`}</div></div>`:'';
   const _sg=leaseSignInfo(l), _pv=leasePoliceInfo(l), _cur=((l.status||'active')==='active'||l.status==='expired')&&leaseIsCurrent(l);
-  const polBox=_cur&&!dr&&(!_sg.done||!_pv.done)?`<div class="ls-draft" style="background:#EEF2FF;border-color:#C7D2FE;"><div>${_sg.done?'✅ Signed'+(_sg.on?' '+fd(_sg.on):''):'⏳ <strong>Not signed yet</strong>'} · ${_pv.done?'🚔 Police verified':'🚔 <strong>Police verification pending</strong>'}</div><div class="ls-acts">${!_sg.done?`<button class="btn btn-green btn-xs" onclick="openAgrSigned('${l.id}')">✅ Mark Signed</button>`:''}${!_pv.done?`<button class="btn btn-xs" style="background:#3730A3;color:#fff;" onclick="openPoliceDone('lease','${l.id}')">🚔 Police Done</button>`:''}${!_sg.done&&!_pv.done?`<button class="btn btn-ghost btn-xs" onclick="agrBothDone('${l.id}')">Both already done</button>`:''}</div></div>`
-    :_cur&&_sg.done&&_pv.done?`<div style="font-size:11px;color:#3730A3;font-weight:700;margin-top:4px;">✅ Signed · 🚔 Police verified</div>`:'';
+  const polBox=_cur&&!dr?`<div class="ar-tags" style="margin-top:8px;">${_sg.done?`<span class="ar-tag g">✓ Signed${_sg.on?' '+fd(_sg.on):''}</span>`:`<span class="ar-tag a">⏳ Not signed yet</span>`}${_pv.done?`<span class="ar-tag g">🚔 Police verified</span>`:`<span class="ar-tag b">🚔 Police pending</span>`}</div>`
+      +((!_sg.done||!_pv.done)?`<div class="ar-btns">${`<button class="s" ${_sg.done?'disabled':''} onclick="openAgrSigned('${l.id}')">✅ Signed</button>`}<button class="p" ${_pv.done?'disabled':''} onclick="openPoliceDone('lease','${l.id}')">🚔 Police done</button><button ${!_sg.done&&!_pv.done?'':'disabled'} onclick="agrBothDone('${l.id}')">Both done</button></div>`:''):'';
+  const acts=[main,
+    `<button class="lsb" onclick="openLeaseDeed('${l.id}')">📄 View</button>`,
+    `<button class="lsb" onclick="shareLeaseWhatsApp('${l.id}')">📤 Share</button>`].filter(Boolean);
   return `<div class="ls-card ${st==='expired'?'ls-exp':st==='expiring'?'ls-soon':st==='draft'?'ls-dft':(st==='renewed'||st==='closed')?'ls-past':''}">
     <div class="ls-top"><div style="min-width:0;"><div class="ls-name">${l.lesseeName||'—'}</div>
       <div class="ls-sub">${l.propertyName||'—'}${leaseUnitLabel(l)?' · '+leaseUnitLabel(l):''}${l.rentAmt?' · ₹'+Number(l.rentAmt).toLocaleString('en-IN')+'/mo':''}</div></div>
       <div style="text-align:right;flex-shrink:0;">${leaseStatusBadge(l)}</div></div>
     <div class="ls-per">${fd(l.leaseStart)} → ${fd(l.leaseEnd)}${days?' · '+days:''}</div>
     ${draftBox}${polBox}
-    <div class="ls-acts">${main}
-      <button class="btn btn-ghost btn-xs" onclick="openLeaseDeed('${l.id}')">📄 ${isAdmin?'View & Print':'View'}</button>
-      <button class="btn btn-ghost btn-xs" onclick="shareLeaseWhatsApp('${l.id}')">📤 Share</button>
-      ${isAdmin?`<button class="btn btn-ghost btn-xs ls-del" title="Delete" onclick="deleteLease('${l.id}')">🗑</button>`:''}
-    </div>
+    <div class="ls-bar" style="grid-template-columns:repeat(${acts.length},minmax(0,1fr))${isAdmin?' 44px':''};">${acts.join('')}${isAdmin?`<button class="lsb lsb-del" title="Delete" onclick="deleteLease('${l.id}')">🗑</button>`:''}</div>
   </div>`;
 }
 function renderLease(){
