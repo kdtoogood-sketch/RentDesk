@@ -5216,8 +5216,11 @@ const CB_KIND={deposit:['🔐','Security / advance (cash)','var(--purple)'],refu
 function ownerLike(pid){ const p=siteById(pid); if(!p)return false; return isOwnerSite(p)||(S.cash||[]).some(c=>c.type==='handover'&&c.propertyId===pid); }
 function _secKey(e){ return (e.kind==='given'||e.kind==='returned'||e.kind==='maintin')?'_kd':(e.site||'_misc'); }
 function cashBookMonth(staff,month,filter){ return cashBookRange(staff,month+'-01',_mEnd(month),filter,month); }
+// Cash book fresh start: everything was reconciled up to 31 Oct 2026, so from 1 Nov 2026 every site starts at ₹0.
+// Months before that still show exactly as they always did.
+const CB_START='2026-11-01';
 function cashBookRange(staff,from,to,filter,month){
-  const all=cashBookEntries(staff);
+  const all=cashBookEntries(staff).filter(e=>from<CB_START||(e.date||'')>=CB_START);
   const inM=e=>(e.date||'')>=from&&(e.date||'')<=to, before=e=>(e.date||'')<from;
   const direct=directExpenses(from,to);
   const keys=new Set();
