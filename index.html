@@ -490,10 +490,20 @@ button{cursor:pointer;}
 .na-box [data-fold="docs"] .dfh-t b{color:var(--ink);}
 .todo-wrap{margin-bottom:14px;}
 .todo-h{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:0 4px 8px;}
-.todo-wrap .urgent-card,.todo-wrap .soon-card{border:1px solid var(--border)!important;border-left:1px solid var(--border)!important;box-shadow:none!important;margin-bottom:8px!important;}
+.todo-wrap .urgent-card,.todo-wrap .soon-card{border:1px solid #DDE1E7!important;border-left:1px solid #DDE1E7!important;box-shadow:0 1px 3px rgba(15,23,42,.06)!important;margin-bottom:10px!important;}
 .todo-wrap .urgent-head,.todo-wrap .soon-head{color:var(--ink)!important;font-size:14px!important;}
 .todo-wrap .dfh-ic{background:#F3F4F6!important;}
 .todo-wrap .dfh-n{background:#F3F4F6!important;color:var(--ink2)!important;}
+.urgent-card>.df-body,.soon-card>.df-body{background:#F3F4F6;padding:2px 0 6px;}
+.urgent-card>.df-body .df-site-head,.soon-card>.df-body .df-site-head{background:#F3F4F6;}
+.urgent-card>.df-body .urgent-row,.soon-card>.df-body .urgent-row,.urgent-card>.df-body .ar,.soon-card>.df-body .ar{
+  background:#fff;border:1px solid #E2E5EA!important;border-radius:12px;margin:8px 10px;box-shadow:0 1px 2px rgba(15,23,42,.05);}
+.urgent-card>.df-body .urgent-row:last-child,.soon-card>.df-body .urgent-row:last-child{border-bottom:1px solid #E2E5EA!important;}
+.urgent-card>.df-body .dft-pane,.soon-card>.df-body .dft-pane{background:#F3F4F6;border-top:none;padding-top:2px;}
+.urgent-card>.df-body .dft-tabs,.soon-card>.df-body .dft-tabs{padding-top:10px;}
+.urgent-card>.df-body .dft-more,.soon-card>.df-body .dft-more{background:#F3F4F6;border-top:none;}
+.urgent-card>.df-body .dft-tab,.soon-card>.df-body .dft-tab{background:#fff;border:1px solid #E2E5EA;}.urgent-card>.df-body .dft-tab.on,.soon-card>.df-body .dft-tab.on{background:var(--ink);border-color:var(--ink);}
+.ar-btns button{white-space:normal!important;overflow:visible!important;text-overflow:clip!important;line-height:1.15;}
 .tl-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;width:100%;}.tl-grid.c3{grid-template-columns:repeat(3,minmax(0,1fr));}
 @media(max-width:330px){.tl-grid{grid-template-columns:repeat(3,minmax(0,1fr));}}
 .tl{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:58px;padding:8px 3px 7px;margin:0;border-radius:12px;border:1.5px solid #F6C7A6;background:#FFF4EC;color:#C2410C;font-family:inherit;font-size:12px;font-weight:700;line-height:1.15;cursor:pointer;text-align:center;overflow-wrap:anywhere;-webkit-tap-highlight-color:transparent;}
@@ -9030,7 +9040,7 @@ function _agrRowH(a){
   const notes=(oldSg?`<div class="ar-note">📎 Lease Deed copy on file${oldSg.on?' from '+fd(oldSg.on):''} (before this agreement)${useBtn('sign',oldSg.on)}</div>`:'')
     +(oldPv?`<div class="ar-note">📎 Police Verification copy on file${oldPv.on?' from '+fd(oldPv.on):''}${useBtn('police',oldPv.on)}</div>`:'');
   const isL=a.kind==='lease', stop='event.stopPropagation();';
-  const B=[]; if(isL&&!a.sg.done)B.push(`<button class="s" onclick="${stop}openAgrSigned('${a.id}')">✅ Mark signed</button>`);
+  const B=[]; if(isL&&!a.sg.done)B.push(`<button class="s" onclick="${stop}openAgrSigned('${a.id}')">✅ Signed</button>`);
   if(!a.pv.done)B.push(`<button class="p" onclick="${stop}openPoliceDone(${arg})">🚔 Police done</button>`);
   if(isL&&!a.sg.done&&!a.pv.done)B.push(`<button onclick="${stop}agrBothDone('${a.id}')">Both done</button>`);
   const btns=B.length?`<div class="ar-btns" style="grid-template-columns:repeat(${B.length},minmax(0,1fr));">${B.join('')}</div>`:'';
@@ -9410,7 +9420,7 @@ function _lsCard(l,drafts){
       <div class="ls-acts"><button class="btn btn-ghost btn-xs" onclick="openLeaseDeed('${dr.id}')">🖨️ Print / Edit</button><button class="btn btn-green btn-xs" onclick="finalizeDraft('${dr.id}')">✅ Mark Signed</button>${_policeDone(dr)?'<span style="font-size:11px;color:#3730A3;font-weight:700;align-self:center;">🚔 Police done</span>':`<button class="btn btn-xs" style="background:#EEF2FF;color:#3730A3;border:1.5px solid #C7D2FE;" onclick="openPoliceDone('lease','${dr.id}')">🚔 Police Done</button>`}</div></div>`:'';
   const _sg=leaseSignInfo(l), _pv=leasePoliceInfo(l), _cur=((l.status||'active')==='active'||l.status==='expired')&&leaseIsCurrent(l);
   const polBox=_cur&&!dr?`<div class="ar-tags" style="margin-top:8px;">${_sg.done?`<span class="ar-tag g">✓ Signed${_sg.on?' '+fd(_sg.on):''}</span>`:`<span class="ar-tag a">⏳ Not signed yet</span>`}${_pv.done?`<span class="ar-tag g">🚔 Police verified</span>`:`<span class="ar-tag b">🚔 Police pending</span>`}</div>`
-      +(()=>{ const B=[]; if(!_sg.done)B.push(`<button class="s" onclick="openAgrSigned('${l.id}')">✅ Mark signed</button>`); if(!_pv.done)B.push(`<button class="p" onclick="openPoliceDone('lease','${l.id}')">🚔 Police done</button>`); if(!_sg.done&&!_pv.done)B.push(`<button onclick="agrBothDone('${l.id}')">Both done</button>`);
+      +(()=>{ const B=[]; if(!_sg.done)B.push(`<button class="s" onclick="openAgrSigned('${l.id}')">✅ Signed</button>`); if(!_pv.done)B.push(`<button class="p" onclick="openPoliceDone('lease','${l.id}')">🚔 Police done</button>`); if(!_sg.done&&!_pv.done)B.push(`<button onclick="agrBothDone('${l.id}')">Both done</button>`);
         return B.length?`<div class="ar-btns" style="grid-template-columns:repeat(${B.length},minmax(0,1fr));">${B.join('')}</div>`:''; })():'';
   const acts=[main,
     `<button class="lsb" onclick="openLeaseDeed('${l.id}')">📄 View</button>`,
