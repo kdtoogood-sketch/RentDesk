@@ -511,6 +511,25 @@ button{cursor:pointer;}
 .mst b{display:block;font-size:15px;font-weight:800;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink);}
 .mst span{display:block;font-size:10.5px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .mask-id{cursor:pointer;}.mask-id em{font-style:normal;font-size:11px;color:var(--orange);margin-left:6px;font-weight:700;}
+.xhead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
+.xact{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:8px;margin-bottom:12px;}.xact .btn{justify-content:center;margin:0;white-space:nowrap;}
+.xsum{background:#fff;border:1px solid #DDE1E7;border-radius:14px;padding:12px 14px;margin-bottom:14px;box-shadow:0 1px 3px rgba(15,23,42,.05);}
+.xsum-top{display:flex;justify-content:space-between;align-items:flex-end;}.xsum-top small{display:block;font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}.xsum-top b{font-size:22px;font-weight:800;color:var(--red);}.xsum-top span{font-size:12px;color:var(--muted);font-weight:600;}
+.xs-list{border-top:1px solid #EEF0F3;margin-top:10px;padding-top:6px;}.xs-r{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;}.xs-r b{font-weight:700;}
+.xgrp{background:#fff;border:1px solid #DDE1E7;border-radius:14px;overflow:hidden;margin-bottom:14px;box-shadow:0 1px 3px rgba(15,23,42,.05);}
+.xgh{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#FFF4EC;border-bottom:1px solid #FED7AA;font-weight:800;font-size:14px;color:var(--ink);}
+.xgh small{font-size:11.5px;color:var(--muted);font-weight:600;margin-left:4px;}.xgh b{color:var(--orange2);}
+.xgh.mu{background:#F3F4F6;border-bottom-color:#E5E7EB;}.xgh.mu b{color:var(--ink2);}
+.xrow{display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border-top:1px solid #F0F1F3;}.xgh+.xrow{border-top:none;}
+.xmain{flex:1;min-width:0;}.xtitle{font-size:14px;font-weight:700;color:var(--ink);line-height:1.3;overflow-wrap:anywhere;}
+.xtags{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;}
+.xtag{font-size:10.5px;font-weight:700;border-radius:6px;padding:2px 7px;background:#F3F4F6;color:var(--ink2);}
+.xtag.am{background:#FFFBEB;color:#B45309;}.xtag.pu{background:#F5F3FF;color:#6D28D9;}.xtag.bl{background:#EFF6FF;color:#1D4ED8;}
+.xmeta{font-size:11px;color:var(--muted);margin-top:3px;}
+.xlines{margin-top:4px;font-size:12px;color:var(--ink2);}.xlines div{display:flex;justify-content:space-between;gap:8px;padding:1px 0;}.xlines b{font-weight:600;}
+.xright{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex:none;}
+.xamt{font-weight:800;font-size:14.5px;color:var(--ink);white-space:nowrap;}
+.xbtns{display:flex;gap:4px;}.xbtns .btn{margin:0;}
 .tl-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;width:100%;}.tl-grid.c3{grid-template-columns:repeat(3,minmax(0,1fr));}
 @media(max-width:330px){.tl-grid{grid-template-columns:repeat(3,minmax(0,1fr));}}
 .tl{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:58px;padding:8px 3px 7px;margin:0;border-radius:12px;border:1.5px solid #F6C7A6;background:#FFF4EC;color:#C2410C;font-family:inherit;font-size:12px;font-weight:700;line-height:1.15;cursor:pointer;text-align:center;overflow-wrap:anywhere;-webkit-tap-highlight-color:transparent;}
@@ -4909,77 +4928,46 @@ function renderExp(){
   curTab='expenses';
   const mc=document.getElementById('mc');
   const fil=(S.expenses||[]).filter(e=>e.month===expMo);
-  const tot=fil.reduce((s,e)=>s+(e.items||[]).reduce((is,i)=>is+Number(i.amount||0),0),0);
-
-  // Group by property
-  function expCardHTML(exp){
-    const t=(exp.items||[]).reduce((s,i)=>s+Number(i.amount||0),0);
-    return`<div class="card" style="margin-bottom:10px;">
-      <div class="card-head">
-        <div class="card-title" style="font-size:13px;">
-          <span style="color:var(--muted);font-weight:400;">${exp.date?fd(exp.date):ml(exp.month)}</span>
-          ${exp.fromCash?`<span style="font-size:10px;background:var(--amber-dim);color:var(--amber);border:1px solid rgba(245,158,11,0.3);border-radius:8px;padding:2px 7px;margin-left:6px;font-weight:700;">💵 From Cash</span>`:''}
-          ${(!exp.fromCash&&exp.paidBy==='Preeti')?`<span style="font-size:10px;background:var(--purple-dim);color:var(--purple);border:1px solid rgba(139,92,246,0.3);border-radius:8px;padding:2px 7px;margin-left:6px;font-weight:700;">💸 In Cash Tab</span>`:''}
-          ${(!exp.fromCash&&exp.paidBy==='KD Taneja')?`<span style="font-size:10px;background:var(--blue-dim);color:var(--blue);border:1px solid rgba(59,130,246,0.3);border-radius:8px;padding:2px 7px;margin-left:6px;font-weight:700;">🏦 KD Taneja</span>`:''}
-          ${(!exp.fromCash&&exp.paidBy==='Client/Direct')?`<span style="font-size:10px;background:#F0FDF4;color:#16A34A;border:1px solid rgba(22,163,74,0.3);border-radius:8px;padding:2px 7px;margin-left:6px;font-weight:700;">👤 Client/Direct</span>`:''}
-          ${exp.ownerRent?`<span style="font-size:10px;background:#F5F3FF;color:#6D28D9;border:1px solid rgba(139,92,246,0.3);border-radius:8px;padding:2px 7px;margin-left:6px;font-weight:700;">🤝 Rent to owner · ${_mShortL(exp.ownerRent.month)}${exp.ownerRent.ref?' · '+_escHtml(exp.ownerRent.ref):''}</span>`:''}
-          ${exp.elecPay?`<span style="font-size:10px;background:var(--blue-dim);color:#1D4ED8;border:1px solid rgba(59,130,246,0.3);border-radius:8px;padding:2px 7px;margin-left:6px;font-weight:700;">⚡ Electricity bill · ${_mShortL(exp.elecPay.month)}</span>`:''}
-          ${exp.addedBy?`<span style="font-size:10px;color:var(--muted);margin-left:6px;">by ${exp.addedBy}</span>`:''}
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <strong style="color:var(--amber);">${fm(t)}</strong>
-          ${isAdmin?`<button class="btn btn-ghost btn-sm" onclick="editExp('${exp.id}')">✏️</button><button class="btn btn-red btn-sm" onclick="delExp('${exp.id}')">🗑</button>`:''}
-        </div>
-      </div>
-      <div class="card-body" style="padding:0;">
-        <table class="tbl"><thead><tr><th>Description</th><th style="text-align:right">Amount</th></tr></thead>
-        <tbody>${(exp.items||[]).map(i=>`<tr><td>${i.desc}</td><td style="text-align:right;font-weight:600;color:var(--amber)">${fm(i.amount)}</td></tr>`).join('')}</tbody>
-        </table>
-      </div>
+  const sumOf=e=>(e.items||[]).reduce((is,i)=>is+Number(i.amount||0),0);
+  const tot=fil.reduce((s,e)=>s+sumOf(e),0);
+  // one compact row per expense: date · what · who/tags · amount (edit / delete on the right for admin)
+  function expRowH(exp){
+    const t=sumOf(exp), items=exp.items||[];
+    const dt=exp.date?new Date(exp.date+'T00:00:00'):null, ok=dt&&!isNaN(dt);
+    const tags=[];
+    if(exp.fromCash)tags.push('<span class="xtag am">💵 From cash</span>');
+    else if(exp.paidBy==='Preeti')tags.push('<span class="xtag">💸 Preeti · cash tab</span>');
+    else if(exp.paidBy==='KD Taneja')tags.push('<span class="xtag">🏦 KD Taneja</span>');
+    else if(exp.paidBy==='Client/Direct')tags.push('<span class="xtag">👤 Client / direct</span>');
+    else if(exp.paidBy)tags.push('<span class="xtag">'+_escHtml(exp.paidBy)+'</span>');
+    if(exp.ownerRent)tags.push(`<span class="xtag pu">🤝 Rent to owner · ${_mShortL(exp.ownerRent.month)}</span>`);
+    if(exp.elecPay)tags.push(`<span class="xtag bl">⚡ Electricity bill · ${_mShortL(exp.elecPay.month)}</span>`);
+    const ref=exp.ownerRent&&exp.ownerRent.ref?`<div class="xmeta">Ref ${_escHtml(exp.ownerRent.ref)}</div>`:'';
+    const title=items.length===1?_escHtml(items[0].desc||'Expense'):items.length+' items';
+    const lines=items.length>1?`<div class="xlines">${items.map(i=>`<div><span>${_escHtml(i.desc||'—')}</span><b>${fm(i.amount)}</b></div>`).join('')}</div>`:'';
+    return `<div class="xrow">
+      <div class="cbe-d">${ok?`<b>${String(dt.getDate()).padStart(2,'0')}</b><span>${dt.toLocaleString('en-IN',{month:'short'})}</span>`:'<b>—</b>'}</div>
+      <div class="xmain"><div class="xtitle">${title}</div>${lines}<div class="xtags">${tags.join('')}</div>${ref}${exp.addedBy&&exp.addedBy!==exp.paidBy?`<div class="xmeta">Added by ${_escHtml(exp.addedBy)}</div>`:''}</div>
+      <div class="xright"><div class="xamt">${fm(t)}</div>${isAdmin?`<div class="xbtns"><button class="btn btn-ghost btn-xs" onclick="editExp('${exp.id}')" aria-label="Edit">✏️</button><button class="btn btn-red btn-xs" onclick="delExp('${exp.id}')" aria-label="Delete">🗑</button></div>`:''}</div>
     </div>`;
   }
-
+  const groupH=(name,icon,list,muted)=>{
+    if(!list.length)return '';
+    const gt=list.reduce((s,e)=>s+sumOf(e),0);
+    list=list.slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+    return `<div class="xgrp"><div class="xgh${muted?' mu':''}"><span>${icon} ${_escHtml(name)} <small>${list.length} entr${list.length===1?'y':'ies'}</small></span><b>${fm(gt)}</b></div>${list.map(expRowH).join('')}</div>`;
+  };
   let grouped='';
   if(fil.length){
-    // Each property group
-    S.properties.forEach(p=>{
-      const pExp=fil.filter(e=>e.propertyId===p.id);
-      if(!pExp.length)return;
-      const pTot=pExp.reduce((s,e)=>s+(e.items||[]).reduce((is,i)=>is+Number(i.amount||0),0),0);
-      grouped+='<div style="margin-bottom:18px;"><div style="background:var(--orange);color:#fff;padding:9px 14px;border-radius:10px 10px 0 0;display:flex;justify-content:space-between;align-items:center;"><span style="font-weight:700;font-size:14px;">🏢 '+p.name+'</span><span style="font-weight:700;font-size:13px;">'+fm(pTot)+'</span></div><div style="border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;padding:10px;">'+pExp.map(expCardHTML).join('')+'<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--amber-dim);border-radius:8px;margin-top:4px;"><span style="font-size:12px;font-weight:700;color:var(--amber);">'+p.name+' Total</span><span style="font-size:13px;font-weight:700;color:var(--orange);">'+fm(pTot)+'</span></div></div></div>';
-    });
-    // Other / General
-    const genExp=fil.filter(e=>!e.propertyId);
-    if(genExp.length){
-      const gTot=genExp.reduce((s,e)=>s+(e.items||[]).reduce((is,i)=>is+Number(i.amount||0),0),0);
-      grouped+='<div style="margin-bottom:18px;"><div style="background:#6B7280;color:#fff;padding:9px 14px;border-radius:10px 10px 0 0;display:flex;justify-content:space-between;align-items:center;"><span style="font-weight:700;font-size:14px;">🗂 Other / General</span><span style="font-weight:700;font-size:13px;">'+fm(gTot)+'</span></div><div style="border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;padding:10px;">'+genExp.map(expCardHTML).join('')+'<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--bg);border-radius:8px;margin-top:4px;"><span style="font-size:12px;font-weight:700;color:var(--muted);">Other / General Total</span><span style="font-size:13px;font-weight:700;color:var(--muted);">'+fm(gTot)+'</span></div></div></div>';
-    }
+    S.properties.forEach(p=>{ grouped+=groupH(p.name,'🏢',fil.filter(e=>e.propertyId===p.id)); });
+    grouped+=groupH('Other / General','🗂',fil.filter(e=>!e.propertyId),true);
   }
-
+  const siteRows=fil.length?S.properties.map(p=>{ const v=fil.filter(e=>e.propertyId===p.id).reduce((s,e)=>s+sumOf(e),0); return v>0?`<div class="xs-r"><span>🏢 ${_escHtml(p.name)}</span><b>${fm(v)}</b></div>`:''; }).join('')
+    +(()=>{ const v=fil.filter(e=>!e.propertyId).reduce((s,e)=>s+sumOf(e),0); return v>0?`<div class="xs-r"><span>🗂 Other / General</span><b>${fm(v)}</b></div>`:''; })():'';
   mc.innerHTML=`
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;">
-    <div style="font-family:inherit;font-size:18px;font-weight:700;">📋 Expenses</div>
-    <button onclick="exportRentData('expenses')" style="background:#2b6ef0;color:#fff;border:none;border-radius:20px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;">📥 Export</button>
-    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-      <div class="mnav"><button onclick="chExp(-1)">‹</button><span>${ml(expMo)}</span><button onclick="chExp(1)">›</button></div>
-      <button class="btn btn-ghost btn-sm" onclick="openExpReport(expMo)">📊 Report</button>
-      <button class="btn btn-orange" onclick="openAddExp()">+ Add</button>
-    </div>
-  </div>
-  <div class="g3" style="margin-bottom:10px;">
-    <div class="stat"><div class="stat-label">Total Expenses</div><div class="stat-value red">${fm(tot)}</div><div class="stat-sub">${ml(expMo)}</div></div>
-    <div class="stat"><div class="stat-label">Entries</div><div class="stat-value">${fil.length}</div></div>
-    <div class="stat"><div class="stat-label">Line Items</div><div class="stat-value">${fil.reduce((s,e)=>s+(e.items||[]).length,0)}</div></div>
-  </div>
-  ${fil.length?(()=>{
-    const rows=S.properties.map(p=>{
-      const pTot=fil.filter(e=>e.propertyId===p.id).reduce((s,e)=>s+(e.items||[]).reduce((is,i)=>is+Number(i.amount||0),0),0);
-      return pTot>0?('<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;"><span style="font-size:13px;font-weight:600;color:var(--ink);">🏢 '+p.name+'</span><span style="font-size:13px;font-weight:700;color:var(--orange);">'+fm(pTot)+'</span></div>'):'';
-    }).join('');
-    const genTot=fil.filter(e=>!e.propertyId).reduce((s,e)=>s+(e.items||[]).reduce((is,i)=>is+Number(i.amount||0),0),0);
-    const genRow=genTot>0?('<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;"><span style="font-size:13px;font-weight:600;color:var(--ink);">🗂 Other / General</span><span style="font-size:13px;font-weight:700;color:var(--muted);">'+fm(genTot)+'</span></div>'):'';
-    return '<div style="background:var(--card2);border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:14px;"><div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Site-wise Breakdown</div><div style="display:flex;flex-direction:column;gap:2px;">'+rows+genRow+'<div style="border-top:1.5px solid var(--border);padding-top:8px;margin-top:6px;display:flex;justify-content:space-between;"><span style="font-weight:700;color:var(--ink);">Grand Total</span><span style="font-weight:700;color:var(--red);">'+fm(tot)+'</span></div></div></div>';
-  })():''}
+  <div class="xhead"><div style="font-size:18px;font-weight:800;">📋 Expenses</div><div class="mnav"><button onclick="chExp(-1)">‹</button><span>${ml(expMo)}</span><button onclick="chExp(1)">›</button></div></div>
+  <div class="xact"><button class="btn btn-orange" onclick="openAddExp()">＋ Add expense</button><button class="btn btn-ghost" onclick="openExpReport(expMo)">📊 Report</button><button class="btn btn-ghost" onclick="exportRentData('expenses')">📥 Export</button></div>
+  <div class="xsum"><div class="xsum-top"><div><small>Total · ${ml(expMo)}</small><b>${fm(tot)}</b></div><span>${fil.length} entr${fil.length===1?'y':'ies'}</span></div>${siteRows?`<div class="xs-list">${siteRows}</div>`:''}</div>
   ${grouped||`<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">No expenses for ${ml(expMo)}</div><button class="btn btn-orange" onclick="openAddExp()">Add Expense</button></div>`}`;
 }
 function chExp(d){const[y,m]=expMo.split('-').map(Number);const dt=new Date(y,m-1+d);expMo=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');renderExp();}
