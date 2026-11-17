@@ -74,30 +74,36 @@ button{cursor:pointer;}
 .tb-logout{width:32px;height:32px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .2s;}
 .tb-logout:hover{border-color:var(--red);color:var(--red);}
 .tabs{display:none;} /* hidden - replaced by bottom nav */
-.content{flex:1;overflow-y:auto;padding:18px;padding-bottom:230px;} /* bottom padding for nav */
+.content{flex:1;overflow-y:auto;padding:18px;padding-bottom:90px;} /* bottom padding for nav */
 
 /* BOTTOM NAV */
 .bottom-nav{
   position:fixed;bottom:0;left:0;right:0;
   background:var(--white);border-top:1px solid var(--border);
-  display:flex;flex-wrap:wrap;
-  height:220px;z-index:100;
-  box-shadow:0 -2px 12px rgba(0,0,0,0.08);
+  display:flex;height:64px;z-index:150;padding-bottom:env(safe-area-inset-bottom);
+  box-shadow:0 -2px 12px rgba(0,0,0,0.06);
 }
 .bn-row-divider{display:none;}
 .bn-item{
-  width:33.3333%;height:55px;
+  flex:1;min-width:0;height:100%;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:3px;cursor:pointer;background:none;border:none;
-  border-bottom:1px solid var(--border);
-  transition:all .2s;color:var(--muted);
+  transition:color .2s;color:var(--muted);font-family:inherit;
 }
-.bn-item:nth-child(n+7){border-bottom:none;}
-.bn-item.active{color:var(--orange);background:var(--orange-dim);}
+.bn-item.active{color:var(--orange);}
+.bottom-nav .bn-item.active::before{content:'';position:absolute;top:0;left:22%;right:22%;height:3px;border-radius:0 0 3px 3px;background:var(--orange);}
 .bn-item:hover{color:var(--ink2);}
-.bn-icon{font-size:20px;line-height:1;}
-.bn-label{font-size:10px;font-weight:600;letter-spacing:.3px;text-transform:uppercase;white-space:nowrap;}
-.bn-item.active .bn-icon{transform:scale(1.1);}
+.bn-icon{font-size:21px;line-height:1;}
+.bn-label{font-size:10.5px;font-weight:700;letter-spacing:.2px;white-space:nowrap;}
+.bn-item.active .bn-icon{transform:scale(1.08);}
+#moreSheet{position:fixed;left:0;right:0;top:0;bottom:64px;z-index:140;background:rgba(15,23,42,.28);display:none;align-items:flex-end;}
+#moreSheet.open{display:flex;}
+.ms-panel{width:100%;background:var(--white);border-radius:18px 18px 0 0;padding:14px 12px 12px;box-shadow:0 -8px 24px rgba(0,0,0,.12);animation:msUp .18s ease-out;}
+@keyframes msUp{from{transform:translateY(24px);opacity:.4}to{transform:none;opacity:1}}
+.ms-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
+.ms-grid .bn-item{height:76px;border:1px solid var(--border);border-radius:14px;background:#FAFAFB;}
+.ms-grid .bn-item.active{background:var(--orange-dim);border-color:#FED7AA;}
+.ms-grid .bn-label{font-size:11.5px;white-space:normal;text-align:center;line-height:1.15;}
 
 /* LEASE OVERLAY */
 #leaseOverlay{position:fixed;inset:0;background:#0008;z-index:300;display:none;flex-direction:column;overflow:hidden;}
@@ -472,6 +478,22 @@ button{cursor:pointer;}
 .cbdir summary::-webkit-details-marker{display:none;}
 .cbdir-n{font-size:11px;color:var(--muted);padding:0 12px 6px;}
 .cbdir .cbe{border-top:1px solid #E9EBEF;padding:8px 12px;}
+.na-box{background:#fff;border:2px solid var(--red);border-radius:16px;overflow:hidden;margin-bottom:14px;box-shadow:0 6px 18px rgba(239,68,68,.16);}
+.na-h{display:flex;justify-content:space-between;align-items:center;background:var(--red);color:#fff;padding:10px 14px;font-weight:800;font-size:15px;}
+.na-tot{background:#fff;color:var(--red);border-radius:20px;padding:2px 10px;font-size:13px;font-weight:900;}
+.na-box .urgent-card,.na-box .soon-card{border:none!important;border-top:1px solid #FDE2E2!important;border-radius:0!important;box-shadow:none!important;margin:0!important;}
+.na-box .urgent-head,.na-box .soon-head{color:var(--ink)!important;background:#fff!important;padding:10px 14px!important;}
+.na-row{display:flex;align-items:center;gap:10px;flex:1;min-width:0;}
+.na-ic{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex:none;}
+.na-tx{flex:1;min-width:0;font-family:Inter,system-ui,sans-serif;}.na-tx b{display:block;font-size:14.5px;color:var(--ink);}.na-tx small{display:block;font-size:12px;font-weight:500;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.na-n{font-size:15px;font-weight:900;min-width:32px;text-align:center;border-radius:9px;padding:4px 6px;flex:none;font-family:Inter,system-ui,sans-serif;}
+.na-box [data-fold="docs"] .dfh-t b{color:var(--ink);}
+.todo-wrap{margin-bottom:14px;}
+.todo-h{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:0 4px 8px;}
+.todo-wrap .urgent-card,.todo-wrap .soon-card{border:1px solid var(--border)!important;border-left:1px solid var(--border)!important;box-shadow:none!important;margin-bottom:8px!important;}
+.todo-wrap .urgent-head,.todo-wrap .soon-head{color:var(--ink)!important;font-size:14px!important;}
+.todo-wrap .dfh-ic{background:#F3F4F6!important;}
+.todo-wrap .dfh-n{background:#F3F4F6!important;color:var(--ink2)!important;}
 .tl-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;width:100%;}.tl-grid.c3{grid-template-columns:repeat(3,minmax(0,1fr));}
 @media(max-width:330px){.tl-grid{grid-template-columns:repeat(3,minmax(0,1fr));}}
 .tl{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:58px;padding:8px 3px 7px;margin:0;border-radius:12px;border:1.5px solid #F6C7A6;background:#FFF4EC;color:#C2410C;font-family:inherit;font-size:12px;font-weight:700;line-height:1.15;cursor:pointer;text-align:center;overflow-wrap:anywhere;-webkit-tap-highlight-color:transparent;}
@@ -662,7 +684,7 @@ button{cursor:pointer;}
 }
 @media(max-width:400px){
   .g2,.g3,.g4{grid-template-columns:1fr;}
-  .bn-label{font-size:8px;}
+  .bn-label{font-size:9.5px;}
 }
 </style>
 </head>
@@ -701,23 +723,26 @@ button{cursor:pointer;}
     </div>
   </div>
   <div class="tabs"></div><!-- kept for JS compat -->
-  <!-- BOTTOM NAV — 3 rows of 3 -->
+  <!-- BOTTOM NAV — one row of 5; the rest sit under "More" -->
   <div class="bottom-nav" id="bottomNav">
-    <!-- Row 1 -->
-    <button class="bn-item active" id="bn-dash" onclick="goTab('dash')"><span class="bn-icon">📊</span><span class="bn-label">Dashboard</span></button>
+    <button class="bn-item active" id="bn-dash" onclick="goTab('dash')"><span class="bn-icon">🏠</span><span class="bn-label">Home</span></button>
     <button class="bn-item" id="bn-props" onclick="goTab('props')"><span class="bn-icon">🏢</span><span class="bn-label">Properties</span></button>
     <button class="bn-item" id="bn-billing" onclick="goTab('billing')"><span class="bn-icon">⚡</span><span class="bn-label">Billing</span></button>
-    <!-- Row 2 -->
-    <button class="bn-item" id="bn-cash" onclick="goTab('cash')"><span class="bn-icon">💰</span><span class="bn-label">Cash &amp; Exp</span></button>
-    <button class="bn-item" id="bn-planner" onclick="goTab('planner')"><span class="bn-icon">✅</span><span class="bn-label">Planner</span></button>
-    <!-- Row 3 -->
-    <button class="bn-item" id="bn-reminders" onclick="goTab('reminders')"><span class="bn-icon">🔔</span><span class="bn-label">Reminders</span></button>
-    <button class="bn-item" id="bn-attendance" onclick="goTab('attendance')"><span class="bn-icon">🕐</span><span class="bn-label">Attendance</span></button>
-    <button class="bn-item" id="bn-lease" onclick="goTab('lease')"><span class="bn-icon">📄</span><span class="bn-label">Lease</span></button>
-    <button class="bn-item" id="bn-past" onclick="goTab('past')"><span class="bn-icon">👥</span><span class="bn-label">Past</span></button>
-    <button class="bn-item" id="bn-owners" onclick="goTab('owners')" style="display:none;"><span class="bn-icon">🤝</span><span class="bn-label">Owners &amp; Profit</span></button>
-    <!-- Row 4 -->
-    <button class="bn-item" id="bn-settings" onclick="goTab('settings')"><span class="bn-icon">⚙️</span><span class="bn-label">Settings</span></button>
+    <button class="bn-item" id="bn-cash" onclick="goTab('cash')"><span class="bn-icon">💰</span><span class="bn-label">Cash</span></button>
+    <button class="bn-item" id="bn-more" onclick="toggleMore()"><span class="bn-icon">☰</span><span class="bn-label">More</span></button>
+  </div>
+  <div id="moreSheet" onclick="if(event.target===this)toggleMore(false)">
+    <div class="ms-panel">
+      <div class="ms-grid">
+        <button class="bn-item" id="bn-lease" onclick="goTab('lease')"><span class="bn-icon">📄</span><span class="bn-label">Lease</span></button>
+        <button class="bn-item" id="bn-planner" onclick="goTab('planner')"><span class="bn-icon">✅</span><span class="bn-label">Planner</span></button>
+        <button class="bn-item" id="bn-reminders" onclick="goTab('reminders')"><span class="bn-icon">🔔</span><span class="bn-label">Reminders</span></button>
+        <button class="bn-item" id="bn-attendance" onclick="goTab('attendance')"><span class="bn-icon">🕐</span><span class="bn-label">Attendance</span></button>
+        <button class="bn-item" id="bn-past" onclick="goTab('past')"><span class="bn-icon">👥</span><span class="bn-label">Past tenants</span></button>
+        <button class="bn-item" id="bn-owners" onclick="goTab('owners')" style="display:none;"><span class="bn-icon">🤝</span><span class="bn-label">Owners &amp; Profit</span></button>
+        <button class="bn-item" id="bn-settings" onclick="goTab('settings')"><span class="bn-icon">⚙️</span><span class="bn-label">Settings</span></button>
+      </div>
+    </div>
   </div>
   <div class="content" id="mc"></div>
 </div>
@@ -1599,8 +1624,12 @@ function goTab(tab){
     const el=document.getElementById('bn-'+t);
     if(el)el.classList.toggle('active',t===tab);
   });
+  { const mb=document.getElementById('bn-more'); if(mb)mb.classList.toggle('active',MORE_TABS.includes(tab)); }
+  toggleMore(false);
   renderTab();
 }
+const MORE_TABS=['lease','planner','reminders','attendance','past','owners','settings','expenses'];
+function toggleMore(open){ const m=document.getElementById('moreSheet'); if(!m)return; const on=open===undefined?!m.classList.contains('open'):!!open; m.classList.toggle('open',on); }
 function renderTab(){
   try{_settleAllLegacyDocs();}catch(e){}
   try{driveAutoJobs();}catch(e){}
@@ -1614,7 +1643,7 @@ function renderTab(){
   if(curTab==='owners'&&!isAdmin)curTab='dash';
   // Fix content padding accordingly
   const mc=document.getElementById('mc');
-  if(mc)mc.style.paddingBottom='230px';
+  if(mc)mc.style.paddingBottom='90px';
   if(vRoom){renderRoomDetail();return;}
   if(vProp){renderPropDetail();return;}
   ({dash:renderDash,props:renderProps,billing:renderBilling,expenses:renderExp,cash:renderCashBook,planner:renderPlanner,reminders:renderReminders,attendance:renderAttendance,lease:renderLease,past:renderPast,settings:renderSettings,owners:renderOwners}[curTab]||renderDash)();
@@ -1732,14 +1761,8 @@ function renderDash(){
     <div style="font-family:'Space Grotesk';font-size:18px;font-weight:700;">Good day, ${user} 👋</div>
     <div style="font-size:12px;color:var(--muted);margin-top:2px;">${new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
   </div>
-  ${dashLeaseUrgentH()}
-  ${dashRentAskH()}
-  ${dashMeterReminderH()}
-  ${dashBankCheckH()}
-  ${dashBirthdaysH()}
-  ${dashOwnerRentH()}
-  ${dashReportsReminderH()}
-  ${dashDocsPendingH()}
+  ${dashNeedsActionH()}
+  ${(()=>{ const t=[dashAgreementsH(),dashMeterReminderH(),dashRentAskH(),dashBankCheckH(),dashOwnerRentH(),dashReportsReminderH(),dashBirthdaysH()].join('').trim(); return t?`<div class="todo-wrap"><div class="todo-h">To do</div>${t}</div>`:''; })()}
   <div class="g4" style="margin-bottom:14px;">
     <div class="stat"><div class="stat-icon">🏢</div><div class="stat-label">Properties</div><div class="stat-value ora">${S.properties.length}</div><div class="stat-sub">${all.length} units</div></div>
     <div class="stat"><div class="stat-icon">✅</div><div class="stat-label">Occupied</div><div class="stat-value grn">${occ}</div><div class="stat-sub">${all.length-occ} vacant</div></div>
@@ -1825,9 +1848,8 @@ function renderStaffDash(){
     <div style="font-family:'Space Grotesk';font-size:18px;font-weight:700;">Hi ${user} 👋</div>
     <div style="font-size:12px;color:var(--muted);margin-top:2px;">${new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
   </div>
-  ${dashLeaseUrgentH()}
-  ${dashMeterReminderH()}
-  ${dashDocsPendingH()}
+  ${dashNeedsActionH()}
+  ${(()=>{ const t=[dashAgreementsH(),dashMeterReminderH()].join('').trim(); return t?`<div class="todo-wrap"><div class="todo-h">To do</div>${t}</div>`:''; })()}
   <div class="g4" style="margin-bottom:16px;">
     <div class="stat"><div class="stat-icon">🏢</div><div class="stat-label">Properties</div><div class="stat-value ora">${S.properties.length}</div><div class="stat-sub">${all.length} units · ${occ} occupied</div></div>
     <div class="stat"><div class="stat-icon">✅</div><div class="stat-label">My Tasks</div><div class="stat-value ${myTasks.length>0?'ora':'grn'}" style="cursor:pointer;" onclick="goTab('planner')">${myTasks.length}</div><div class="stat-sub">${myTasks.length>0?'Tap to view':'All done!'}</div></div>
@@ -6512,7 +6534,7 @@ function docsPendingRows(){
   }));
   return rows;
 }
-function dashDocsPendingH(){
+function dashDocsPendingH(defOpen){
   const rows=docsPendingRows(); if(!rows.length)return '';
   const rowH=({p,r,miss})=>`<div class="ar tap-row" data-room="${p.id}|${r.id}">
       <div class="ar-av" style="background:#FEE2E2;color:#B91C1C;">${_ini(r.tenant.name)}</div>
@@ -6520,8 +6542,8 @@ function dashDocsPendingH(){
         <div class="ar-tags">${miss.map(m=>`<span class="ar-tag r">${_escHtml(m)}</span>`).join('')}</div></div>
       <button class="ar-up" title="Upload documents" onclick="event.stopPropagation();openDocs('${p.id}','${r.id}')">📎</button></div>`;
   return dfBox('docs','urgent-card','','urgent-head','',
-    `<span class="dfh"><span class="dfh-ic" style="background:#FEE2E2;">📋</span><span class="dfh-t"><b>Documents pending</b><small>Tap 📎 to upload and clear</small></span><span class="dfh-n" style="background:#FEE2E2;color:#B91C1C;">${rows.length}</span></span>`,
-    dfTabs('docs',rows,x=>x.p.name,rowH));
+    `<span class="dfh"><span class="dfh-ic" style="background:#FEE2E2;">📋</span><span class="dfh-t"><b>Documents pending</b><small>${(()=>{ const c={}; rows.forEach(x=>{c[x.p.name]=(c[x.p.name]||0)+1;}); return Object.keys(c).sort((a,b)=>_siteIdx(a)-_siteIdx(b)).map(k=>_escHtml(k)+' · '+c[k]).join('&nbsp;&nbsp; ')+' — tap 📎 to upload'; })()}</small></span><span class="dfh-n" style="background:#FEE2E2;color:#B91C1C;">${rows.length}</span></span>`,
+    dfTabs('docs',rows,x=>x.p.name,rowH),defOpen);
 }
 
 // ── storage used by documents (Settings) ──
@@ -8869,13 +8891,18 @@ function _alertSecondBtn(a){
     :`<button class="btn btn-ghost btn-sm" onclick="closeM();goRoom('${a.pid}','${a.rid}')">🏠 Room</button>`;
 }
 // Red count bubble on the Lease button in the bottom nav
-function updateLeaseBadge(){
-  const btn=document.getElementById('bn-lease');if(!btn)return;
+function _setBadge(id,n){
+  const btn=document.getElementById(id);if(!btn)return;
   let b=btn.querySelector('.bn-badge');
-  const n=expiredAlerts().length;
   if(!n){if(b)b.remove();return;}
   if(!b){b=document.createElement('span');b.className='bn-badge';btn.appendChild(b);}
   b.textContent=n;
+}
+function updateLeaseBadge(){
+  const n=expiredAlerts().length;
+  _setBadge('bn-lease',n); _setBadge('bn-more',n);
+  let na=0; try{ na=needsActionCounts().total; }catch(e){}
+  _setBadge('bn-dash',na);
 }
 function _alertRowH(a){
   const urgent=a.days<0;
@@ -9073,6 +9100,27 @@ function savePoliceDone(kind,a,b){
   t.obj.police={...(t.obj.police||{}),status:'done',on,by:user,note};
   actLog('Police verification done — '+t.name+' ('+fd(on)+')'+(note?' · '+note:''));
   sched();closeM();renderTab();toast('🚔 Police verification marked done');
+}
+// ── "Needs action now": the three things that must shout — expired leases, leases ending soon, documents missing ──
+function needsActionCounts(){
+  const al=allLeaseAlerts(), ex=al.filter(a=>a.days<0).length, soon=al.filter(a=>a.days>=0).length;
+  let docs=0; try{ docs=docsPendingRows().length; }catch(e){}
+  return {ex,soon,docs,total:ex+soon+docs};
+}
+function dashNeedsActionH(){
+  const al=allLeaseAlerts(), ex=al.filter(a=>a.days<0), soon=al.filter(a=>a.days>=0);
+  const docsH=dashDocsPendingH(false), n=needsActionCounts();
+  if(!n.total) return '';
+  const drafted=g=>{ const d=g.filter(a=>a.draftId).length; return d?d+' renewal'+(d>1?'s':'')+' drafted':''; };
+  const names=l=>l.slice(0,3).map(a=>_escHtml(a.tn||a.name||'')).filter(Boolean).join(' · ')+(l.length>3?' +'+(l.length-3):'');
+  let h='';
+  if(ex.length)h+=dfBox('exp','urgent-card','','urgent-head','',
+    `<span class="na-row"><span class="na-ic" style="background:#FEE2E2;">⛔</span><span class="na-tx"><b>${ex.length} lease${ex.length>1?'s':''} expired</b><small>${names(ex)}</small></span><span class="na-n" style="background:#FEE2E2;color:#DC2626;">${ex.length}</span></span>`,
+    dfSites('exp',ex,a=>a.prop,g=>g.map(_alertRowH).join(''),drafted),false);
+  if(soon.length)h+=dfBox('soon','soon-card','','soon-head','',
+    `<span class="na-row"><span class="na-ic" style="background:#FEF3C7;">⏳</span><span class="na-tx"><b>${soon.length} lease${soon.length>1?'s':''} ending within 30 days</b><small>${names(soon)}</small></span><span class="na-n" style="background:#FEF3C7;color:#B45309;">${soon.length}</span></span>`,
+    dfSites('soon',soon,a=>a.prop,g=>g.map(_alertRowH).join(''),drafted),false);
+  return `<div class="na-box"><div class="na-h"><span>🚨 Needs action now</span><span class="na-tot">${n.total}</span></div>${h}${docsH}</div>`;
 }
 function dashLeaseUrgentH(){
   const al=allLeaseAlerts();
