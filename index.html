@@ -2632,7 +2632,7 @@ function buildProfitDocDef(){
     if(blocks.length) c.push({margin:[0,16,0,0],stack:blocks});
   });
   c.push({margin:[0,12,0,0],text:'Collected = rent & electricity payments recorded for the period (security deposits excluded). Caretaking sites count only your fee. Client/Direct expenses and amounts cut from owner rent are not your cost. Electricity cost = main meter reading; bill payments entered in Expenses are the payment record and are not subtracted again.',fontSize:7.5,color:'#9CA3AF'});
-  return {pageSize:'A4',pageOrientation:'landscape',pageMargins:[20,20,20,25],content:c,defaultStyle:{fontSize:9}};
+  return _pdfBW({pageSize:'A4',pageOrientation:'portrait',pageMargins:[24,24,24,28],content:c,defaultStyle:{fontSize:9}});
 }
 async function shareProfitPdf(){
   try{ await loadPdfMake(); if(!window.pdfMake)throw new Error('PDF maker did not load');
@@ -3658,7 +3658,7 @@ async function shareReportPdfBlob(fullHtml,title){
   if(!window.html2pdf){toast('❌ PDF library not loaded — try refresh',4000);return false;}
   const name=pdfName(title);
   const frame=document.createElement('iframe');
-  frame.style.cssText='position:fixed;left:-10000px;top:0;width:1123px;height:10px;border:0;opacity:0;pointer-events:none;';
+  frame.style.cssText='position:fixed;left:-10000px;top:0;width:794px;height:10px;border:0;opacity:0;pointer-events:none;';
   document.body.appendChild(frame);
   try{
     const doc=frame.contentDocument||frame.contentWindow.document;
@@ -3673,8 +3673,8 @@ async function shareReportPdfBlob(fullHtml,title){
       margin:8,
       filename:name,
       image:{type:'jpeg',quality:0.95},
-      html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff',windowWidth:1123,height:fullH},
-      jsPDF:{unit:'mm',format:'a4',orientation:'landscape'},
+      html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff',windowWidth:794,height:fullH},
+      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
       pagebreak:{mode:['avoid-all','css','legacy']}
     };
     const blob=await html2pdf().set(opt).from(doc.body).outputPdf('blob');
@@ -5498,7 +5498,19 @@ function buildCashBookHtml(){
     '.net-total{display:flex;justify-content:space-between;padding:10px 0 4px;border-top:1px solid rgba(255,255,255,.2);margin-top:6px;font-size:16px;font-weight:700;}',
     '.sign{display:flex;justify-content:space-between;gap:30px;margin-top:34px;font-size:11px;color:#6B7280;page-break-inside:avoid;}','.sign div{flex:1;border-top:1px solid #9CA3AF;padding-top:5px;text-align:center;}',
     '.rpt-footer{margin-top:24px;padding-top:12px;border-top:1px solid #E8ECF0;display:flex;justify-content:space-between;font-size:10px;color:#9CA3AF;}',
-    '@page{size:A4 landscape;margin:10mm;}'
+    '@page{size:A4 portrait;margin:9mm;}',
+    /* black & white print */
+    'body *{color:#000!important;background:transparent!important;box-shadow:none!important;}',
+    '.report-header{border-bottom:2.5px solid #000;padding:12px 4px!important;}',
+    '.summary-grid{border-bottom:1.5px solid #000!important;}.summary-tile{border-right:1px solid #999!important;}.st-label{color:#333!important;}',
+    '.content{padding:12px 4px!important;}',
+    '.prop-header,.prop-header *{background:#000!important;color:#fff!important;border-radius:0!important;}.prop-header .ph-status{border:1px solid #fff;}',
+    '.rtbl{border:1px solid #000!important;}.rtbl th{background:#E3E3E3!important;color:#000!important;border-bottom:1.5px solid #000!important;}.rtbl td{border-bottom:1px solid #999!important;}',
+    '.t-total td{background:#E8E8E8!important;border-top:2px solid #000!important;}.t-open td{color:#333!important;}',
+    '.dir-head{border:1px solid #000!important;border-top:none!important;background:#EEE!important;}.dir-tbl{border:1px solid #000!important;border-top:none!important;}.dir-tbl td{border-bottom:1px solid #BBB;}',
+    '.net,.net *{background:#000!important;color:#fff!important;}.net *{background:transparent!important;}',
+    '.sign div{border-top:1px solid #000!important;}.rpt-footer{border-top:1px solid #000!important;}',
+    'body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}'
   ].join('');
   const sec=s=>{
     const rows=s.rows.map(e=>'<tr>'
@@ -5587,7 +5599,7 @@ function buildCashBookDocDef(){
   });
   const nr=(l,v,lc,vc,big)=>({margin:[0,2,0,2],columns:[{text:l,color:lc,fontSize:big?12:10,bold:!!big},{text:typeof v==='string'?v:M(v),color:vc,fontSize:big?13:10,bold:!!big,alignment:'right'}]});
   const small=(l,v)=>({margin:[0,1,0,1],columns:[{text:l,color:'#9CA3AF',fontSize:8},{text:typeof v==='string'?v:M(v),color:'#9CA3AF',fontSize:8,alignment:'right'}]});
-  const line={margin:[0,4,0,2],canvas:[{type:'line',x1:0,y1:0,x2:760,y2:0,lineWidth:0.5,lineColor:'#444'}]};
+  const line={margin:[0,4,0,2],canvas:[{type:'line',x1:0,y1:0,x2:523,y2:0,lineWidth:0.5,lineColor:'#444'}]};
   const cl=d.close;
   const stack=R.filtered
     ?[small(R.label+' · '+R.per.label,''),nr('Opening balance ('+fd(R.per.from)+')',R.sel.opening,'#fff','#fff'),nr('+ Cash in',R.sel.inn,'#D1FAE5','#6EE7A0'),nr('− Cash out',R.sel.out,'#FED7AA','#FDBA74'),line,nr('Closing · cash in hand ('+fd(R.per.to)+')',R.sel.closing,'#fff',R.sel.closing<0?'#FCA5A5':'#6EE7A0',true),...(R.sel.direct?[small('Paid directly by KD / client (not from cash)',R.sel.direct)]:[])]
@@ -5596,9 +5608,9 @@ function buildCashBookDocDef(){
       R.per.month?small('Cash counted'+(cl?' ('+fd(cl.on)+', '+cl.by+')':''),cl?M(cl.actual)+(cl.diff?'  (difference '+(cl.diff>0?'+':'−')+M(Math.abs(cl.diff))+')':'  matches'):'______________')
         :small('Monthly cash count',d.closes.map(x=>_mShortL(x.month)+' '+(x.c?(x.c.diff?'diff '+M(x.c.diff):'✓'):'✗')).join(' · '))];
   content.push({margin:[0,10,0,0],unbreakable:true,table:{widths:['*'],body:[[{stack,fillColor:'#1A1A1A',margin:[12,10,12,10]}]]},layout:'noBorders'});
-  content.push({margin:[0,30,0,0],unbreakable:true,columns:[R.staff,'Checked by (KD)','Date'].map(t=>({stack:[{canvas:[{type:'line',x1:0,y1:0,x2:220,y2:0,lineWidth:0.6,lineColor:'#9CA3AF'}]},{text:t,fontSize:9,color:'#6B7280',alignment:'center',margin:[0,4,0,0]}]})),columnGap:30});
+  content.push({margin:[0,30,0,0],unbreakable:true,columns:[R.staff,'Checked by (KD)','Date'].map(t=>({stack:[{canvas:[{type:'line',x1:0,y1:0,x2:160,y2:0,lineWidth:0.6,lineColor:'#9CA3AF'}]},{text:t,fontSize:9,color:'#6B7280',alignment:'center',margin:[0,4,0,0]}]})),columnGap:30});
   content.push({margin:[0,16,0,0],columns:[{text:'K.D. Constructions · www.kdcinfra.in',fontSize:8,color:'#9CA3AF'},{text:'Cash & Expense Report · '+R.label+' · '+R.per.label,fontSize:8,color:'#9CA3AF',alignment:'right'}]});
-  return {pageSize:'A4',pageOrientation:'landscape',pageMargins:[20,20,20,25],content,defaultStyle:{fontSize:9},styles:{th:{bold:true,fontSize:8,color:'#6B7280',fillColor:'#F9FAFB'}}};
+  return _pdfBW({pageSize:'A4',pageOrientation:'portrait',pageMargins:[24,24,24,28],content,defaultStyle:{fontSize:9},styles:{th:{bold:true,fontSize:8,color:'#6B7280',fillColor:'#F9FAFB'}}});
 }
 function _cbFileTitle(){ const f=cbFilterArg(); const label=f==='all'?'All-Sites':f.map(cbKeyName).join('-'); return 'Cash-Expenses-'+label+'-'+cbPeriod().slug; }
 async function shareCashBook(){
@@ -8091,7 +8103,7 @@ function printExpensesOnly(month, filterPropId=''){
 
   const htmlStr=`<!DOCTYPE html><html><head><title>Expenses — ${ml(month)}</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-  <style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:Inter,sans-serif;padding:30px;background:#fff;max-width:700px;margin:0 auto;}.header{background:#F97316;color:#fff;padding:16px 20px;border-radius:8px;margin-bottom:20px;display:flex;justify-content:space-between;}.total-box{background:#1A1A1A;color:#fff;padding:14px 20px;border-radius:8px;display:flex;justify-content:space-between;font-size:16px;font-weight:700;margin-top:16px;}button{display:none;}</style>
+  <style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:Inter,sans-serif;padding:30px;background:#fff;max-width:700px;margin:0 auto;}.header{background:#F97316;color:#fff;padding:16px 20px;border-radius:8px;margin-bottom:20px;display:flex;justify-content:space-between;}.total-box{background:#1A1A1A;color:#fff;padding:14px 20px;border-radius:8px;display:flex;justify-content:space-between;font-size:16px;font-weight:700;margin-top:16px;}button{display:none;}@page{size:A4 portrait;margin:10mm;}body{padding:0;max-width:none;}body *{color:#000!important;}div[style*="background"]{background:#fff!important;}.header,div[style*="background:#F97316"],div[style*="background:#6B7280"],.total-box{background:#000!important;}.header *,.total-box *,div[style*="background:#F97316"] *,div[style*="background:#6B7280"] *{color:#fff!important;}td,th{border-bottom:1px solid #999!important;}*{-webkit-print-color-adjust:exact;print-color-adjust:exact;}</style>
   </head><body>
   <div class="header"><div><div style="font-size:10px;opacity:0.8;letter-spacing:1px;text-transform:uppercase;">K.D. Constructions</div><div style="font-size:18px;font-weight:700;">Expense Report${filterPropId?(` — `+(S.properties.find(p=>p.id===filterPropId)||{}).name):'  — All Sites'}</div></div><div style="text-align:right;"><div style="font-size:11px;opacity:0.8;">${ml(month)}</div><div style="font-size:13px;font-weight:600;">Generated: ${new Date().toLocaleDateString('en-IN')}</div></div></div>
   ${propSections||'<div style="text-align:center;padding:40px;color:#9CA3AF;">No expenses for this month</div>'}
