@@ -735,6 +735,13 @@ button{cursor:pointer;}
 .work-calm{background:var(--green-dim,#ECFDF5);color:#047857;border-radius:12px;padding:10px 14px;font-size:13.5px;font-weight:600;margin:0 0 12px}
 .work-fold{display:flex;justify-content:space-between;align-items:center;width:100%;background:#fff;border:1px dashed var(--border);border-radius:12px;padding:11px 14px;font:inherit;font-size:13.5px;font-weight:600;color:var(--ink2);cursor:pointer;margin:6px 0 10px}
 .pt-sum{display:flex;justify-content:space-between;align-items:center;gap:10px;cursor:pointer}.pt-chev{color:var(--muted);font-size:14px}
+.pf-up{display:block;text-align:center;padding:10px;border:1.5px dashed var(--border);border-radius:10px;font-size:13px;font-weight:600;color:var(--ink2);cursor:pointer;background:#fff;}
+.pf-img{max-width:100%;max-height:150px;border-radius:8px;margin-top:8px;border:1px solid var(--border);display:block;}
+.pf-has{display:inline-block;margin-top:8px;font-size:12.5px;font-weight:600;color:var(--green);cursor:pointer;}
+.pf-rm{display:inline-block;margin:8px 0 0 12px;font-size:12.5px;font-weight:600;color:var(--red);cursor:pointer;}
+.pf-clip{padding:2px 6px!important;margin-right:4px;}
+.pf-view{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:10050;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px;}
+.pf-view img{max-width:100%;max-height:85vh;border-radius:10px;}.pf-view .pf-x{color:#fff;font-weight:700;margin-top:12px;font-size:14px;}.pf-view .pf-wait{color:#fff;font-size:14px;}
 </style>
 </head>
 <body>
@@ -3317,7 +3324,7 @@ function renderRoomDetail(){
     <div class="card">
       <div class="card-head"><div class="card-title">💰 Payments</div><button class="btn btn-amber btn-sm" onclick="openPayment('${p.id}','${r.id}')">+ Add</button></div>
       <div class="card-body" style="padding:0;overflow-x:auto;">
-        ${payments.length?`<table class="tbl"><thead><tr><th>Month</th><th>Amount</th><th>Mode</th><th>Date</th><th>Notes</th><th></th></tr></thead><tbody>${payments.slice(-8).reverse().map(py=>`<tr><td>${ml(py.month)}</td><td style="color:var(--green);font-weight:600;">${fm(py.amount)}</td><td>${py.mode||'—'}</td><td>${fd(py.date)}</td><td style="font-size:12px;color:var(--muted);">${py.ref?'<b style="color:var(--ink2);">Ref '+_escHtml(py.ref)+'</b>'+(py.notes?' · ':''):''}${py.notes||(py.ref?'':'—')}</td><td><div style="display:flex;gap:4px;"><button class="btn btn-ghost btn-xs" onclick="editPayment('${p.id}','${r.id}','${py.id}')">✏️</button><button class="btn btn-red btn-xs" onclick="delPayment('${p.id}','${r.id}','${py.id}')">🗑</button></div></td></tr>`).join('')}</tbody></table>`:'<div style="text-align:center;color:var(--muted);padding:18px;">No payments yet</div>'}
+        ${payments.length?`<table class="tbl"><thead><tr><th>Month</th><th>Amount</th><th>Mode</th><th>Date</th><th>Notes</th><th></th></tr></thead><tbody>${payments.slice(-8).reverse().map(py=>`<tr><td>${ml(py.month)}</td><td style="color:var(--green);font-weight:600;">${fm(py.amount)}</td><td>${py.mode||'—'}</td><td>${fd(py.date)}</td><td style="font-size:12px;color:var(--muted);">${py.ref?'<b style="color:var(--ink2);">Ref '+_escHtml(py.ref)+'</b>'+(py.notes?' · ':''):''}${py.notes||(py.ref?'':'—')}</td><td><div style="display:flex;gap:4px;">${proofClipH(py)}<button class="btn btn-ghost btn-xs" onclick="editPayment('${p.id}','${r.id}','${py.id}')">✏️</button><button class="btn btn-red btn-xs" onclick="delPayment('${p.id}','${r.id}','${py.id}')">🗑</button></div></td></tr>`).join('')}</tbody></table>`:'<div style="text-align:center;color:var(--muted);padding:18px;">No payments yet</div>'}
       </div>
     </div>
   </div>`;
@@ -4339,11 +4346,12 @@ function openPayment(pid,rid,defaultMonth){
   <div id="pyStatus" style="margin-bottom:12px;display:none;"></div>
   <div class="frow"><div><label class="flabel">Payment Mode</label><select class="fselect" id="pyMd" onchange="document.getElementById('pyRcvW').style.display=this.value==='Cash'?'block':'none';refModeChange('pyRef',this.value);{const w=document.getElementById('pyIntoW');if(w)w.style.display=(this.value==='Cash'||this.value==='Salary adjustment')?'none':'block';}"><option>Bank Transfer</option><option>UPI</option><option>Cash</option><option>Cheque</option><option>Salary adjustment</option></select></div><div><label class="flabel">Date</label><input class="finput" id="pyD" type="date" value="${today()}"/></div></div>
   ${refFieldH('pyRef','Bank Transfer')}
+  ${proofFieldH(null)}
   ${bankOn(p)?`<div class="frow1" id="pyIntoW"><label class="flabel">Paid into</label><select class="fselect" id="pyInto"><option value="">Not sure</option>${BANK_INTO.map(o=>`<option>${o}</option>`).join('')}</select></div>`:''}
   <div class="frow1" id="pyRcvW" style="display:none;"><label class="flabel">Cash received by *</label><select class="fselect" id="pyRcv">${[...staffList(),'KD Taneja'].map(o=>`<option ${o===(staffList().includes(user)?user:'KD Taneja')?'selected':''}>${o}</option>`).join('')}</select><div class="fhint">Cash with staff is added to their cash in hand automatically</div></div>
   <div class="frow1"><label class="flabel">Notes <span style="color:var(--muted);font-weight:400;text-transform:none;">optional</span></label><input class="finput" id="pyNote" placeholder="Remarks"/></div>
   <div style="font-size:12px;color:var(--muted);padding:9px 12px;background:var(--bg);border-radius:8px;">💡 Short payment → balance auto carries forward · Placeholder shows month's due amount</div>`,
-  `<button class="btn btn-ghost" onclick="closeM()">Cancel</button><button class="btn btn-orange" onclick="savePayment('${pid}','${rid}')">Save</button>`);
+  `<button class="btn btn-ghost" onclick="closeM()">Cancel</button><button class="btn btn-orange" onclick="pfThen(()=>savePayment('${pid}','${rid}'))">Save</button>`);
 }
 function pyCheck(){
   const pyA=document.getElementById('pyA');
@@ -4362,7 +4370,7 @@ function savePayment(pid,rid){
   const _md=document.getElementById('pyMd').value;
   if(!_payLockOK(_md,(document.getElementById('pyRcv')||{}).value||user,document.getElementById('pyD').value))return;
   const _ref=refRead('pyRef',_md); if(_ref===null)return;
-  r.payments.push({id:uid(),month:mo,amount:Number(a),mode:_md,...(_ref?{ref:_ref}:{}),date:document.getElementById('pyD').value,notes:(document.getElementById('pyNote')||{}).value||'',...(_md==='Cash'?{receivedBy:(document.getElementById('pyRcv')||{}).value||user}:{}),...((_md!=='Cash'&&(document.getElementById('pyInto')||{}).value)?{into:document.getElementById('pyInto').value}:{})});
+  { const _py={id:uid(),month:mo,amount:Number(a),mode:_md,...(_ref?{ref:_ref}:{}),date:document.getElementById('pyD').value,notes:(document.getElementById('pyNote')||{}).value||'',...(_md==='Cash'?{receivedBy:(document.getElementById('pyRcv')||{}).value||user}:{}),...((_md!=='Cash'&&(document.getElementById('pyInto')||{}).value)?{into:document.getElementById('pyInto').value}:{})}; pfApply(_py,{pid,date:_py.date,what:'Rent '+((r.tenant&&r.tenant.name)||r.type)+' '+mo,amount:_py.amount}); r.payments.push(_py); }
   const elec=(r.electricityReadings||[]).find(x=>x.month===mo),bal=getCarryIn(r,mo);
   const dedTotal=(r.deductions||[]).filter(d=>d.month===mo).reduce((s,d)=>s+Number(d.amount||0),0);
   const _as=(r.tenant&&((r.tenant.activeFrom||r.tenant.moveInDate)||''))||(r.lease&&r.lease.startDate)||'';
@@ -5014,7 +5022,7 @@ function renderExp(){
     return `<div class="xrow">
       <div class="cbe-d">${ok?`<b>${String(dt.getDate()).padStart(2,'0')}</b><span>${dt.toLocaleString('en-IN',{month:'short'})}</span>`:'<b>—</b>'}</div>
       <div class="xmain"><div class="xtitle">${title}</div>${lines}<div class="xtags">${tags.join('')}</div>${ref}${exp.addedBy&&exp.addedBy!==exp.paidBy?`<div class="xmeta">Added by ${_escHtml(exp.addedBy)}</div>`:''}</div>
-      <div class="xright"><div class="xamt">${fm(t)}</div>${isAdmin?`<div class="xbtns"><button class="btn btn-ghost btn-xs" onclick="editExp('${exp.id}')" aria-label="Edit">✏️</button><button class="btn btn-red btn-xs" onclick="delExp('${exp.id}')" aria-label="Delete">🗑</button></div>`:''}</div>
+      <div class="xright"><div class="xamt">${proofClipH(exp)}${fm(t)}</div>${isAdmin?`<div class="xbtns"><button class="btn btn-ghost btn-xs" onclick="editExp('${exp.id}')" aria-label="Edit">✏️</button><button class="btn btn-red btn-xs" onclick="delExp('${exp.id}')" aria-label="Delete">🗑</button></div>`:''}</div>
     </div>`;
   }
   const groupH=(name,icon,list,muted)=>{
@@ -5113,6 +5121,64 @@ function _expOwnerRead(id){ // returns undefined (not owner rent), null (stop), 
   const mode=document.getElementById('eOwnMd').value, ref=refRead('eOwnRef',mode,id); if(ref===null)return null;
   return {month:document.getElementById('eOwnM').value||mk(),mode,...(ref?{ref}:{})};
 }
+
+// ══ 📎 PROOF / SCREENSHOT on entries (expenses, cash entries, rent payments) ══
+// Optional. The photo is shrunk on the phone, saved apart from the main data (rentdesk_docs, like tenant
+// documents) and the entry keeps only a small pointer: proof = {ref, n, mime, at, by}. Copied to Drive too.
+let _pf={data:null,meta:null,del:false,cur:null};
+function proofFieldH(cur){
+  _pf={data:null,meta:null,del:false,cur:cur||null};
+  return `<div class="frow1"><label class="flabel">Proof / screenshot <span style="color:var(--muted);font-weight:400;text-transform:none;">optional</span></label>
+    <label class="pf-up"><input type="file" accept="image/*" id="pfIn" style="display:none" onchange="pfPick(this)"><span id="pfLbl">${cur?'📷 Change photo':'📷 Add photo / screenshot'}</span></label>
+    <div id="pfPrev">${cur?`<span class="pf-has" onclick="viewProof('${cur.ref}',${cur.n||1})">📎 Photo attached — tap to see</span><a class="pf-rm" onclick="pfRemove()">Remove</a>`:''}</div></div>`;
+}
+async function pfPick(inp){
+  const f=inp.files&&inp.files[0]; if(!f)return;
+  const lbl=document.getElementById('pfLbl'); if(lbl)lbl.textContent='⏳ Preparing photo…';
+  const d=await _shrinkPhoto(f);
+  if(!d){ if(lbl)lbl.textContent='📷 Add photo / screenshot'; toast('❌ Could not read that photo (iPhone HEIC? take a screenshot of it and use that)',6000); return; }
+  _pf.data=d; _pf.meta=null; _pf.del=false;
+  const pv=document.getElementById('pfPrev'); if(pv)pv.innerHTML=`<img class="pf-img" src="${d}"><a class="pf-rm" onclick="pfRemove()">Remove</a>`;
+  if(lbl)lbl.textContent='📷 Change photo';
+}
+function pfRemove(){
+  _pf.data=null; _pf.meta=null; _pf.del=true;
+  const pv=document.getElementById('pfPrev'); if(pv)pv.innerHTML='<div style="font-size:12px;color:var(--muted);margin-top:6px;">Photo will be removed when you save.</div>';
+  const lbl=document.getElementById('pfLbl'); if(lbl)lbl.textContent='📷 Add photo / screenshot';
+  const i=document.getElementById('pfIn'); if(i)i.value='';
+}
+// upload first (if a new photo was picked), then run the normal save. A failed upload saves nothing.
+async function pfThen(fn){
+  if(_pf.data&&!_pf.meta){
+    toast('⏳ Uploading photo…',15000);
+    const put=await _putFileData(_pf.data,'proof.jpg','image/jpeg');
+    if(!put){ toast('❌ Photo not uploaded — check internet and try again (nothing saved)',6000); return; }
+    _pf.meta={ref:put.ref,n:put.n,mime:'image/jpeg',at:new Date().toISOString(),by:user||''};
+    _pf.data=null;                                   // a second tap on Save re-uses this upload
+  }
+  fn();
+}
+// put the proof on a saved entry (o) — the new photo, the old one kept, or none if removed
+function pfApply(o,drv){
+  if(!o)return;
+  if(_pf.meta){ o.proof=_pf.meta; if(drv)_pfDrive(_pf.meta,drv); }
+  else if(_pf.del) delete o.proof;
+}
+function _pfDrive(meta,d){
+  if(!driveOn()||!meta||meta._q)return; meta._q=1;
+  const mo=String(d.date||today()).slice(0,7), site=d.pid?(_pName(d.pid)||'Other'):'Other / General';
+  _driveEnq({type:'proof',k2:'proof:'+meta.ref,ref:meta.ref,n:meta.n,pid:d.pid||'',site,month:mo,
+    label:(d.date||'')+' – '+String(d.what||'Proof').replace(/[\\/:*?"<>|#]/g,'-').slice(0,60)+' – Rs '+Math.round(Number(d.amount)||0),why:'proof'});
+  delete meta._q;
+}
+function proofClipH(o){ const f=o&&o.proof; return f&&f.ref?`<button class="btn btn-ghost btn-xs pf-clip" title="See proof" onclick="event.stopPropagation();viewProof('${f.ref}',${f.n||1})">📎</button>`:''; }
+async function viewProof(ref,n){
+  const o=document.createElement('div'); o.className='pf-view'; o.onclick=()=>o.remove();
+  o.innerHTML='<div class="pf-wait">Loading photo…</div><div class="pf-x">✕ Close</div>'; document.body.appendChild(o);
+  try{ const d=await _getFileData({ref,n:n||1}); if(!d)throw 0; const w=o.querySelector('.pf-wait'); if(w)w.outerHTML=`<img src="${d}">`; }
+  catch(e){ const w=o.querySelector('.pf-wait'); if(w)w.textContent='❌ Could not load the photo — check internet'; }
+}
+
 function expFormH(ex=null){
   _eoSite='eP'; _eoDesc='ed_0'; _eoAmt='ea_0'; _eoDate='eMo'; setTimeout(_expElecSuggest,0);
   const opts=`<option value="">-- Other / General --</option>`+S.properties.map(p=>`<option value="${p.id}" ${(ex&&ex.propertyId)===p.id?'selected':''}>${p.name}</option>`).join('');
@@ -5128,11 +5194,12 @@ function expFormH(ex=null){
   return`<div class="frow"><div><label class="flabel">Property</label><select class="fselect" id="eP" onchange="_expOwnerToggle()">${opts}</select></div><div><label class="flabel">Date *</label><input class="finput" type="date" id="eMo" value="${defDate}"/></div></div>
   <div class="frow1"><label class="flabel">Paid By <span style="color:var(--orange);">★</span> <span style="font-size:10px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0;">(Preeti = shows in Cash Tab)</span></label><select class="fselect" id="ePaidBy">${paidByOpts}</select></div>
   ${_expOwnerH(ex)}${_expElecH(ex)}
+  ${proofFieldH(ex&&ex.proof)}
   <div class="fsec">Expense Items</div><div id="eItems">${items.map((item,i)=>`<div class="frow" id="ei_${i}"><div><label class="flabel">Description</label><input class="finput" id="ed_${i}" value="${item.desc}" placeholder="e.g. Plumbing, Labour" oninput="_expElecSuggest()"/></div><div><label class="flabel">Amount (₹)</label><input class="finput" id="ea_${i}" type="number" value="${item.amount}" placeholder="0"/></div></div>`).join('')}</div><button class="btn btn-ghost btn-sm" type="button" onclick="addEI()">+ Add Item</button>`;
 }
 function addEI(){const c=document.getElementById('eItems'),i=ei++;const d=document.createElement('div');d.className='frow';d.id=`ei_${i}`;d.innerHTML=`<div><label class="flabel">Description</label><input class="finput" id="ed_${i}" placeholder="Description" oninput="_expElecSuggest()"/></div><div><label class="flabel">Amount (₹)</label><input class="finput" id="ea_${i}" type="number" placeholder="0"/></div>`;c.appendChild(d);}
 function getEI(){const items=[];document.querySelectorAll('[id^="ed_"]').forEach(el=>{const i=el.id.split('_')[1],d=el.value.trim(),a=(document.getElementById('ea_'+i)||{}).value;if(d&&a)items.push({desc:d,amount:Number(a)});});return items;}
-function openAddExp(preset){ei=(preset&&preset.items&&preset.items.length)||0;openM(preset&&preset.ownerRent?'🤝 Pay owner':'Add Expense',expFormH(preset||null),`<button class="btn btn-ghost" onclick="closeM()">Cancel</button><button class="btn btn-orange" onclick="saveExp()">Save</button>`);}
+function openAddExp(preset){ei=(preset&&preset.items&&preset.items.length)||0;openM(preset&&preset.ownerRent?'🤝 Pay owner':'Add Expense',expFormH(preset||null),`<button class="btn btn-ghost" onclick="closeM()">Cancel</button><button class="btn btn-orange" onclick="pfThen(saveExp)">Save</button>`);}
 function saveExp(){
   const dateVal=document.getElementById('eMo').value,items=getEI();
   if(!dateVal){toast('❌ Select a date');return;}
@@ -5142,15 +5209,15 @@ function saveExp(){
   const paidBy=document.getElementById('ePaidBy').value;
   if(!_cashLockOK(paidBy,dateVal))return;
   const own=_expOwnerRead(); if(own===null)return; const elec=own?undefined:_expElecRead();
-  S.expenses.push({id:uid(),propertyId:pid,date:dateVal,month:mo,items,addedBy:user,paidBy:paidBy,...(own?{ownerRent:own}:{}),...(elec?{elecPay:elec}:{})});
+  { const _e={id:uid(),propertyId:pid,date:dateVal,month:mo,items,addedBy:user,paidBy:paidBy,...(own?{ownerRent:own}:{}),...(elec?{elecPay:elec}:{})}; pfApply(_e,{pid,date:dateVal,what:(items[0]&&items[0].desc)||'Expense',amount:items.reduce((s,i)=>s+Number(i.amount||0),0)}); S.expenses.push(_e); }
   sched();closeM();renderTab();
   const expPropName=pid?((S.properties.find(x=>x.id===pid)||{}).name||'General'):'General';
   const expTotal=items.reduce((s,i)=>s+Number(i.amount||0),0);
   actLog('Expense added — '+expPropName+' ₹'+expTotal.toLocaleString('en-IN')+(paidBy?' paid by '+paidBy:''));
   toast('✅ Saved'+(paidBy==='Preeti'?' · Added to Cash Tab':''));
 }
-function editExp(id){const exp=(S.expenses||[]).find(x=>x.id===id);if(!exp)return;ei=(exp.items&&exp.items.length)||0;openM('Edit Expense',expFormH(exp),`${isAdmin?`<button class="btn btn-red" style="margin-right:auto;" onclick="closeM();delExp('${id}')">🗑 Delete</button>`:''}<button class="btn btn-ghost" onclick="closeM()">Cancel</button><button class="btn btn-orange" onclick="updExp('${id}')">Update</button>`);}
-function updExp(id){const exp=(S.expenses||[]).find(x=>x.id===id);if(!exp)return;if(!_cashLockOK(exp.paidBy,exp.date))return;if(!_cashLockOK(document.getElementById('ePaidBy').value,document.getElementById('eMo').value))return;const own=_expOwnerRead(id);if(own===null)return;if(own)exp.ownerRent=own;else if(document.getElementById('eOwn'))delete exp.ownerRent;{const el=own?undefined:_expElecRead();if(el)exp.elecPay=el;else if(document.getElementById('eElec'))delete exp.elecPay;}const dateVal=document.getElementById('eMo').value;exp.propertyId=document.getElementById('eP').value;exp.date=dateVal;exp.month=dateVal.substr(0,7);exp.items=getEI();exp.paidBy=document.getElementById('ePaidBy').value;sched();closeM();renderTab();toast('✅ Updated'+(exp.paidBy==='Preeti'?' · Visible in Cash Tab':''));}
+function editExp(id){const exp=(S.expenses||[]).find(x=>x.id===id);if(!exp)return;ei=(exp.items&&exp.items.length)||0;openM('Edit Expense',expFormH(exp),`${isAdmin?`<button class="btn btn-red" style="margin-right:auto;" onclick="closeM();delExp('${id}')">🗑 Delete</button>`:''}<button class="btn btn-ghost" onclick="closeM()">Cancel</button><button class="btn btn-orange" onclick="pfThen(()=>updExp('${id}'))">Update</button>`);}
+function updExp(id){const exp=(S.expenses||[]).find(x=>x.id===id);if(!exp)return;if(!_cashLockOK(exp.paidBy,exp.date))return;if(!_cashLockOK(document.getElementById('ePaidBy').value,document.getElementById('eMo').value))return;const own=_expOwnerRead(id);if(own===null)return;if(own)exp.ownerRent=own;else if(document.getElementById('eOwn'))delete exp.ownerRent;{const el=own?undefined:_expElecRead();if(el)exp.elecPay=el;else if(document.getElementById('eElec'))delete exp.elecPay;}const dateVal=document.getElementById('eMo').value;exp.propertyId=document.getElementById('eP').value;exp.date=dateVal;exp.month=dateVal.substr(0,7);exp.items=getEI();exp.paidBy=document.getElementById('ePaidBy').value;pfApply(exp,{pid:exp.propertyId,date:exp.date,what:((exp.items||[])[0]||{}).desc||'Expense',amount:_expAmt(exp)});sched();closeM();renderTab();toast('✅ Updated'+(exp.paidBy==='Preeti'?' · Visible in Cash Tab':''));}
 function delExp(id){const exp=(S.expenses||[]).find(x=>x.id===id);if(exp&&!_cashLockOK(exp.paidBy,exp.date))return;if(!confirm('Delete?'))return;actLog('Deleted expense — '+((exp&&exp.date)||'')+'');S.expenses=(S.expenses||[]).filter(x=>x.id!==id);sched();renderTab();toast('🗑 Deleted');}
 
 // ══ CASH & EXPENSES (single tab) ══════════════════════════════════════════
@@ -5389,7 +5456,7 @@ function renderCashBook(){
         <div class="cbe-d">${ok?`<b>${String(dt.getDate()).padStart(2,'0')}</b><span>${dt.toLocaleString('en-IN',{month:'short'})}</span>`:'<b>—</b>'}</div>
         <div class="cbe-t"><div style="font-weight:700;">${x.text||'Expense'}</div><span class="cbe-k" style="color:var(--muted);">${x.paidBy||''}</span></div>
         <div class="cbe-a">${fm(x.amount)}</div>
-        <div class="cbe-x"><button class="btn btn-ghost btn-xs" onclick="editExp('${x.id}')">✏️</button>${isAdmin?`<button class="btn btn-red btn-xs" onclick="delExp('${x.id}')">🗑</button>`:''}</div></div>`; }).join('')}</details>`:'';
+        <div class="cbe-x">${proofClipH(x.raw||(S.expenses||[]).find(e=>e.id===x.id))}<button class="btn btn-ghost btn-xs" onclick="editExp('${x.id}')">✏️</button>${isAdmin?`<button class="btn btn-red btn-xs" onclick="delExp('${x.id}')">🗑</button>`:''}</div></div>`; }).join('')}</details>`:'';
     return`<div class="card cbcard" style="margin-bottom:12px;">
       <div class="card-head" style="flex-wrap:wrap;gap:6px;"><div class="card-title">${sec.key==='_kd'?'💼':sec.key==='_misc'?'🗂️':'🏢'} ${sec.name}</div>${st?`<span class="badge ${st[1]}">${st[0]}</span>`:''}</div>
       ${stmt}
@@ -5668,7 +5735,9 @@ function printCashBook(){
   }catch(e){ toast('❌ Could not open print view'); }
 }
 
-function cbRowActions(e){
+function cbRowActions(e){ return proofClipH(e.raw||(e.src==='pay'?_cbPayRaw(e):null)||(e.src==='cash'?((S.cash||[]).find(c=>c.id===e.id)||{proof:_cbProofCur({id:e.id,type:'spent'})}):null))+_cbRowActions(e); }
+function _cbPayRaw(e){ const p=(S.properties||[]).find(x=>x.id===e.pid), r=((p&&p.rooms)||[]).find(x=>x.id===e.rid); return ((r&&r.payments)||[]).find(x=>x.id===e.id)||null; }
+function _cbRowActions(e){
   if(e.src==='refund')return e.raw&&e.raw.pastId?`<button class="btn btn-ghost btn-xs" title="Open refund" onclick="openRefundForm('${e.raw.pastId}')">🧾</button>`:'';
   if(e.src==='pastpay'||e.src==='auto')return'';   // vacated tenant's rent / automatic lines — not edited here
   if(e.src==='pay')return`<button class="btn btn-ghost btn-xs" title="Change who received" onclick="openPayReceiver('${e.pid}','${e.rid}','${e.id}')">👤</button>`;
@@ -5689,6 +5758,7 @@ function openPayReceiver(pid,rid,pyId){
 }
 // ── Add / edit (cash received · expense · handed to owner · returned to KD) ──
 let _cbKind='expense', _cbEdit=null;
+function _cbProofCur(x){ if(!x||!x.id)return null; if(x.proof)return x.proof; if(x.type==='spent'){ const e=(S.expenses||[]).find(e=>e.cashId===x.id); return e&&e.proof||null; } return null; }
 function openCbAdd(editId){
   _cbEdit=editId?(S.cash||[]).find(c=>c.id===editId):null;
   if(_cbEdit)_cbKind=_cbEdit.type==='given'?'given':_cbEdit.type==='spent'?'expense':_cbEdit.type;
@@ -5718,8 +5788,9 @@ function _renderCbForm(){
       <div id="cbHoHint" style="display:none;background:#F5F3FF;border:1px solid rgba(139,92,246,.3);border-radius:10px;padding:10px 12px;font-size:12.5px;color:#6D28D9;line-height:1.5;"></div>`:''}
     ${k==='returned'?`
       <div class="frow"><div><label class="flabel">Returned by</label><select class="fselect" id="cbS">${L.map(s=>`<option ${s===staff?'selected':''}>${s}</option>`).join('')}</select></div><div></div></div>
-      <div class="frow1"><label class="flabel">Note</label><input class="finput" id="cbN" value="${(x.note||'').replace(/"/g,'&quot;')}" placeholder="e.g. Cash handed back to KD"/></div>`:''}`,
-    `${_cbEdit&&(isAdmin||_cbEdit.by===user)?`<button class="btn btn-red" style="margin-right:auto;" onclick="closeM();delCbEntry('${_cbEdit.id}')">🗑 Delete</button>`:''}<button class="btn btn-ghost" onclick="closeM()">Cancel</button><button class="btn btn-orange" onclick="saveCbEntry()">${_cbEdit?'Update':'Save'}</button>`);
+      <div class="frow1"><label class="flabel">Note</label><input class="finput" id="cbN" value="${(x.note||'').replace(/"/g,'&quot;')}" placeholder="e.g. Cash handed back to KD"/></div>`:''}
+    ${proofFieldH(_cbProofCur(x))}`,
+    `${_cbEdit&&(isAdmin||_cbEdit.by===user)?`<button class="btn btn-red" style="margin-right:auto;" onclick="closeM();delCbEntry('${_cbEdit.id}')">🗑 Delete</button>`:''}<button class="btn btn-ghost" onclick="closeM()">Cancel</button><button class="btn btn-orange" onclick="pfThen(saveCbEntry)">${_cbEdit?'Update':'Save'}</button>`);
   setTimeout(()=>{ _expOwnerToggle(); _cbHandoverHint(); },0);
 }
 function _cbHandoverHint(src){
@@ -5754,31 +5825,32 @@ function saveCbEntry(){
     if(document.getElementById('cbP')){ x.propertyId=v('cbP'); x.propertyLabel=_pName(x.propertyId)||'Other / General'; }
     if(document.getElementById('cbS')) x.staff=v('cbS');
     if(document.getElementById('cbSrc')) x.source=v('cbSrc');
-    if(x.type==='spent'){ const e=S.expenses.find(e=>e.cashId===x.id); if(e){ e.date=date; e.month=date.slice(0,7); e.propertyId=x.propertyId; e.items=[{desc:note,amount:amt}]; } }
+    if(x.type==='spent'){ const e=S.expenses.find(e=>e.cashId===x.id); if(e){ e.date=date; e.month=date.slice(0,7); e.propertyId=x.propertyId; e.items=[{desc:note,amount:amt}]; if(e.proof&&!x.proof){ x.proof=e.proof; delete e.proof; } } }
+    pfApply(x,{pid:x.propertyId,date,what:note||x.type,amount:amt});
     actLog('Cash entry edited — '+fm(amt)+' ('+(x.type)+')');
     sched(); closeM(); renderTab(); toast('✅ Updated'); return;
   }
   if(k==='expense'){
     if(!note){toast('❌ Say what the expense was for');return;}
     const pid=v('cbP'), by=v('cbBy'), own=_expOwnerRead(); if(own===null)return; const elec=own?undefined:_expElecRead();
-    S.expenses.push({id:uid(),propertyId:pid,date,month:date.slice(0,7),items:[{desc:note,amount:amt}],addedBy:user,paidBy:by,...(own?{ownerRent:own}:{}),...(elec?{elecPay:elec}:{})});
+    { const _e={id:uid(),propertyId:pid,date,month:date.slice(0,7),items:[{desc:note,amount:amt}],addedBy:user,paidBy:by,...(own?{ownerRent:own}:{}),...(elec?{elecPay:elec}:{})}; pfApply(_e,{pid,date,what:note,amount:amt}); S.expenses.push(_e); }
     actLog('Expense added — '+(_pName(pid)||'Misc')+' '+fm(amt)+' paid by '+by+' ('+note+')');
   } else if(k==='handover'){
     const pid=v('cbP'); if(!pid){toast('❌ Pick the site');return;}
     const lp=siteById(pid);
     if(lp&&propType(lp)==='leased'){ // paid to the owner of a leased site = rent paid to that owner (from staff cash, or by KD directly)
       const by=v('cbS'), mode=v('cbMd')||'Cash', ref=refRead('cbRef',mode); if(ref===null)return;
-      S.expenses.push({id:uid(),propertyId:pid,date,month:date.slice(0,7),items:[{desc:note||('Rent to owner — '+((lp.ownLease&&lp.ownLease.owner)||'owner')),amount:amt}],addedBy:user,paidBy:by,ownerRent:{month:v('cbOwnM')||date.slice(0,7),mode,...(ref?{ref}:{})}});
+      { const _e={id:uid(),propertyId:pid,date,month:date.slice(0,7),items:[{desc:note||('Rent to owner — '+((lp.ownLease&&lp.ownLease.owner)||'owner')),amount:amt}],addedBy:user,paidBy:by,ownerRent:{month:v('cbOwnM')||date.slice(0,7),mode,...(ref?{ref}:{})}}; pfApply(_e,{pid,date,what:'Rent to owner',amount:amt}); S.expenses.push(_e); }
       actLog('Rent paid to owner — '+lp.name+' '+fm(amt)+' by '+by+' ('+mode+(ref?' '+ref:'')+')');
       sched(); closeM(); renderTab(); toast('✅ Saved as rent paid to owner'); return;
     }
-    S.cash.push({id:uid(),type:'handover',staff:v('cbS'),date,amount:amt,propertyId:pid,propertyLabel:_pName(pid),note,by:user});
+    { const _c={id:uid(),type:'handover',staff:v('cbS'),date,amount:amt,propertyId:pid,propertyLabel:_pName(pid),note,by:user}; pfApply(_c,{pid,date,what:'Handed to owner',amount:amt}); S.cash.push(_c); }
     actLog('Cash handed to owner — '+_pName(pid)+' '+fm(amt)+' by '+v('cbS'));
   } else if(k==='returned'){
-    S.cash.push({id:uid(),type:'returned',staff:v('cbS'),date,amount:amt,propertyId:'',propertyLabel:'',note,by:user});
+    { const _c={id:uid(),type:'returned',staff:v('cbS'),date,amount:amt,propertyId:'',propertyLabel:'',note,by:user}; pfApply(_c,{pid:'',date,what:'Returned to KD',amount:amt}); S.cash.push(_c); }
     actLog('Cash returned to KD — '+fm(amt)+' by '+v('cbS'));
   } else {
-    S.cash.push({id:uid(),type:'given',staff:v('cbS'),source:v('cbSrc'),date,amount:amt,propertyId:'',propertyLabel:'Other / General',note,by:user});
+    { const _c={id:uid(),type:'given',staff:v('cbS'),source:v('cbSrc'),date,amount:amt,propertyId:'',propertyLabel:'Other / General',note,by:user}; pfApply(_c,{pid:'',date,what:'Cash received',amount:amt}); S.cash.push(_c); }
     actLog('Cash received — '+fm(amt)+' by '+v('cbS')+' from '+v('cbSrc'));
   }
   sched(); closeM(); renderTab(); toast('✅ Saved');
@@ -6747,6 +6819,15 @@ async function driveFlush(){
         catch(e){ hadErr=true; job.tries=(job.tries||0)+1; _driveLastErr=String(e.message||e); if(job.tries<8)_driveQ.push(job); _driveSaveQ(); if(e instanceof TypeError)break; }
         continue;
       }
+      if(job.type==='proof'){                                            // 📎 proof photo → Current Tenants / <site> / Payment proofs – <month>
+        try{ const data=await _getFileData({ref:job.ref,n:job.n||1});
+          if(!data){ const e=new Error('Could not load proof photo from the app'); e.missing=true; throw e; }
+          window._lastEdit=Date.now();
+          await _drivePost({action:'file',tenant:{tkey:'proofs_'+(job.pid||'general')+'_'+job.month,site:job.site||'Other / General',unit:'Payment proofs',name:_mShortL(job.month),from:'',past:false},fileName:job.label+'.jpg',data});
+          _driveLastOk=Date.now(); try{localStorage.setItem('rentdesk_drive_last',String(_driveLastOk));}catch(e){} }
+        catch(e){ hadErr=true; job.tries=(job.tries||0)+1; _driveLastErr=String(e.message||e); if(job.tries<8&&!e.missing)_driveQ.push(job); _driveSaveQ(); if(e instanceof TypeError)break; }
+        continue;
+      }
       const loc=_findByTkey(job.tkey);
       if(!loc)continue;                                                  // tenant record gone
       let f=null;
@@ -7168,10 +7249,11 @@ function editPayment(pid, rid, payId){
       <div><label class="flabel">Date</label><input class="finput" id="epyD" type="date" value="${py.date}"/></div>
     </div>
     ${refFieldH('epyRef',py.mode,py.ref)}
+    ${proofFieldH(py.proof)}
     <div class="frow1" id="epyRcvW" style="display:${py.mode==='Cash'?'block':'none'};"><label class="flabel">Cash received by</label><select class="fselect" id="epyRcv">${['',...staffList(),'KD Taneja'].map(o=>`<option value="${o}" ${(py.receivedBy||'')===o?'selected':''}>${o||'— not set —'}</option>`).join('')}</select></div>
     <div class="frow1"><label class="flabel">Notes</label><input class="finput" id="epyNote" value="${py.notes||''}" placeholder="Optional"/></div>`,
     `<button class="btn btn-ghost" onclick="closeM()">Cancel</button>
-     <button class="btn btn-orange" onclick="saveEditPayment('${pid}','${rid}','${payId}')">Update</button>`
+     <button class="btn btn-orange" onclick="pfThen(()=>saveEditPayment('${pid}','${rid}','${payId}'))">Update</button>`
   );
 }
 
@@ -7192,6 +7274,7 @@ function saveEditPayment(pid, rid, payId){
   py.mode=document.getElementById('epyMd').value;
   py.date=document.getElementById('epyD').value;
   py.notes=document.getElementById('epyNote').value;
+  pfApply(py,{pid,date:py.date,what:'Rent '+((r.tenant&&r.tenant.name)||r.type)+' '+py.month,amount:py.amount});
   if(py.mode==='Cash'){ const _rv=(document.getElementById('epyRcv')||{}).value; if(_rv)py.receivedBy=_rv; else delete py.receivedBy; } else delete py.receivedBy;
   { const ch=[]; if(Number(_was.amount)!==Number(py.amount))ch.push(fm(_was.amount)+' → '+fm(py.amount)); if(_was.month!==py.month)ch.push(ml(_was.month)+' → '+ml(py.month)); if(_was.mode!==py.mode)ch.push(_was.mode+' → '+py.mode); if(_was.date!==py.date)ch.push('date '+fd(_was.date)+' → '+fd(py.date)); if((_was.rcv||'')!==(py.receivedBy||''))ch.push('received by '+(_was.rcv||'—')+' → '+(py.receivedBy||'—'));
     actLog('Payment edited — '+((r.tenant&&r.tenant.name)||r.type)+' ('+p.name+') '+fm(py.amount)+' for '+ml(py.month)+(ch.length?': '+ch.join(', '):' (no change)')); }
