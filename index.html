@@ -745,6 +745,7 @@ button{cursor:pointer;}
 .ocr-st{display:none;font-size:12px;line-height:1.5;margin-top:6px;}
 .ocr-fill{background:#FEF9C3!important;border-color:#EAB308!important;}
 .sb-tag{font-size:10.5px;font-weight:700;color:#047857;background:#ECFDF5;border:1px solid #A7F3D0;border-radius:6px;padding:2px 6px;white-space:nowrap;}
+.sa-box{background:#F5F3FF;border:1px solid rgba(139,92,246,.25);border-radius:10px;padding:9px 12px;margin:2px 0 12px;}.sa-chk{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;line-height:1.45;cursor:pointer;}
 </style>
 </head>
 <body>
@@ -2300,6 +2301,18 @@ function payChipsH(p,r,mo){
 // ══════════════════════════════════════════════════════
 function propType(p){ return (p&&p.ownType)||(p&&isOwnerSite(p)?'care':'self'); }
 const PTYPE={self:'🏠 Self-owned',leased:'📜 Leased & sublet',care:'🤝 Caretaking'};
+// Caretaking fee for one month. A fixed fee can change from a chosen month (care.changes = [{from:'YYYY-MM', amount}]);
+// months before a change keep the old amount, so past reports never move.
+function careFeeFor(p,m){
+  const C=(p&&p.care)||{}; let a=Number(C.amount!=null?C.amount:(p&&p.maintCharge||0));
+  (C.changes||[]).filter(c=>c.from&&c.from<=m).sort((x,y)=>x.from.localeCompare(y.from)).forEach(c=>{ a=Number(c.amount)||0; });
+  return a;
+}
+function careFeeLabel(p,months){
+  const C=(p&&p.care)||{}; if(C.mode==='pct')return (C.pct||0)+'% of rent collected';
+  const g={}; months.forEach(m=>{ const a=careFeeFor(p,m); g[a]=(g[a]||0)+1; });
+  return Object.entries(g).map(([a,n])=>fm(Number(a))+' × '+n+' month'+(n>1?'s':'')).join(' + ');
+}
 function propTypeFieldsH(p){
   const t=propType(p), L=p.ownLease||{}, C=p.care||{};
   const f=(id,label,val,type,ph)=>`<div><label class="flabel">${label}</label><input class="finput" id="${id}" type="${type||'text'}" value="${_escHtml(val==null?'':val)}" placeholder="${ph||''}"/></div>`;
@@ -2315,14 +2328,20 @@ function propTypeFieldsH(p){
   </div>
   <div id="ptCare" style="display:${t==='care'?'block':'none'};background:var(--bg);border-radius:10px;padding:10px 12px;margin-bottom:10px;">
     <div class="frow"><div><label class="flabel">You earn</label><select class="fselect" id="ocMode"><option value="fixed" ${(C.mode||'fixed')==='fixed'?'selected':''}>Fixed amount / month</option><option value="pct" ${C.mode==='pct'?'selected':''}>% of rent collected</option></select></div>
-      ${f('ocVal','Amount (₹) or %',C.mode==='pct'?C.pct:(C.amount!=null?C.amount:(p.maintCharge||'')),'number','e.g. 5000 or 10')}</div>
+      ${f('ocVal','Amount (₹) or %',C.mode==='pct'?C.pct:careFeeFor(p,mk()),'number','e.g. 5000 or 10')}</div>
+    ${C.mode!=='pct'&&(C.amount!=null||C.changes)?`<div class="frow"><div><label class="flabel">New amount applies from</label><input class="finput" id="ocFrom" type="month" value="${_mAdd(mk(),1)}"/></div><div style="font-size:11px;color:var(--muted);align-self:end;padding-bottom:8px;">Months before keep the old fee, so past reports don't change.</div></div>`:''}
+    ${(C.changes||[]).length?`<div style="font-size:12px;color:var(--ink2);margin-top:2px;">Fee history: ${fm(Number(C.amount!=null?C.amount:(p.maintCharge||0)))} at first${C.changes.slice().sort((x,y)=>x.from.localeCompare(y.from)).map(c=>' → '+fm(Number(c.amount))+' from '+_mShortL(c.from)).join('')}</div>`:''}
   </div>`;
 }
 function readPropType(p){
   const v=id=>(document.getElementById(id)||{}).value||'';
   const t=v('pType'); if(!t)return; p.ownType=t;
   if(t==='leased') p.ownLease={owner:v('olOwner').trim(),rent:Number(v('olRent')||0),dueDay:Number(v('olDue')||7),security:Number(v('olSec')||0),esc:Number(v('olEsc')||0),escEvery:Number(v('olEvery')||12),start:v('olStart'),end:v('olEnd'),trackFrom:v('olTrack')||((p.ownLease&&p.ownLease.trackFrom)||mk())};
-  if(t==='care'){ const mode=v('ocMode')||'fixed', val=Number(v('ocVal')||0); p.care=mode==='pct'?{mode,pct:val}:{mode,amount:val}; }
+  if(t==='care'){ const mode=v('ocMode')||'fixed', val=Number(v('ocVal')||0), prev=p.care||{}, from=v('ocFrom');
+    if(mode==='fixed'&&prev.mode!=='pct'&&(prev.amount!=null||prev.changes)&&from){
+      // a change to an existing fixed fee only applies from the chosen month
+      if(val!==careFeeFor(p,from)||(prev.changes||[]).some(c=>c.from===from)){ const ch=(prev.changes||[]).filter(c=>c.from!==from); ch.push({from,amount:val}); p.care={...prev,mode:'fixed',changes:ch}; if(prev.amount==null)p.care.amount=Number(p.maintCharge||0); actLog('Caretaking fee for '+p.name+' → '+fm(val)+' from '+_mShortL(from)); }
+    } else p.care=mode==='pct'?{mode,pct:val}:{mode,amount:val}; }
 }
 function ownerRentDue(p,m){
   if(propType(p)!=='leased')return 0; const L=p.ownLease||{}; if(!Number(L.rent))return 0;
@@ -2404,7 +2423,7 @@ function siteProfit(p,months){
   const ownerRent=months.reduce((s,m)=>s+ownerRentDue(p,m),0);
   const ownerPaid=months.reduce((s,m)=>s+_sumA(_ownPays(p.id,m)),0), ownerCut=months.reduce((s,m)=>s+_sumA(_ownDeds(p.id,m)),0);
   let fee=0, net=0;
-  if(t==='care'){ const C=p.care||{}; fee=C.mode==='pct'?Math.round(collected*Number(C.pct||0)/100):Number(C.amount!=null?C.amount:(p.maintCharge||0))*months.length; net=fee; }
+  if(t==='care'){ const C=p.care||{}; fee=C.mode==='pct'?Math.round(collected*Number(C.pct||0)/100):months.reduce((a,m)=>a+careFeeFor(p,m),0); net=fee; }
   else net=collected-elecBill-expenses-(t==='leased'?ownerRent:0);
   const elecWarn=_mmOverlaps(p).filter(o=>inM(o.a.month));
   return {p,t,collected,expenses,elecBill,elecNote,elecWarn,elecMonths,elecStatus,elecOrphan,elecLike,ownerRent,ownerPaid,ownerCut,fee,net,exps};
@@ -2469,7 +2488,7 @@ function renderOwners(){
   const profitCard=x=>{ const p=x.p; let body='';
     if(x.t==='care'){ const C=p.care||{};
       body=line('Rent collected <i>(owner\'s money)</i>',fm(x.collected),'var(--muted)')
-        +line('Your fee',fm(x.fee),'var(--green)',C.mode==='pct'?(C.pct||0)+'% of rent collected':fm(C.amount!=null?C.amount:(p.maintCharge||0))+' × '+per.months.length+' month'+(per.months.length>1?'s':''));
+        +line('Your fee',fm(x.fee),'var(--green)',careFeeLabel(p,per.months));
     } else {
       body=line('Rent &amp; electricity collected',fm(x.collected),'var(--green)')
         +tapLine(p.id+':elec','− Main electricity bill',x.elecBill?fm(x.elecBill):'—','var(--blue)',_elecSubH(x),_elecDetH(x))
@@ -4351,6 +4370,8 @@ function openPayment(pid,rid,defaultMonth){
   <div class="frow"><div><label class="flabel">Payment Mode</label><select class="fselect" id="pyMd" onchange="document.getElementById('pyRcvW').style.display=this.value==='Cash'?'block':'none';refModeChange('pyRef',this.value);{const w=document.getElementById('pyIntoW');if(w)w.style.display=(this.value==='Cash'||this.value==='Salary adjustment')?'none':'block';}"><option>Bank Transfer</option><option>UPI</option><option>Cash</option><option>Cheque</option><option>Salary adjustment</option></select></div><div><label class="flabel">Date</label><input class="finput" id="pyD" type="date" value="${today()}"/></div></div>
   ${refFieldH('pyRef','Bank Transfer')}
   ${proofFieldH(null)}
+  <div class="sa-box"><label class="sa-chk"><input type="checkbox" id="pySa" ${r.salAdjAmt?'checked':''} onchange="document.getElementById('pySaW').style.display=this.checked?'flex':'none'"> Also record part of this rent as <b>Salary adjustment</b> <span style="color:var(--muted);font-weight:400;">(cut from staff salary — no cash)</span></label>
+    <div id="pySaW" style="display:${r.salAdjAmt?'flex':'none'};gap:8px;align-items:center;margin-top:6px;"><span style="font-size:12.5px;">Amount ₹</span><input class="finput" id="pySaA" type="number" style="max-width:130px;" value="${r.salAdjAmt||7500}"/></div></div>
   ${bankOn(p)?`<div class="frow1" id="pyIntoW"><label class="flabel">Paid into</label><select class="fselect" id="pyInto"><option value="">Not sure</option>${BANK_INTO.map(o=>`<option>${o}</option>`).join('')}</select></div>`:''}
   <div class="frow1" id="pyRcvW" style="display:none;"><label class="flabel">Cash received by *</label><select class="fselect" id="pyRcv">${[...staffList(),'KD Taneja'].map(o=>`<option ${o===(staffList().includes(user)?user:'KD Taneja')?'selected':''}>${o}</option>`).join('')}</select><div class="fhint">Cash with staff is added to their cash in hand automatically</div></div>
   <div class="frow1"><label class="flabel">Notes <span style="color:var(--muted);font-weight:400;text-transform:none;">optional</span></label><input class="finput" id="pyNote" placeholder="Remarks"/></div>
@@ -4375,6 +4396,10 @@ function savePayment(pid,rid){
   if(!_payLockOK(_md,(document.getElementById('pyRcv')||{}).value||user,document.getElementById('pyD').value))return;
   const _ref=refRead('pyRef',_md); if(_ref===null)return;
   { const _py={id:uid(),month:mo,amount:Number(a),mode:_md,...(_ref?{ref:_ref}:{}),date:document.getElementById('pyD').value,notes:(document.getElementById('pyNote')||{}).value||'',...(_md==='Cash'?{receivedBy:(document.getElementById('pyRcv')||{}).value||user}:{}),...((_md!=='Cash'&&(document.getElementById('pyInto')||{}).value)?{into:document.getElementById('pyInto').value}:{})}; pfApply(_py,{pid,date:_py.date,what:'Rent '+((r.tenant&&r.tenant.name)||r.type)+' '+mo,amount:_py.amount}); r.payments.push(_py); }
+  { const sa=document.getElementById('pySa'), saA=Number((document.getElementById('pySaA')||{}).value||0);
+    if(sa&&sa.checked&&saA>0){ r.payments.push({id:uid(),month:mo,amount:saA,mode:'Salary adjustment',date:document.getElementById('pyD').value,notes:'Cut from staff salary (no cash)'}); r.salAdjAmt=saA;
+      actLog('Salary adjustment — '+((r.tenant&&r.tenant.name)||r.type)+' '+fm(saA)+' for '+ml(mo)+' (cut from salary)'); }
+    else if(sa&&!sa.checked&&r.salAdjAmt) delete r.salAdjAmt; }
   const elec=(r.electricityReadings||[]).find(x=>x.month===mo),bal=getCarryIn(r,mo);
   const dedTotal=(r.deductions||[]).filter(d=>d.month===mo).reduce((s,d)=>s+Number(d.amount||0),0);
   const _as=(r.tenant&&((r.tenant.activeFrom||r.tenant.moveInDate)||''))||(r.lease&&r.lease.startDate)||'';
