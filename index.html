@@ -723,11 +723,11 @@ button{cursor:pointer;}
   .bn-label{font-size:9.5px;}
 }
 .atl{display:flex;flex-direction:column}
-.atr{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr) minmax(0,1fr) auto;gap:8px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border)}
+.atr{display:grid;grid-template-columns:minmax(0,0.8fr) minmax(0,1.1fr) minmax(0,1fr) 84px;gap:6px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border)}
 .atr:last-child{border-bottom:0}
-.atd{font-size:13px;font-weight:600;color:var(--ink)}.atd small{display:block;font-size:11px;font-weight:500;color:var(--muted)}
-.ati,.ato{font-size:13px;color:var(--ink2,#444)}.ati span,.ato span{display:block;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-.ati b{font-size:15px;color:var(--green)}.ato i{font-style:normal;color:var(--orange);font-size:12px}
+.atd{font-size:13.5px;font-weight:700;color:var(--ink);white-space:nowrap}.atd>span{display:block;font-size:11px;font-weight:500;color:var(--muted)}.atd small{display:block;font-size:11px;font-weight:500;color:var(--muted)}
+.ati,.ato{font-size:13px;color:var(--ink2,#444);white-space:nowrap}.ati span,.ato span{display:block;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.ati b{font-size:14.5px;color:var(--green)}.ato i{font-style:normal;color:var(--orange);font-size:12px}
 .ath{text-align:right;font-size:13px;font-weight:600;white-space:nowrap}.atp{display:flex;gap:6px;justify-content:flex-end;margin-top:2px}.atp a{font-size:11px;font-weight:500;color:var(--muted);text-decoration:none}
 .lsf-bar{display:flex;gap:6px;overflow-x:auto;margin:0 0 12px;padding-bottom:2px;scrollbar-width:none}.lsf-bar::-webkit-scrollbar{display:none}
 .lsf{flex:none;border:1px solid var(--border);background:#fff;color:var(--ink2);border-radius:999px;padding:6px 12px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap}
@@ -7051,7 +7051,7 @@ function renderAttendance(){
 
 // One line per day: day · In (bold) · Out · hours · location pins. No wide table, nothing cut off on a phone.
 function attRowsH(list,showStaff){
-  const day=d=>{ if(!d)return'—'; const x=new Date(d+'T00:00:00'); return isNaN(x)?fd(d):x.toLocaleDateString('en-IN',{weekday:'short',day:'2-digit',month:'short'}); };
+  const day=d=>{ if(!d)return'—'; const x=new Date(d+'T00:00:00'); return isNaN(x)?fd(d):x.toLocaleDateString('en-IN',{day:'2-digit',month:'short'})+'<span>'+x.toLocaleDateString('en-IN',{weekday:'short'})+'</span>'; };
   return '<div class="atl">'+list.map(a=>`<div class="atr">
     <div class="atd">${day(a.date)}${showStaff?`<small>${_escHtml(a.staffName||'')}</small>`:''}</div>
     <div class="ati"><span>In</span><b>${a.checkInTime||'—'}</b></div>
