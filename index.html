@@ -232,7 +232,7 @@ button{cursor:pointer;}
 .tbl tr.row-expired td{background:#FEF2F2;}
 .tbl tr.row-soon td{background:#FFFBEB;}
 .bn-item{position:relative;}
-.bn-badge{position:absolute;top:5px;left:calc(50% + 6px);min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--red);color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;animation:urgentPulse 1.6s ease-in-out infinite;}
+.bn-badge{position:absolute;top:5px;left:calc(50% + 6px);min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--red);color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;animation:urgentPulse 1.6s ease-in-out 3;}
 .quick-room-row{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-bottom:1px solid var(--border);font-size:13px;}
 .quick-room-row:last-child{border-bottom:none;}
 
@@ -746,6 +746,7 @@ button{cursor:pointer;}
 .ocr-fill{background:#FEF9C3!important;border-color:#EAB308!important;}
 .sb-tag{font-size:10.5px;font-weight:700;color:#047857;background:#ECFDF5;border:1px solid #A7F3D0;border-radius:6px;padding:2px 6px;white-space:nowrap;}
 .sa-box{background:#F5F3FF;border:1px solid rgba(139,92,246,.25);border-radius:10px;padding:9px 12px;margin:2px 0 12px;}.sa-chk{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;line-height:1.45;cursor:pointer;}
+button,.bn-item,.tap-row,a,label,summary,select,[onclick]{touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
 </style>
 </head>
 <body>
@@ -1237,7 +1238,7 @@ function showAppForUser(){
   document.getElementById('app').style.flexDirection='column';
   document.getElementById('tbUser').textContent=user;
   const tr=document.getElementById('tbRole');tr.textContent=isAdmin?'Admin':'Staff';tr.className='tb-role '+(isAdmin?'admin':'staff');
-  setTimeout(()=>sbLinkLoad().then(ch=>{ if(ch&&curTab)try{renderTab();}catch(e){} }),1500);   // SiteBooks cleaning money for the cash book
+  setTimeout(()=>sbLinkLoad().then(ch=>{ if(ch&&curTab==='cash'&&!document.getElementById('ov').classList.contains('open'))try{renderCashBook();}catch(e){} }),1500);   // SiteBooks cleaning money — only the Cash tab shows it
 }
 let _signingIn=false;
 async function doLogin(){
@@ -1687,8 +1688,10 @@ function goTab(tab){
   });
   { const mb=document.getElementById('bn-more'); if(mb)mb.classList.toggle('active',MORE_TABS.includes(tab)); }
   toggleMore(false);
-  renderTab();
+  // the tab lights up at once; the page is drawn on the next frame (only the last tap counts if tapped quickly)
+  const go=++_goSeq; requestAnimationFrame(()=>{ if(go===_goSeq&&curTab===tab)renderTab(); });
 }
+let _goSeq=0;
 const MORE_TABS=['lease','planner','reminders','attendance','past','owners','settings','expenses'];
 function toggleMore(open){ const m=document.getElementById('moreSheet'); if(!m)return; const on=open===undefined?!m.classList.contains('open'):!!open; m.classList.toggle('open',on); }
 function renderTab(){
@@ -5633,7 +5636,7 @@ function cbSelectAll(on){ cbSel=on?null:[]; cbDDOpen=true; renderCashBook(); }
 function cbOnly(k){ cbSel=[k]; cbDDOpen=false; renderCashBook(); }
 function renderCashBook(){
   curTab='cash';
-  sbLinkLoad().then(ch=>{ if(ch&&curTab==='cash')renderCashBook(); });
+  sbLinkLoad().then(ch=>{ if(ch&&curTab==='cash'&&!document.getElementById('ov').classList.contains('open'))renderCashBook(); });
   if(!cbMo)cbMo=mk();
   const staff=_cbStaff(), L=staffList();
   if(cbSel)cbSel=cbSel.filter(k=>cbAllKeys().includes(k));
