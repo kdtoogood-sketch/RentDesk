@@ -722,6 +722,19 @@ button{cursor:pointer;}
   .g2,.g3,.g4{grid-template-columns:1fr;}
   .bn-label{font-size:9.5px;}
 }
+.atl{display:flex;flex-direction:column}
+.atr{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr) minmax(0,1fr) auto;gap:8px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border)}
+.atr:last-child{border-bottom:0}
+.atd{font-size:13px;font-weight:600;color:var(--ink)}.atd small{display:block;font-size:11px;font-weight:500;color:var(--muted)}
+.ati,.ato{font-size:13px;color:var(--ink2,#444)}.ati span,.ato span{display:block;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.ati b{font-size:15px;color:var(--green)}.ato i{font-style:normal;color:var(--orange);font-size:12px}
+.ath{text-align:right;font-size:13px;font-weight:600;white-space:nowrap}.atp{display:flex;gap:6px;justify-content:flex-end;margin-top:2px}.atp a{font-size:11px;font-weight:500;color:var(--muted);text-decoration:none}
+.lsf-bar{display:flex;gap:6px;overflow-x:auto;margin:0 0 12px;padding-bottom:2px;scrollbar-width:none}.lsf-bar::-webkit-scrollbar{display:none}
+.lsf{flex:none;border:1px solid var(--border);background:#fff;color:var(--ink2);border-radius:999px;padding:6px 12px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap}
+.lsf b{margin-left:3px}.lsf.red{color:var(--red);border-color:#FECACA}.lsf.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.work-calm{background:var(--green-dim,#ECFDF5);color:#047857;border-radius:12px;padding:10px 14px;font-size:13.5px;font-weight:600;margin:0 0 12px}
+.work-fold{display:flex;justify-content:space-between;align-items:center;width:100%;background:#fff;border:1px dashed var(--border);border-radius:12px;padding:11px 14px;font:inherit;font-size:13.5px;font-weight:600;color:var(--ink2);cursor:pointer;margin:6px 0 10px}
+.pt-sum{display:flex;justify-content:space-between;align-items:center;gap:10px;cursor:pointer}.pt-chev{color:var(--muted);font-size:14px}
 </style>
 </head>
 <body>
@@ -6143,20 +6156,15 @@ function renderPlanner(){
     <button class="btn btn-orange" onclick="openAddTask()">+ Add Task</button>
   </div>
   ${workDateNavHTML()}
-  <div class="work-hero">
-    <div class="work-hero-title">${overdue?`⚠️ ${overdue} overdue task${overdue>1?'s':''}`:open.length?`${open.length} open task${open.length>1?'s':''}`:'All tasks cleared'}</div>
-    <div class="work-hero-sub">${overdue?'Handle these first.':selectedDue?`${selectedDue} due on this date.`:'Your planner is calm for this date.'}</div>
-  </div>
-  ${workDate===today()?dashDocsPendingH():''}
-  <div class="work-stats">
-    <div class="work-stat"><div class="work-stat-num ora">${open.length}</div><div class="work-stat-lbl">Open</div></div>
-    <div class="work-stat"><div class="work-stat-num red">${overdue}</div><div class="work-stat-lbl">Overdue</div></div>
-    <div class="work-stat"><div class="work-stat-num grn">${done.length}</div><div class="work-stat-lbl">Done</div></div>
-  </div>
-  <div class="work-section-title"><span>${viewingToday&&overdue>0?'Today + Overdue Carry-Forward':'Tasks For Selected Date'}</span><span>${open.length}</span></div>
-  ${open.length?open.map(t=>taskRowH(t)).join(''):`<div class="empty-soft"><div class="emo">✅</div><div>No open tasks!</div></div>`}
-  ${done.length?`<div class="work-section-title"><span>Completed</span><span>${done.length}</span></div>${done.map(t=>taskRowH(t)).join('')}`:''}`; 
+  ${overdue||open.length?`<div class="work-hero">
+    <div class="work-hero-title">${overdue?`⚠️ ${overdue} overdue task${overdue>1?'s':''}`:`${open.length} open task${open.length>1?'s':''}`}</div>
+    <div class="work-hero-sub">${overdue?'Handle these first.':selectedDue?`${selectedDue} due on this date.`:'Open tasks for this date.'}</div>
+  </div>`:`<div class="work-calm">✓ All tasks cleared for this date</div>`}
+  ${open.length?`<div class="work-section-title"><span>${viewingToday&&overdue>0?'Today + Overdue Carry-Forward':'Tasks For Selected Date'}</span><span>${open.length}</span></div>${open.map(t=>taskRowH(t)).join('')}`:''}
+  ${workDate===today()?dashDocsPendingH(false):''}
+  ${done.length?`<button class="work-fold" onclick="_plDone=!_plDone;renderPlanner()"><span>${_plDone?'▾':'▸'} Completed tasks</span><b>${done.length}</b></button>${_plDone?done.map(t=>taskRowH(t)).join(''):''}`:''}`; 
 }
+let _plDone=false;
 function taskRowH(t){
   const isDone=t.status==='done',kind=dueKind(t.dueDate,isDone);
   return`<div class="task-item ${isDone?'done-task':kind}">
@@ -7012,19 +7020,7 @@ function renderAttendance(){
   <div class="card">
     <div class="card-head"><div class="card-title">📅 My Attendance History</div></div>
     <div class="card-body" style="padding:0;">
-      ${myHistory.length?`<table class="tbl">
-        <thead><tr><th>Date</th><th>Check In</th><th>Check Out</th><th>Hours</th><th>Location</th></tr></thead>
-        <tbody>${myHistory.map(a=>`<tr>
-          <td>${fd(a.date)}</td>
-          <td style="color:var(--green);font-weight:600;">${a.checkInTime||'—'}</td>
-          <td style="color:var(--orange);font-weight:600;">${a.checkOutTime||'—'}</td>
-          <td style="font-weight:600;">${calcHours(a)}</td>
-          <td style="font-size:12px;">
-            ${a.checkInMapUrl?`<a href="${a.checkInMapUrl}" target="_blank" style="color:var(--green);">In 📍</a>`:''}
-            ${a.checkOutMapUrl?` <a href="${a.checkOutMapUrl}" target="_blank" style="color:var(--orange);">Out 📍</a>`:''}
-          </td>
-        </tr>`).join('')}</tbody>
-      </table>`:`<div class="empty" style="padding:24px;"><div class="empty-text">No attendance records yet</div></div>`}
+      ${myHistory.length?attRowsH(myHistory,false):`<div class="empty" style="padding:24px;"><div class="empty-text">No attendance records yet</div></div>`}
     </div>
   </div>`
 
@@ -7047,23 +7043,22 @@ function renderAttendance(){
 
   <div class="card">
     <div class="card-head"><div class="card-title">📋 All Attendance Records</div></div>
-    <div style="overflow-x:auto;">
-      ${myHistory.length?`<table class="tbl">
-        <thead><tr><th>Date</th><th>Staff</th><th>Check In</th><th>Check Out</th><th>Hours</th><th>In Location</th><th>Out Location</th></tr></thead>
-        <tbody>${myHistory.map(a=>`<tr>
-          <td>${fd(a.date)}</td>
-          <td><strong>${a.staffName}</strong></td>
-          <td style="color:var(--green);font-weight:600;">${a.checkInTime||'—'}</td>
-          <td style="color:var(--orange);font-weight:600;">${a.checkOutTime||'—'}</td>
-          <td style="font-weight:600;">${calcHours(a)}</td>
-          <td>${a.checkInMapUrl?`<a href="${a.checkInMapUrl}" target="_blank" class="btn btn-green btn-xs">📍 View</a>`:'—'}</td>
-          <td>${a.checkOutMapUrl?`<a href="${a.checkOutMapUrl}" target="_blank" class="btn btn-amber btn-xs">📍 View</a>`:'—'}</td>
-        </tr>`).join('')}</tbody>
-      </table>`:`<div class="empty" style="padding:24px;"><div class="empty-text">No records yet</div></div>`}
+    <div>
+      ${myHistory.length?attRowsH(myHistory,staffNames.length>1):`<div class="empty" style="padding:24px;"><div class="empty-text">No records yet</div></div>`}
     </div>
   </div>`}`;
 }
 
+// One line per day: day · In (bold) · Out · hours · location pins. No wide table, nothing cut off on a phone.
+function attRowsH(list,showStaff){
+  const day=d=>{ if(!d)return'—'; const x=new Date(d+'T00:00:00'); return isNaN(x)?fd(d):x.toLocaleDateString('en-IN',{weekday:'short',day:'2-digit',month:'short'}); };
+  return '<div class="atl">'+list.map(a=>`<div class="atr">
+    <div class="atd">${day(a.date)}${showStaff?`<small>${_escHtml(a.staffName||'')}</small>`:''}</div>
+    <div class="ati"><span>In</span><b>${a.checkInTime||'—'}</b></div>
+    <div class="ato"><span>Out</span>${a.checkOutTime||(a.checkIn?'<i>not out</i>':'—')}</div>
+    <div class="ath">${calcHours(a)}<div class="atp">${a.checkInMapUrl?`<a href="${a.checkInMapUrl}" target="_blank" title="Check-in location">📍In</a>`:''}${a.checkOutMapUrl?`<a href="${a.checkOutMapUrl}" target="_blank" title="Check-out location">📍Out</a>`:''}</div></div>
+  </div>`).join('')+'</div>';
+}
 function calcHours(rec){
   if(!rec||!rec.checkIn||!rec.checkOut)return'—';
   const diff=(new Date(rec.checkOut)-new Date(rec.checkIn))/3600000;
@@ -9199,18 +9194,18 @@ function dashNeedsActionH(){
     dfSites('soon',soon,a=>a.prop,g=>g.map(_alertRowH).join(''),drafted),false);
   return `<div class="na-box"><div class="na-h"><span>🚨 Needs action now</span><span class="na-tot">${n.total}</span></div>${h}${docsH}</div>`;
 }
-function dashLeaseUrgentH(){
+function dashLeaseUrgentH(only){
   const al=allLeaseAlerts();
   const ex=al.filter(a=>a.days<0),soon=al.filter(a=>a.days>=0);
   let h='';
   const drafted=g=>{ const d=g.filter(a=>a.draftId).length; return d?d+' renewal'+(d>1?'s':'')+' drafted':''; };
-  if(ex.length)h+=dfBox('exp','urgent-card','','urgent-head','',
+  if(ex.length&&(!only||only==='exp'))h+=dfBox('exp','urgent-card','','urgent-head','',
     `<span>🚨 ${ex.length} lease${ex.length>1?'s':''} expired — action needed</span><button class="btn btn-sm" style="background:#FEF2F2;color:var(--red);flex:none;" onclick="event.stopPropagation();goTab('lease')">View All</button>`,
     dfSites('exp',ex,a=>a.prop,g=>g.map(_alertRowH).join(''),drafted));
-  if(soon.length)h+=dfBox('soon','soon-card','','soon-head','',
+  if(soon.length&&(!only||only==='soon'))h+=dfBox('soon','soon-card','','soon-head','',
     `<span>⏳ ${soon.length} lease${soon.length>1?'s':''} ending within 30 days</span>`,
     dfSites('soon',soon,a=>a.prop,g=>g.map(_alertRowH).join(''),drafted));
-  h+=dashAgreementsH();
+  if(!only||only==='agr')h+=dashAgreementsH();
   return h;
 }
 // Pops up once each time the app is opened if any lease has expired
@@ -9459,13 +9454,15 @@ function closeLease(leaseId){
 // ── LEASE DEED (Part 1/3 — renderLease) ──
 // Red/yellow alerts stay at the top (always open). Below: tidy, collapsible sections —
 // current leases as cards (renewal drafts tucked inside their lease), past leases, and rooms to create leases for.
-let _lsQ='', _lsOpen=null;
+let _lsQ='', _lsOpen=null, _lsF='all';
+// Lease page filter chips: show one group at a time (All = everything, as before)
+function setLsF(k){ _lsF=(_lsF===k&&k!=='all')?'all':k; if(['exp','soon','agr'].includes(_lsF))_dfLoad()[_lsF]=true; renderLease(); window.scrollTo(0,0); }
 function _lsState(){ if(!_lsOpen){ try{_lsOpen=JSON.parse(localStorage.getItem('rentdesk_lease_sections')||'null');}catch(e){} if(!_lsOpen)_lsOpen={cur:true,past:false,rooms:false}; } return _lsOpen; }
 function _lsToggle(k){ const o=_lsState(); o[k]=!o[k]; try{localStorage.setItem('rentdesk_lease_sections',JSON.stringify(o));}catch(e){} renderLease(); }
 function _lsSearch(v){ _lsQ=v; renderLease(); const el=document.getElementById('ls_q'); if(el){el.focus(); el.setSelectionRange(v.length,v.length);} }
 function _lsMatch(l){ if(!_lsQ)return true; const q=_lsQ.toLowerCase(); return [l.lesseeName,l.propertyName,leaseUnitLabel(l)].join(' ').toLowerCase().includes(q); }
 function _lsSec(k,title,count,body,extra){
-  const open=_lsState()[k];
+  const open=_lsF===k||_lsState()[k];
   return `<div class="card ls-sec" style="margin-bottom:14px;">
     <div class="card-head ls-head" onclick="_lsToggle('${k}')">
       <div class="card-title">${title} <span class="ls-count">${count}</span></div>
@@ -9522,7 +9519,7 @@ function renderLease(){
   const curF=cur.filter(l=>_lsQ?_lsMatch(l):!inAlert.has(l.id)), pastF=past.filter(_lsMatch);
   const hiddenN=_lsQ?0:cur.filter(l=>inAlert.has(l.id)).length;
   const search=`<input class="finput" id="ls_q" placeholder="🔍 Search tenant, site or unit" value="${(_lsQ||'').replace(/"/g,'&quot;')}" oninput="_lsSearch(this.value)" style="margin-bottom:10px;"/>`;
-  const curBody=(all.length>3?search:'')+(hiddenN?`<div style="font-size:12px;color:var(--muted);margin:-2px 0 10px;">${hiddenN} expired / ending-soon lease${hiddenN>1?'s are':' is'} in the red & yellow boxes above.</div>`:'')+(curF.length?`<div class="ls-grid">${curF.map(l=>_lsCard(l,drafts)).join('')}</div>`
+  const curBody=(all.length>3?search:'')+(hiddenN?`<div style="font-size:12px;color:var(--muted);margin:-2px 0 10px;">${hiddenN} expired / ending-soon lease${hiddenN>1?'s are':' is'} ${_lsF==='all'?'in the red &amp; yellow boxes above':'under the Expired / Ending soon chips'}.</div>`:'')+(curF.length?`<div class="ls-grid">${curF.map(l=>_lsCard(l,drafts)).join('')}</div>`
     :all.length?`<div style="color:var(--muted);font-size:13px;padding:6px 2px;">${_lsQ?'No lease matches “'+_lsQ+'”.':'No current leases.'}</div>`
     :`<div class="empty"><div class="empty-icon">📄</div><div class="empty-text">No lease deeds created yet</div><button class="btn btn-orange" onclick="openLeaseDeed(null,null,null)">+ Create First Lease</button></div>`);
   const pastBody=pastF.length?`<div class="ls-grid">${pastF.map(l=>_lsCard(l,{})).join('')}</div>`:`<div style="color:var(--muted);font-size:13px;">${_lsQ?'No past lease matches.':'No past leases.'}</div>`;
@@ -9542,11 +9539,18 @@ function renderLease(){
       <button class="btn btn-ghost btn-xs" onclick="openLeaseDeed(null,'${p.id}','${r.id}')">📄 Create Lease</button></div>`;
   }).join('');
   const tools=isAdmin?`<button class="btn btn-ghost btn-xs" onclick="exportRentData('leases')">📥 Export</button><button class="btn btn-orange btn-xs" onclick="openLeaseDeed(null,null,null)">+ New Lease</button>`:'';
+  const _al=allLeaseAlerts(), nEx=_al.filter(a=>a.days<0).length, nSoon=_al.filter(a=>a.days>=0).length;
+  const _ag=agreementsPending(), nPv=_ag.filter(a=>!a.pv.done).length;
+  if(_lsF==='exp'&&!nEx||_lsF==='soon'&&!nSoon||_lsF==='agr'&&!_ag.length||_lsF==='past'&&!past.length||_lsF==='rooms'&&!rooms.length)_lsF='all';
+  const chip=(k,lab,n,red)=>`<button class="lsf${_lsF===k?' on':''}${red&&n?' red':''}" onclick="setLsF('${k}')">${lab}${n!==''?' <b>'+n+'</b>':''}</button>`;
+  const chips=`<div class="lsf-bar">${chip('all','All','')}${nEx?chip('exp','Expired',nEx,1):''}${nSoon?chip('soon','Ending soon',nSoon):''}${_ag.length?chip('agr','To sign'+(nPv?' / police':''),_ag.length):''}${chip('cur','Current',cur.length)}${past.length?chip('past','Past',past.length):''}${rooms.length?chip('rooms','No lease',noDeed||rooms.length):''}</div>`;
+  const F=_lsF, show=k=>F==='all'||F===k;
   mc.innerHTML=`
-  ${dashLeaseUrgentH()}
-  ${_lsSec('cur','📄 Current Leases',cur.length,curBody,tools)}
-  ${past.length?_lsSec('past','🗂 Past Leases',past.length,pastBody,''):''}
-  ${rooms.length?_lsSec('rooms','🏠 Create Lease for a Room',noDeed?noDeed+' without lease':rooms.length,roomsBody,''):''}`;
+  ${chips}
+  ${F==='all'?dashLeaseUrgentH():['exp','soon','agr'].includes(F)?dashLeaseUrgentH(F):''}
+  ${show('cur')?_lsSec('cur','📄 Current Leases',cur.length,curBody,tools):''}
+  ${past.length&&show('past')?_lsSec('past','🗂 Past Leases',past.length,pastBody,''):''}
+  ${rooms.length&&show('rooms')?_lsSec('rooms','🏠 Create Lease for a Room',noDeed?noDeed+' without lease':rooms.length,roomsBody,''):''}`;
 }
 
 // ── LEASE DEED (Part 1b — shareLeaseWhatsApp) ──
@@ -10969,11 +10973,18 @@ window.onload=()=>{
 };
 
 // ── PAST TENANTS ──────────────────────────────────────────────────────────
+let _ptF='all', _ptOpen=new Set();
+function _ptStatus(t){ const f=refundInfo(t); return (!f.due||f.left<=0)?'settled':f.isRefund?'refund':'owes'; }
+function _ptToggle(id){ _ptOpen.has(id)?_ptOpen.delete(id):_ptOpen.add(id); renderPast(); }
 function renderPast(){
   const mc=document.getElementById('mc');if(!mc)return;
   const all=S.pastTenants||[];
   const srch=(document.getElementById('pastSearch')||{}).value||'';
-  const fil=srch?all.filter(t=>(t.name||'').toLowerCase().includes(srch.toLowerCase())||(t.phone||'').includes(srch)):all;
+  const fil0=srch?all.filter(t=>(t.name||'').toLowerCase().includes(srch.toLowerCase())||(t.phone||'').includes(srch)):all;
+  const cnt={refund:0,owes:0,settled:0}; all.forEach(t=>cnt[_ptStatus(t)]++);
+  if(_ptF!=='all'&&!cnt[_ptF])_ptF='all';
+  const fil=_ptF==='all'?fil0:fil0.filter(t=>_ptStatus(t)===_ptF);
+  const pchip=(k,lab,n,cls)=>`<button class="lsf${_ptF===k?' on':''}${cls?' '+cls:''}" onclick="_ptF='${k}';renderPast()">${lab}${n!==''?' <b>'+n+'</b>':''}</button>`;
   const byProp={};
   fil.forEach(t=>{const k=t.propertyId||'other';if(!byProp[k])byProp[k]={name:t.propertyName||'Other',list:[]};byProp[k].list.push(t);});
   const pendRef=all.filter(t=>t.settlement&&(t.settlement.refundStatus==='pending'||t.settlement.refundStatus==='partial')&&Number(t.settlement.netRefund||0)>0);
@@ -10989,19 +11000,21 @@ function renderPast(){
     <div class="card" style="margin-bottom:14px;">
       <input class="finput" id="pastSearch" placeholder="🔍 Search by name or phone..." oninput="renderPast()" value="${srch}" style="border:none;background:transparent;outline:none;width:100%;"/>
     </div>
+    ${all.length?`<div class="lsf-bar">${pchip('all','All',all.length)}${cnt.refund?pchip('refund','Refund due',cnt.refund,'red'):''}${cnt.owes?pchip('owes','Tenant owes',cnt.owes,'red'):''}${cnt.settled?pchip('settled','Settled',cnt.settled):''}</div>`:''}
     ${Object.keys(byProp).length===0?`<div class="empty-state"><div style="font-size:2.5rem">👥</div><div style="font-weight:600;margin:8px 0 4px">No past tenants yet</div><div style="font-size:13px;color:var(--muted)">Vacated tenants will appear here.</div></div>`:
     Object.values(byProp).map(g=>`
       <div style="background:var(--orange);color:#fff;padding:10px 16px;border-radius:10px 10px 0 0;font-weight:700;font-size:14px;margin-top:14px;">
         🏢 ${g.name} <span style="opacity:.7;font-size:12px;font-weight:400;">(${g.list.length})</span></div>
       ${g.list.sort((a,b)=>b.vacatingDate>a.vacatingDate?1:-1).map(t=>`
         <div class="card" style="border-radius:0;border-top:none;margin-bottom:0;">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
-            <div><div style="font-weight:700;font-size:15px;">${t.name||'—'}</div>
-              <div style="font-size:12px;color:var(--muted);">${t.phone||''} ${t.roomType?'· '+t.roomType+(t.unitNo?' #'+t.unitNo:''):''}</div></div>
-            ${(()=>{ const f=refundInfo(t);
+          <div class="pt-sum" onclick="_ptToggle('${t.id}')">
+            <div style="min-width:0;"><div style="font-weight:700;font-size:15px;">${t.name||'—'}</div>
+              <div style="font-size:12px;color:var(--muted);">${t.roomType?t.roomType+(t.unitNo?' #'+t.unitNo:'')+' · ':''}Left ${fd(t.vacatingDate)}${(()=>{ const f=refundInfo(t); return f.due&&f.left>0?' · '+(f.isRefund?'refund ':'owes ')+fm(f.left):f.due?' · '+(f.isRefund?'refunded ':'received ')+fm(f.due):''; })()}</div></div>
+            <div style="display:flex;align-items:center;gap:8px;flex:none;">${(()=>{ const f=refundInfo(t);
               if(!f.due||f.left<=0)return '<span class="badge badge-grn">✅ Settled</span>';
-              return f.isRefund?'<span class="badge badge-red">💰 Refund Pending</span>':'<span class="badge badge-amb">⚠️ Tenant Owes</span>'; })()}
+              return f.isRefund?'<span class="badge badge-red">💰 Refund Pending</span>':'<span class="badge badge-amb">⚠️ Tenant Owes</span>'; })()}<span class="pt-chev">${_ptOpen.has(t.id)?'▾':'▸'}</span></div>
           </div>
+          ${_ptOpen.has(t.id)?`<div style="padding-top:10px;">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;font-size:12px;margin-bottom:8px;">
             <div><span style="color:var(--muted)">Tenure:</span> ${fd(t.moveInDate)} → ${fd(t.vacatingDate)}</div>
             <div><span style="color:var(--muted)">Reason:</span> ${t.vacatingReason||'—'}</div>
@@ -11089,6 +11102,7 @@ function renderPast(){
               })()}
             </div>
           </details>
+          </div>`:''}
         </div>`).join('')}
       <div style="height:8px;border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;margin-bottom:2px;"></div>`).join('')}`;
 }
