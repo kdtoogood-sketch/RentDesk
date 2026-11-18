@@ -2835,7 +2835,8 @@ function settlementsPrintH(data){
       +'<td style="font-weight:700;color:'+(x.isRefund?'#10B981':'#EF4444')+';">'+(x.due?(x.isRefund?'Refund ':'Owes ')+R(x.due):'&mdash;')+'</td><td>'+R(x.paid)+'</td>'
       +'<td style="font-weight:700;color:'+(x.left>0?'#EF4444':'#10B981')+';">'+(x.left>0?R(x.left):'&#10003;')+'</td>'
       +'<td style="font-size:10px;">'+(x.paysThisMonth.length?x.paysThisMonth.map(p=>R(p.amount)+' &middot; '+fd(p.date)+' &middot; '+(p.mode||'')+' &middot; by '+(p.by||'')).join('<br/>'):'&mdash;')+'</td>'
-      +'<td style="font-weight:700;color:'+x.tone+';">'+x.label+'</td></tr>').join('')
+      +'<td style="font-weight:700;color:'+x.tone+';">'+x.label+'</td></tr>'
+      +(x.work?'<tr><td colspan="10" style="font-size:10.5px;padding:3px 6px 6px;"><b>How worked out:</b> '+_refundWorkText(x.work,R).replace(/= ([^=]*)$/,'= <b>$1</b>')+'</td></tr>':'')).join('')
     +'</tb'+'ody></t'+'able></div>';
 }
 function settlementsScreenH(data){
@@ -2844,7 +2845,7 @@ function settlementsScreenH(data){
     <thead><tr><th>Tenant</th><th>Unit</th><th>Vacated</th><th>Security</th><th>Adjusted</th><th>Refund / owes</th><th>Paid</th><th>Left</th><th>Status</th></tr></thead><tbody>
     ${L.map(x=>`<tr><td><strong>${x.name}</strong>${x.leftThisMonth?'':'<div style="font-size:10px;color:var(--muted);">left earlier</div>'}</td><td>${x.prop?x.prop+' · ':''}${x.unit}</td><td>${fd(x.vacated)}</td><td>${fm(x.secHeld)}</td><td>${fm(x.secAdj)}</td>
       <td style="font-weight:700;color:${x.isRefund?'var(--green)':'var(--red)'};">${x.due?(x.isRefund?'Refund ':'Owes ')+fm(x.due):'—'}</td><td>${fm(x.paid)}${x.paysThisMonth.length?`<div style="font-size:10px;color:var(--muted);">${x.paysThisMonth.map(p=>fm(p.amount)+' · '+fd(p.date)+' · by '+p.by).join('<br/>')}</div>`:''}</td>
-      <td style="font-weight:700;color:${x.left>0?'var(--red)':'var(--green)'};">${x.left>0?fm(x.left):'✓'}</td><td style="font-size:12px;font-weight:600;color:${x.tone};">${x.label}</td></tr>`).join('')}
+      <td style="font-weight:700;color:${x.left>0?'var(--red)':'var(--green)'};">${x.left>0?fm(x.left):'✓'}</td><td style="font-size:12px;font-weight:600;color:${x.tone};">${x.label}</td></tr>${x.work?`<tr><td colspan="9" style="font-size:12px;color:var(--muted);padding-top:0;">How worked out: ${_refundWorkText(x.work,fm).replace(/= ([^=]*)$/,'= <b style="color:var(--ink);">$1</b>')}</td></tr>`:''}`).join('')}
     </tbody></table></div></div>`;
 }
 function settlementsPdfBlocks(data){
@@ -2852,13 +2853,15 @@ function settlementsPdfBlocks(data){
   const M=v=>'\u20B9'+Math.round(v||0).toLocaleString('en-IN');
   const th=t=>({text:t,style:'th'});
   const body=[[th('Tenant'),th('Unit'),th('Vacated'),th('Security held'),th('Adjusted'),th('Refund / owes'),th('Paid so far'),th('Left'),th('Status')]];
-  L.forEach(x=>body.push([
+  L.forEach(x=>{ body.push([
     {stack:[{text:x.name,bold:true,fontSize:8},...(x.leftThisMonth?[]:[{text:'left earlier',fontSize:7,color:'#9CA3AF'}])]},
     {text:(x.prop?x.prop+' \u00B7 ':'')+x.unit,fontSize:8},{text:fd(x.vacated),fontSize:8},{text:M(x.secHeld),fontSize:8},{text:M(x.secAdj),fontSize:8},
     {text:x.due?(x.isRefund?'Refund ':'Owes ')+M(x.due):'\u2014',fontSize:8,bold:true,color:x.isRefund?'#10B981':'#EF4444'},
     {stack:[{text:M(x.paid),fontSize:8},...x.paysThisMonth.map(p=>({text:M(p.amount)+' \u00B7 '+fd(p.date)+' \u00B7 by '+p.by,fontSize:7,color:'#6B7280'}))]},
     {text:x.left>0?M(x.left):'Done',fontSize:8,bold:true,color:x.left>0?'#EF4444':'#10B981'},
-    {text:x.label,fontSize:8,bold:true,color:x.tone}]));
+    {text:x.label,fontSize:8,bold:true,color:x.tone}]);
+    if(x.work){ const t=_refundWorkText(x.work,M), k=t.lastIndexOf(' = ');
+      body.push([{colSpan:9,fontSize:8,text:[{text:'How worked out: ',bold:true},t.slice(0,k+3),{text:t.slice(k+3),bold:true}]},'','','','','','','','']); } });
   return[{margin:[0,8,0,0],table:{widths:['*'],body:[[{text:'Security & Refunds',color:'#fff',bold:true,fontSize:10,fillColor:'#1A1A1A',margin:[8,5,8,5]}]]},layout:'noBorders'},
     {table:{headerRows:1,widths:[58,64,46,48,40,56,70,40,'*'],body},layout:{hLineWidth:()=>0.4,hLineColor:()=>'#E8ECF0',vLineWidth:()=>0.4,vLineColor:()=>'#E8ECF0',paddingLeft:()=>4,paddingRight:()=>4,paddingTop:()=>4,paddingBottom:()=>4}}];
 }
@@ -11205,13 +11208,27 @@ function refundLabelText(t){
 }
 function refundTone(t){ const f=refundInfo(t); return !f.due||f.left<=0?'#10B981':(f.isRefund?'#D97706':'#EF4444'); }
 // Vacated this month, plus any refund paid this month for someone who left earlier
+// Refund working for a vacated tenant: Security − pending rent − cleaning − damages − other + paid on leaving day = refund / owes.
+// Only shown when the saved parts add up exactly to the saved refund (never invents a figure).
+function _refundWork(t){
+  const s=t.settlement||{}, n=v=>Math.round(Number(v||0));
+  const sec=n(t.securityHeld), net=n(s.netRefund);
+  const parts=[['Security',sec,1],['Pending rent',n(s.rentPending),-1],['Cleaning',n(s.cleaningCharge),-1],['Damages',n(s.damageDeductions),-1],['Other',n(s.otherDeductions),-1],['Paid on leaving day',n(s.cashPaidOnDay),1]];
+  if(parts.reduce((a,p)=>a+p[1]*p[2],0)!==net)return null;
+  const used=parts.filter((p,i)=>i===0||p[1]);
+  return{parts:used,net,result:net>0?'Refund':net<0?'Tenant owes':'Settled'};
+}
+function _refundWorkText(w,R){
+  if(!w)return'';
+  return w.parts.map((p,i)=>(i?(p[2]>0?' + ':' \u2212 '):'')+p[0]+' '+R(p[1])).join('')+' = '+w.result+(w.net?' '+R(Math.abs(w.net)):'');
+}
 function settlementsForMonth(month,filterPropId){
   return (S.pastTenants||[]).filter(t=>(!filterPropId||t.propertyId===filterPropId)&&t.settlement&&(
       sameMonthDate(t.vacatingDate,month)||(t.settlement.refundPayments||[]).some(x=>(x.date||'').slice(0,7)===month)))
     .map(t=>{ const f=refundInfo(t);
       return{name:t.name||'—',prop:t.propertyName||'',unit:(t.roomType||'')+(t.unitNo?' #'+t.unitNo:''),vacated:t.vacatingDate,leftThisMonth:sameMonthDate(t.vacatingDate,month),
         secHeld:Number(t.securityHeld||0),secAdj:Number((t.settlement&&t.settlement.securityAdjusted)||0),isRefund:f.isRefund,due:f.due,paid:f.paid,left:f.left,
-        paysThisMonth:f.pays.filter(x=>(x.date||'').slice(0,7)===month),label:refundLabelText(t),tone:refundTone(t)}; })
+        paysThisMonth:f.pays.filter(x=>(x.date||'').slice(0,7)===month),label:refundLabelText(t),tone:refundTone(t),work:_refundWork(t)}; })
     .sort((a,b)=>(a.prop+a.unit).localeCompare(b.prop+b.unit));
 }
 function refundInfo(t){
