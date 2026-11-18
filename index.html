@@ -744,6 +744,7 @@ button{cursor:pointer;}
 .pf-view img{max-width:100%;max-height:85vh;border-radius:10px;}.pf-view .pf-x{color:#fff;font-weight:700;margin-top:12px;font-size:14px;}.pf-view .pf-wait{color:#fff;font-size:14px;}
 .ocr-st{display:none;font-size:12px;line-height:1.5;margin-top:6px;}
 .ocr-fill{background:#FEF9C3!important;border-color:#EAB308!important;}
+.sb-tag{font-size:10.5px;font-weight:700;color:#047857;background:#ECFDF5;border:1px solid #A7F3D0;border-radius:6px;padding:2px 6px;white-space:nowrap;}
 </style>
 </head>
 <body>
@@ -1235,6 +1236,7 @@ function showAppForUser(){
   document.getElementById('app').style.flexDirection='column';
   document.getElementById('tbUser').textContent=user;
   const tr=document.getElementById('tbRole');tr.textContent=isAdmin?'Admin':'Staff';tr.className='tb-role '+(isAdmin?'admin':'staff');
+  setTimeout(()=>sbLinkLoad().then(ch=>{ if(ch&&curTab)try{renderTab();}catch(e){} }),1500);   // SiteBooks cleaning money for the cash book
 }
 let _signingIn=false;
 async function doLogin(){
@@ -5377,6 +5379,71 @@ function fundOfSite(pid){ const p=siteById(pid); return isOwnerSite(p)?pid:'kd';
 // Every money movement for one staff member, oldest first, tagged with the account ("fund") it belongs to.
 // Maintenance charges are moved from an owner site's account to KD's account automatically, taken from the
 // first cash collected for that site each month (up to the monthly charge).
+
+// ══ 🔗 READ-ONLY LINK TO SITEBOOKS' CLEANING REGISTER (sbclean, sbclean_cfg) ══
+// SiteBooks owns this data; this app only reads and shows it (nothing is written back, nothing is copied).
+// Cleanings, caretakers' "Mark paid", and Preeti's own Airbnb-cleaning cash all live there.
+const SBL_BASE='https://firestore.googleapis.com/v1/projects/propdesk-f50e0/databases/(default)/documents/';
+const SBL_CACHE='sb_link_cache';
+let _sbl={cfg:null,list:[],at:0,err:'',busy:null};
+try{ const c=JSON.parse(localStorage.getItem(SBL_CACHE)||'null'); if(c&&Array.isArray(c.list)){ _sbl.cfg=c.cfg||null; _sbl.list=c.list; _sbl.at=c.at||0; } }catch(e){}
+function _sblDec(v){
+  if(!v||'nullValue' in v)return null;
+  if('booleanValue' in v)return v.booleanValue; if('integerValue' in v)return Number(v.integerValue); if('doubleValue' in v)return v.doubleValue; if('stringValue' in v)return v.stringValue;
+  if('arrayValue' in v)return (v.arrayValue.values||[]).map(_sblDec);
+  if('mapValue' in v)return Object.fromEntries(Object.entries(v.mapValue.fields||{}).map(([k,x])=>[k,_sblDec(x)]));
+  return null;
+}
+const _sblObj=d=>{ const o=Object.fromEntries(Object.entries(d.fields||{}).map(([k,v])=>[k,_sblDec(v)])); o.id=d.name.split('/').pop(); return o; };
+// fetch the latest (at most once a minute unless forced); returns true when something changed
+function sbLinkLoad(force){
+  if(_sbl.busy)return _sbl.busy;
+  if(!force&&_sbl.at&&Date.now()-_sbl.at<60000&&!_sbl.err)return Promise.resolve(false);
+  _sbl.busy=(async()=>{
+    try{
+      const list=[]; let tok='';
+      do{ const r=await fetch(SBL_BASE+'sbclean?pageSize=300'+(tok?'&pageToken='+encodeURIComponent(tok):''),{cache:'no-store'});
+        if(r.status===404)break; if(!r.ok)throw Object.assign(new Error('HTTP '+r.status),{status:r.status});
+        const j=await r.json(); (j.documents||[]).forEach(d=>list.push(_sblObj(d))); tok=j.nextPageToken||''; }while(tok);
+      const rc=await fetch(SBL_BASE+'sbclean_cfg/main',{cache:'no-store'});
+      const cfg=rc.ok?_sblObj(await rc.json()):(rc.status===404?null:_sbl.cfg);
+      const before=JSON.stringify([_sbl.cfg,_sbl.list]);
+      _sbl.cfg=cfg; _sbl.list=list; _sbl.at=Date.now(); _sbl.err='';
+      try{ localStorage.setItem(SBL_CACHE,JSON.stringify({cfg,list,at:_sbl.at})); }catch(e){}
+      return JSON.stringify([cfg,list])!==before;
+    }catch(e){ _sbl.err=e&&e.status===403?'rules':'offline'; return false; }
+    finally{ _sbl.busy=null; }
+  })();
+  return _sbl.busy;
+}
+const sbCaretakers=()=>((_sbl.cfg&&_sbl.cfg.caretakers)||[]);
+const sbPartnerName=pid=>{ const p=((_sbl.cfg&&_sbl.cfg.partners)||[]).find(x=>x.id===pid); return p?p.name:(pid||'').replace(/^p_/,'').replace(/^./,c=>c.toUpperCase()); };
+const sbUnitName=id=>{ const u=((_sbl.cfg&&_sbl.cfg.units)||[]).find(x=>x.id===id); return u?u.name:'?'; };
+// one caretaker's month in SiteBooks: cleanings (units × that entry's rate) and what was marked paid for that month
+function sbCareMonth(cid,m){
+  const ent=_sbl.list.filter(e=>e.kind==='clean'&&!e.deleted&&e.by===cid&&String(e.date||'').slice(0,7)===m);
+  let n=0, amt=0; ent.forEach(e=>{ const k=(e.units||[]).length; n+=k; amt+=k*(Number(e.rate)||0); });
+  const pays=_sbl.list.filter(e=>e.kind==='pay'&&!e.deleted&&e.by===cid&&e.month===m);
+  return {n,amt:Math.round(amt*100)/100,paid:pays.reduce((a,p)=>a+(Number(p.amount)||0),0),pays,days:new Set(ent.map(e=>e.date)).size};
+}
+
+// Preeti's Airbnb-cleaning money from SiteBooks, shown in her cash book (same cash in hand) — from 18 Nov 2026 only,
+// so everything before stays exactly as reconciled. Read-only here: change these in SiteBooks.
+const SB_LINK_FROM='2026-11-18';
+function sbCashRows(staff){
+  if(staff!=='Preeti')return [];
+  const out=[];
+  _sbl.list.forEach(e=>{
+    if(e.deleted||String(e.date||'')<SB_LINK_FROM)return;
+    const amt=Number(e.amount)||0; if(!(amt>0))return;
+    if(e.kind==='cash') out.push({kind:'given',fund:'kd',dir:1,date:e.date,amount:amt,site:'',siteName:'',
+      text:'Cash received from '+sbPartnerName(e.from)+' — Airbnb cleaning'+(e.mode&&e.mode!=='Cash'?' ('+e.mode+')':'')+(e.note?' — '+e.note:''),src:'sb',id:'sb_'+e.id});
+    else if(e.kind==='clean'&&e.by==='ext'&&e.preeti) out.push({kind:'expense',fund:'kd',dir:-1,date:e.date,amount:amt,site:'',siteName:'',
+      text:'🧹 Airbnb cleaning — '+(e.company||'Snabbit')+((e.units||[]).length?' ('+(e.units||[]).map(sbUnitName).join(', ')+')':''),src:'sb',id:'sb_'+e.id});
+  });
+  return out;
+}
+
 function cashBookEntries(staff){
   const out=[];
   (S.cash||[]).forEach(c=>{
@@ -5430,6 +5497,7 @@ function cashBookEntries(staff){
     out.push({kind:'maint',fund:e.site,dir:-1,date:e.date,amount:t,site:e.site,siteName:p.name,text:'Maintenance charge → KD’s account',src:'auto',id:'m_'+e.id});
     out.push({kind:'maintin',fund:'kd',dir:1,date:e.date,amount:t,site:e.site,siteName:p.name,text:'Maintenance charge from '+p.name,src:'auto',id:'mi_'+e.id});
   });
+  out.push(...sbCashRows(staff));                       // 🔗 from SiteBooks (Airbnb cleaning money)
   return out.sort((a,b)=>(a.date||'').localeCompare(b.date||'')||(a.kind==='maintin'||a.kind==='maint'?1:0)-(b.kind==='maintin'||b.kind==='maint'?1:0)||(b.dir-a.dir));
 }
 function directExpenses(from,to){ // paid by KD / client / not set — listed under the right account, not part of staff cash
@@ -5540,6 +5608,7 @@ function cbSelectAll(on){ cbSel=on?null:[]; cbDDOpen=true; renderCashBook(); }
 function cbOnly(k){ cbSel=[k]; cbDDOpen=false; renderCashBook(); }
 function renderCashBook(){
   curTab='cash';
+  sbLinkLoad().then(ch=>{ if(ch&&curTab==='cash')renderCashBook(); });
   if(!cbMo)cbMo=mk();
   const staff=_cbStaff(), L=staffList();
   if(cbSel)cbSel=cbSel.filter(k=>cbAllKeys().includes(k));
@@ -5849,6 +5918,7 @@ function printCashBook(){
 function cbRowActions(e){ return proofClipH(e.raw||(e.src==='pay'?_cbPayRaw(e):null)||(e.src==='cash'?((S.cash||[]).find(c=>c.id===e.id)||{proof:_cbProofCur({id:e.id,type:'spent'})}):null))+_cbRowActions(e); }
 function _cbPayRaw(e){ const p=(S.properties||[]).find(x=>x.id===e.pid), r=((p&&p.rooms)||[]).find(x=>x.id===e.rid); return ((r&&r.payments)||[]).find(x=>x.id===e.id)||null; }
 function _cbRowActions(e){
+  if(e.src==='sb')return '<span class="sb-tag" title="Entered in SiteBooks — change it there">🔗 SiteBooks</span>';
   if(e.src==='refund')return e.raw&&e.raw.pastId?`<button class="btn btn-ghost btn-xs" title="Open refund" onclick="openRefundForm('${e.raw.pastId}')">🧾</button>`:'';
   if(e.src==='pastpay'||e.src==='auto')return'';   // vacated tenant's rent / automatic lines — not edited here
   if(e.src==='pay')return`<button class="btn btn-ghost btn-xs" title="Change who received" onclick="openPayReceiver('${e.pid}','${e.rid}','${e.id}')">👤</button>`;
