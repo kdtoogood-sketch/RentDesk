@@ -2860,7 +2860,7 @@ function settlementsPdfBlocks(data){
     {text:x.left>0?M(x.left):'Done',fontSize:8,bold:true,color:x.left>0?'#EF4444':'#10B981'},
     {text:x.label,fontSize:8,bold:true,color:x.tone}]));
   return[{margin:[0,8,0,0],table:{widths:['*'],body:[[{text:'Security & Refunds',color:'#fff',bold:true,fontSize:10,fillColor:'#1A1A1A',margin:[8,5,8,5]}]]},layout:'noBorders'},
-    {table:{headerRows:1,widths:[70,70,50,55,50,65,80,45,'*'],body},layout:{hLineWidth:()=>0.4,hLineColor:()=>'#E8ECF0',vLineWidth:()=>0.4,vLineColor:()=>'#E8ECF0',paddingLeft:()=>4,paddingRight:()=>4,paddingTop:()=>4,paddingBottom:()=>4}}];
+    {table:{headerRows:1,widths:[58,64,46,48,40,56,70,40,'*'],body},layout:{hLineWidth:()=>0.4,hLineColor:()=>'#E8ECF0',vLineWidth:()=>0.4,vLineColor:()=>'#E8ECF0',paddingLeft:()=>4,paddingRight:()=>4,paddingTop:()=>4,paddingBottom:()=>4}}];
 }
 function elecReportScreenH(month,filterPropId){
   const d=elecReportData(month,filterPropId); if(!d.rows.length)return'';
@@ -2919,7 +2919,7 @@ function elecReportPdfBlocks(month,filterPropId){
     {margin:[0,8,0,0],table:{widths:['*','auto'],body:[[
       {text:'ELECTRICITY RECONCILIATION · '+ml(month)+' ('+ml(d.usage)+' usage)',color:'#fff',bold:true,fontSize:10,fillColor:d.issues?'#EF4444':'#10B981',margin:[8,5,8,5]},
       {text:d.issues?d.issues+' TO CHECK':'ALL COVERED',color:'#fff',bold:true,fontSize:10,fillColor:d.issues?'#EF4444':'#10B981',margin:[8,5,8,5],alignment:'right'}]]},layout:'noBorders'},
-    {table:{headerRows:1,widths:['*',70,40,70,60,70,60,70,'*'],body,dontBreakRows:true},
+    {table:{headerRows:1,widths:['*',64,32,62,48,58,52,58,'*'],body,dontBreakRows:true},
       layout:{hLineWidth:()=>0.4,hLineColor:()=>'#E8ECF0',vLineWidth:()=>0.4,vLineColor:()=>'#E8ECF0',paddingLeft:()=>4,paddingRight:()=>4,paddingTop:()=>4,paddingBottom:()=>4}},
     {margin:[0,4,0,8],columns:[{text:'Bill = main meter units × rate (a reading that covers several months is split equally over them). Collected = tenants\' electricity in proportion to how much of the month\'s bill they paid.',fontSize:7,color:'#6B7280'},
       {text:'[   ] Reconciliation checked   By: ____________   Date: __________',fontSize:8,color:'#374151',alignment:'right'}]}
@@ -3722,6 +3722,49 @@ function loadPdfMake(){
 }
 
 // Build a pdfmake document definition that mirrors the monthly report design
+// keep only the listed columns of a pdfmake table row; cells spanning several columns shrink their colSpan
+function _dropCols(row,keep){
+  const out=[]; let i=0;
+  while(i<row.length){
+    const c=row[i], span=(c&&c.colSpan)||1, cover=[]; for(let k=i;k<i+span;k++) if(keep.includes(k)) cover.push(k);
+    if(cover.length){ const nc={...c}; if(cover.length>1) nc.colSpan=cover.length; else delete nc.colSpan; out.push(nc); for(let k=1;k<cover.length;k++) out.push({}); }
+    i+=span;
+  }
+  return out;
+}
+// Black & white print: dark text, no pale fills or pale lines, white text only on the black bands
+function _pdfBW(dd){
+  const hex=c=>{ c=String(c||'').replace('#',''); if(c.length===3)c=c.split('').map(x=>x+x).join(''); return c.length===6?[parseInt(c.slice(0,2),16),parseInt(c.slice(2,4),16),parseInt(c.slice(4,6),16)]:null; };
+  const lum=c=>{ const h=hex(c); return h?(0.299*h[0]+0.587*h[1]+0.114*h[2])/255:1; };
+  const isGrey=c=>{ const h=hex(c); return h&&Math.max(...h)-Math.min(...h)<24; };
+  const walk=(n,dark)=>{
+    if(Array.isArray(n)){ n.forEach(x=>walk(x,dark)); return; }
+    if(!n||typeof n!=='object') return;
+    let d=dark;
+    if(n.fillColor&&typeof n.fillColor==='string'){
+      const L=lum(n.fillColor);
+      if(L<0.3){ n.fillColor='#000000'; d=true; }              // black bands stay black
+      else if(/^#?FFF7ED$/i.test(n.fillColor)){ n.fillColor='#E8E8E8'; d=false; }   // total rows: light grey
+      else { delete n.fillColor; d=false; }                     // orange header & pale tints → white paper
+    }
+    if(typeof n.color==='string'){
+      if(d) n.color='#FFFFFF';
+      else n.color=(isGrey(n.color)&&lum(n.color)>0.25&&lum(n.color)<0.95)?'#333333':'#000000';
+    }
+    if(n.lineColor) n.lineColor='#000000';
+    if(n.fontSize&&n.fontSize<8) n.fontSize=8;
+    if(n.layout&&typeof n.layout==='object'){
+      if(n.layout.hLineColor) n.layout.hLineColor=()=> '#8C8C8C';
+      if(n.layout.vLineColor) n.layout.vLineColor=()=> '#B0B0B0';
+      if(typeof n.layout.fillColor==='function') n.layout.fillColor=()=>null;
+      if(typeof n.layout.vLineColor==='string') n.layout.vLineColor='#B0B0B0';
+    }
+    Object.keys(n).forEach(k=>{ if(k!=='layout') walk(n[k],d); });
+  };
+  walk(dd.content,false);
+  if(dd.styles&&dd.styles.th){ dd.styles.th.color='#000000'; dd.styles.th.fillColor='#E3E3E3'; }
+  return dd;
+}
 function buildMonthlyReportDocDef(month,filterPropId){
   const data=buildMonthlyReportData(month,filterPropId);
   const printDate=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
@@ -3731,6 +3774,7 @@ function buildMonthlyReportDocDef(month,filterPropId){
   const monthCollected=data.totalCollected;                          // = Billing "Collected"
   const fmI=v=>'\u20B9'+(v||0).toLocaleString('en-IN');
   const content=[];
+  const PW=547;   // A4 portrait width inside the margins — the report is printed upright, in black & white
 
   // 1. Header band (orange)
   content.push({
@@ -3820,11 +3864,16 @@ function buildMonthlyReportDocDef(month,filterPropId){
 
   // 3. Per-property sections
   data.props.forEach(p=>{
+    // which columns carry information for this site (empty or same-for-everyone columns are left out of the print)
+    const _rates=[...new Set(p.rooms.map(r=>r.elecRate).filter(Boolean))];
+    const showTok=false /* token shown under the tenant's name instead */, showDed=p.rooms.some(r=>r.dedAmt>0)||p.totalDed>0, showRate=_rates.length>1;
+    const _rateNote=(!showRate&&_rates.length===1)?fmI(_rates[0])+'/unit':'';
+    const keep=[0,1,showTok?2:-1,3,4,5,showRate?6:-1,7,showDed?8:-1,9,10,11,12].filter(i=>i>=0);
     // Black property header band
     content.push({
       margin:[0,8,0,0],
       table:{widths:['*'],body:[[
-        {text:p.name+(p.address?' \u00B7 '+p.address:''),color:'#fff',bold:true,fontSize:10,fillColor:'#1A1A1A',margin:[8,5,8,5]}
+        {text:p.name+(p.address?' \u00B7 '+p.address:'')+(_rateNote?' \u00B7 Electricity '+_rateNote:''),color:'#fff',bold:true,fontSize:10,fillColor:'#1A1A1A',margin:[8,5,8,5]}
       ]]},
       layout:'noBorders'
     });
@@ -3848,7 +3897,7 @@ function buildMonthlyReportDocDef(month,filterPropId){
 
     p.rooms.forEach(r=>{
       const tenantStack=[{text:r.tenant,bold:true,fontSize:9}];
-      if(r.phone)tenantStack.push({text:String(r.phone).replace(/[^0-9+\-()]+/g,' ').replace(/\s+/g,' ').trim(),fontSize:7,color:'#9CA3AF'});
+      if(r.tokenAmount>0)tenantStack.push({text:'Token '+fmI(r.tokenAmount)+(r.securityBalance!=null?' \u00B7 Sec bal '+fmI(r.securityBalance):''),fontSize:7,color:'#6B7280'});
       if(r.isVacated){ tenantStack.push({text:'VACATED '+fd(r.vacatedOn),fontSize:7,bold:true,color:'#F97316'}); if(r.refundLabel)tenantStack.push({text:r.refundLabel,fontSize:7,bold:true,color:r.refundTone||'#10B981'}); }
       const tokenCell=r.tokenAmount>0
         ?{stack:[
@@ -3901,12 +3950,13 @@ function buildMonthlyReportDocDef(month,filterPropId){
       {text:p.totalPend>0?fmI(p.totalPend):'All Paid',color:p.totalPend>0?'#EF4444':'#10B981',bold:true,fillColor:'#FFF7ED',fontSize:9,alignment:'right'}
     ]);
 
+    const W13=[36,'*',46,44,30,30,30,38,44,46,46,58,40];
     content.push({
       margin:[0,0,0,2],
       table:{
         headerRows:1,
-        widths:[28,68,54,46,34,34,38,44,54,50,48,'*',52],
-        body:body,
+        widths:keep.map(i=>W13[i]),
+        body:body.map(row=>_dropCols(row,keep)),
         dontBreakRows:true
       },
       layout:{
@@ -3931,7 +3981,7 @@ function buildMonthlyReportDocDef(month,filterPropId){
         layout:{hLineWidth:(i,node)=>(i===0)?0:0.4,hLineColor:()=>'#EEEEEE',vLineWidth:()=>0,paddingLeft:()=>2,paddingRight:()=>2,paddingTop:()=>3,paddingBottom:()=>3}}:{text:''};
       content.push({margin:[0,6,0,12],unbreakable:ex.length<=40,stack:[
         {columns:[{text:'Expenses \u2014 '+p.name+' ('+ex.length+')',bold:true,fontSize:9.5,color:'#92400E'},{text:fmI(expTotal),bold:true,fontSize:9.5,color:'#92400E',alignment:'right'}]},
-        {canvas:[{type:'line',x1:0,y1:2,x2:800,y2:2,lineWidth:1,lineColor:'#F59E0B'}],margin:[0,0,0,2]},
+        {canvas:[{type:'line',x1:0,y1:2,x2:PW,y2:2,lineWidth:1,lineColor:'#F59E0B'}],margin:[0,0,0,2]},
         {columns:[colT(ex.slice(0,half)),colT(ex.slice(half))],columnGap:22},
         {margin:[0,5,0,0],alignment:'right',fontSize:8.5,color:'#555555',text:[
           ...Object.keys(byWho).flatMap(k=>[{text:'Paid by '+k+' '},{text:fmI(byWho[k]),bold:true,color:'#1A1A1A'},{text:'     '}]),
@@ -3949,14 +3999,14 @@ function buildMonthlyReportDocDef(month,filterPropId){
     ]
   });
   content.push({
-    margin:[0,8,0,0],
+    margin:[0,8,0,0],unbreakable:true,
     table:{widths:['*'],body:[[{
       stack:[
         netRow('Total Expected (Month)',monthExpected,'#fff','#fff'),
         netRow('Total Collected',monthCollected,'#D1FAE5','#6EE7A0'),
         netRow('Total Expenses',data.totalExp,'#FCA5A5','#FCA5A5'),
         netRow('Main electricity bill (meter)',data.elecCost,'#93C5FD','#93C5FD'),
-        {margin:[0,4,0,2],canvas:[{type:'line',x1:0,y1:0,x2:760,y2:0,lineWidth:0.5,lineColor:'#444'}]},
+        {margin:[0,4,0,2],canvas:[{type:'line',x1:0,y1:0,x2:PW-24,y2:0,lineWidth:0.5,lineColor:'#444'}]},
         netRow('Net Income',monthCollected-data.totalExp-data.elecCost,'#fff','#6EE7A0',true)
       ],
       fillColor:'#1A1A1A',margin:[12,10,12,10]
@@ -3973,14 +4023,14 @@ function buildMonthlyReportDocDef(month,filterPropId){
     ]
   });
 
-  return {
+  return _pdfBW({
     pageSize:'A4',
-    pageOrientation:'landscape',
-    pageMargins:[20,20,20,25],
+    pageOrientation:'portrait',
+    pageMargins:[24,24,24,28],
     content:content,
     defaultStyle:{fontSize:9},
     styles:{th:{bold:true,fontSize:8,color:'#6B7280',fillColor:'#F9FAFB'}}
-  };
+  });
 }
 
 // Generate true vector PDF via pdfmake and share to WhatsApp / share sheet
@@ -7662,6 +7712,13 @@ async function printMonthlyReport(month, filterPropId='', shareMode=false){
 
   // Build detailed per-tenant sections
   const propSections=data.props.map(p=>{
+    const _rates=[...new Set((p.rooms||[]).map(r=>r.elecRate).filter(Boolean))];
+    const K={tok:(p.rooms||[]).some(r=>r.tokenAmount>0||(r.depositsThisMonth&&r.depositsThisMonth.length)), rate:_rates.length>1, carry:(p.rooms||[]).some(r=>r.carryIn), ded:(p.rooms||[]).some(r=>r.dedAmt>0), close:(p.rooms||[]).some(r=>r.closingBal>0)};
+    const COLS=['unit','tenant','tok','rent','old','new','rate','elec','carry','ded','total','paid','close','how','pend'];
+    const on=c=>K[c]===undefined||K[c];
+    const cut=cells=>cells.filter((_,i)=>on(COLS[i])).join('');
+    const nOn=list=>list.filter(on).length;
+    const rateNote=(!K.rate&&_rates.length===1)?' &middot; Electricity &#8377;'+_rates[0]+'/unit':'';
     const roomRows=(p.rooms||[]).map(r=>{
       const dedCell=r.dedAmt>0?('-&#8377;'+r.dedAmt.toLocaleString('en-IN')+(r.deds.length?'<br/><span style="font-size:10px;">'+r.deds.map(d=>d.desc).join(', ')+'</span>':'')):'—';
       const rowBg=r.isVacated?' style="background:#FFF7ED;"':'';
@@ -7669,25 +7726,27 @@ async function printMonthlyReport(month, filterPropId='', shareMode=false){
       const secAdjLine=(r.isVacated&&r.securityAdjusted)?'<br/><span style="font-size:9px;color:#8B5CF6;">Sec adj ₹'+r.securityAdjusted.toLocaleString('en-IN')+'</span>':'';
       const netRefLine=r.isVacated?'<br/><span style="font-size:9px;font-weight:700;color:'+(r.refundTone||'#10B981')+';">'+(r.refundLabel||'')+'</span>':'';
       const _oldNetRefLine=r.isVacated?'<br/><span style="font-size:9px;font-weight:700;color:'+(r.netRefund>0?'#10B981':r.netRefund<0?'#EF4444':'#10B981')+';">'+(r.netRefund>0?'Refund ₹'+r.netRefund.toLocaleString('en-IN'):r.netRefund<0?'Owes ₹'+Math.abs(r.netRefund).toLocaleString('en-IN'):'Settled')+'</span>':'';
-      return '<tr'+rowBg+'>'
-        +'<td>'+r.unit+'</td>'
-        +'<td><strong>'+r.tenant+'</strong>'+(r.phone?'<br/><span style="font-size:10px;color:#9CA3AF;">'+r.phone+'</span>':'')+vacBadge+'</td>'
-        +'<td style="font-size:10px;color:#6D28D9;">'+(r.tokenAmount>0?('Token &#8377;'+r.tokenAmount.toLocaleString('en-IN')+(r.securityBalance!=null?'<br/><span style="color:#6B7280;">Sec bal &#8377;'+r.securityBalance.toLocaleString('en-IN')+'</span>':'')):'—')+((r.depositsThisMonth&&r.depositsThisMonth.length)?r.depositsThisMonth.map(function(e){return '<br/><span style="color:#F97316;">+'+e.kind+' &#8377;'+e.amount.toLocaleString('en-IN')+' ('+fd(e.date)+')</span>';}).join(''):'')+'</td>'
-        +'<td>&#8377;'+r.rent.toLocaleString('en-IN')+(r.secDue>0?'<div style="font-size:10px;color:#B45309;font-weight:700;">+ &#8377;'+r.secDue.toLocaleString('en-IN')+' security</div>':'')+'</td>'
-        +'<td style="font-size:11px;text-align:right;">'+(r.elecOld!=null?r.elecOld:'—')+'</td>'
-        +'<td style="font-size:11px;text-align:right;font-weight:600;">'+(r.elecNew!=null?r.elecNew:'—')+'</td>'
-        +'<td style="font-size:11px;text-align:right;">'+(r.elecRate?'&#8377;'+r.elecRate+'/u':'—')+'</td>'
-        +'<td style="color:#3B82F6;font-weight:600;">'+(r.elec>0?'&#8377;'+r.elec.toLocaleString('en-IN'):'—')+'</td>'
-        +'<td style="color:'+(r.carryIn<0?'#059669':'#EF4444')+';font-weight:600;">'+(r.carryIn>0?'&#8377;'+r.carryIn.toLocaleString('en-IN'):r.carryIn<0?'Credit &#8377;'+(-r.carryIn).toLocaleString('en-IN'):'—')+'</td>'
-        +'<td style="color:#8B5CF6;">'+dedCell+'</td>'
-        +'<td style="font-weight:700;font-size:13px;">&#8377;'+r.total.toLocaleString('en-IN')+'</td>'
-        +'<td style="color:#10B981;font-weight:600;">&#8377;'+r.paid.toLocaleString('en-IN')+secAdjLine+netRefLine+'</td>'
-        +'<td style="color:'+(r.closingBal>0?'#EF4444':'#10B981')+';font-weight:700;">'+(r.closingBal>0?'&#8377;'+r.closingBal.toLocaleString('en-IN'):'—')+'</td>'
-        +'<td style="font-size:10px;color:#6B7280;">'+(r.paymentDetails||'—')+'</td>'
-        +'<td style="color:'+(r.pend>0?'#EF4444':'#10B981')+';font-weight:700;">'+(r.pend>0?'&#8377;'+r.pend.toLocaleString('en-IN'):'&#10003; Paid')+'</td>'
+      return '<tr'+rowBg+'>'+cut([
+        '<td>'+r.unit+'</td>',
+        '<td><strong>'+r.tenant+'</strong>'+vacBadge+'</td>',
+        '<td style="font-size:10px;color:#6D28D9;">'+(r.tokenAmount>0?('Token &#8377;'+r.tokenAmount.toLocaleString('en-IN')+(r.securityBalance!=null?'<br/><span style="color:#6B7280;">Sec bal &#8377;'+r.securityBalance.toLocaleString('en-IN')+'</span>':'')):'—')+((r.depositsThisMonth&&r.depositsThisMonth.length)?r.depositsThisMonth.map(function(e){return '<br/><span style="color:#F97316;">+'+e.kind+' &#8377;'+e.amount.toLocaleString('en-IN')+' ('+fd(e.date)+')</span>';}).join(''):'')+'</td>',
+        '<td>&#8377;'+r.rent.toLocaleString('en-IN')+(r.secDue>0?'<div style="font-size:10px;color:#B45309;font-weight:700;">+ &#8377;'+r.secDue.toLocaleString('en-IN')+' security</div>':'')+'</td>',
+        '<td style="font-size:11px;text-align:right;">'+(r.elecOld!=null?r.elecOld:'—')+'</td>',
+        '<td style="font-size:11px;text-align:right;font-weight:600;">'+(r.elecNew!=null?r.elecNew:'—')+'</td>',
+        '<td style="font-size:11px;text-align:right;">'+(r.elecRate?'&#8377;'+r.elecRate+'/u':'—')+'</td>',
+        '<td style="color:#3B82F6;font-weight:600;">'+(r.elec>0?'&#8377;'+r.elec.toLocaleString('en-IN'):'—')+'</td>',
+        '<td style="color:'+(r.carryIn<0?'#059669':'#EF4444')+';font-weight:600;">'+(r.carryIn>0?'&#8377;'+r.carryIn.toLocaleString('en-IN'):r.carryIn<0?'Credit &#8377;'+(-r.carryIn).toLocaleString('en-IN'):'—')+'</td>',
+        '<td style="color:#8B5CF6;">'+dedCell+'</td>',
+        '<td style="font-weight:700;font-size:13px;">&#8377;'+r.total.toLocaleString('en-IN')+'</td>',
+        '<td style="color:#10B981;font-weight:600;">&#8377;'+r.paid.toLocaleString('en-IN')+secAdjLine+netRefLine+'</td>',
+        '<td style="color:'+(r.closingBal>0?'#EF4444':'#10B981')+';font-weight:700;">'+(r.closingBal>0?'&#8377;'+r.closingBal.toLocaleString('en-IN'):'—')+'</td>',
+        '<td style="font-size:10px;color:#6B7280;">'+(r.paymentDetails||'—')+'</td>',
+        '<td style="color:'+(r.pend>0?'#EF4444':'#10B981')+';font-weight:700;">'+(r.pend>0?'&#8377;'+r.pend.toLocaleString('en-IN'):'&#10003; Paid')+'</td>',
+        
+      ])
         +'</tr>';
     }).join('');
-    const vacRow=p.vacantCount>0?'<tr><td colspan="15" style="color:#9CA3AF;font-style:italic;font-size:11px;padding:6px 10px;">Vacant ('+p.vacantCount+'): '+(p.vacantUnits||[]).join(', ')+'</td></tr>':'';
+    const vacRow=p.vacantCount>0?'<tr><td colspan="'+COLS.filter(on).length+'" style="color:#9CA3AF;font-style:italic;font-size:11px;padding:6px 10px;">Vacant ('+p.vacantCount+'): '+(p.vacantUnits||[]).join(', ')+'</td></tr>':'';
     const expRow=(()=>{ if(!p.expenses.length)return '';
       const ex=p.expenses.map((e,i)=>({e,i})).sort((x,y)=>String(x.e.date||'').localeCompare(String(y.e.date||''))||x.i-y.i).map(x=>x.e);
       const tot=ex.reduce((t,e)=>t+(e.elec?0:e.amount),0), byWho={};
@@ -7699,23 +7758,23 @@ async function printMonthlyReport(month, filterPropId='', shareMode=false){
         +'<div class="xf">'+Object.keys(byWho).map(k=>'<span>Paid by '+_escHtml(k)+' <b>&#8377;'+byWho[k].toLocaleString('en-IN')+'</b></span>').join('')+'<span>Total <b>&#8377;'+tot.toLocaleString('en-IN')+'</b></span></div></div>';
     })();
     return '<div class="prop-section">'
-      +'<div class="prop-header">'+p.name+(p.address?' &middot; '+p.address:'')+'</div>'
+      +'<div class="prop-header">'+p.name+(p.address?' &middot; '+p.address:'')+rateNote+'</div>'
       +'<t'+'able class="rtbl"><th'+'ead><tr>'
-      +'<th>Unit</th><th>Tenant</th><th>Token / Security</th><th>Rent</th><th>Old Reading</th><th>New Reading</th><th>Rate</th><th>Elec Bill</th><th>Carry-In</th><th>Deduction</th><th>Total Due</th><th>Paid</th><th>Closing Bal</th><th>How Paid</th><th>Pending</th>'
+      +cut(['<th>Unit</th>','<th>Tenant</th>','<th>Token / Security</th>','<th>Rent</th>','<th>Old</th>','<th>New</th>','<th>Rate</th>','<th>Elec</th>','<th>Carry-In</th>','<th>Deduction</th>','<th>Total Due</th>','<th>Paid</th>','<th>Closing Bal</th>','<th>How Paid</th>','<th>Pending</th>'])
       +'</tr></th'+'ead>'
       +'<tb'+'ody>'+roomRows+vacRow+'</tb'+'ody>'
       +'<tf'+'oot><tr class="t-total">'
-      +'<td colspan="3">Property Total</td>'
+      +'<td colspan="'+nOn(['unit','tenant','tok'])+'">Property Total</td>'
       +'<td>&#8377;'+p.totalRent.toLocaleString('en-IN')+'</td>'
-      +'<td colspan="3"></td>'
-      +'<td style="color:#3B82F6;font-weight:700;">&#8377;'+p.totalElec.toLocaleString('en-IN')+'</td>'
-      +'<td></td>'
-      +'<td style="color:#8B5CF6;font-weight:700;">'+(p.totalDed>0?'-&#8377;'+p.totalDed.toLocaleString('en-IN'):'')+'</td>'
+      +'<td colspan="'+nOn(['old','new','rate'])+'"></td>'
+      +'<td style="font-weight:700;">&#8377;'+p.totalElec.toLocaleString('en-IN')+'</td>'
+      +(on('carry')?'<td></td>':'')
+      +(on('ded')?'<td style="font-weight:700;">'+(p.totalDed>0?'-&#8377;'+p.totalDed.toLocaleString('en-IN'):'')+'</td>':'')
       +'<td style="font-weight:700;">&#8377;'+p.totalDue.toLocaleString('en-IN')+'</td>'
-      +'<td style="color:#10B981;font-weight:700;">&#8377;'+p.totalPaid.toLocaleString('en-IN')+'</td>'
+      +'<td style="font-weight:700;">&#8377;'+p.totalPaid.toLocaleString('en-IN')+'</td>'
+      +(on('close')?'<td></td>':'')
       +'<td></td>'
-      +'<td></td>'
-      +'<td style="color:'+(p.totalPend>0?'#EF4444':'#10B981')+';font-weight:700;">'+(p.totalPend>0?'&#8377;'+p.totalPend.toLocaleString('en-IN'):'&#10003; All Paid')+'</td>'
+      +'<td style="font-weight:700;">'+(p.totalPend>0?'&#8377;'+p.totalPend.toLocaleString('en-IN'):'&#10003; All Paid')+'</td>'
       +'</tr></tf'+'oot>'
       +'</t'+'able>'+expRow+'</div>';
   }).join('');
@@ -7773,7 +7832,20 @@ async function printMonthlyReport(month, filterPropId='', shareMode=false){
     '.net-r{display:flex;justify-content:space-between;padding:4px 0;font-size:13px;}',
     '.net-total{display:flex;justify-content:space-between;padding:10px 0 0;border-top:1px solid rgba(255,255,255,.2);margin-top:6px;font-size:16px;font-weight:700;}',
     '.rpt-footer{margin-top:24px;padding-top:12px;border-top:1px solid #E8ECF0;display:flex;justify-content:space-between;font-size:10px;color:#9CA3AF;}',
-    '@page{size:A4 landscape;margin:10mm;}'
+    '@page{size:A4 portrait;margin:9mm;}',
+    /* black & white print: dark text, white paper, black bands */
+    'body *{color:#000!important;background:transparent!important;box-shadow:none!important;}',
+    '.report-header{border-bottom:2.5px solid #000;padding:12px 4px!important;}',
+    '.summary-grid{border-bottom:1.5px solid #000!important;}.summary-tile{border-right:1px solid #999!important;}.st-label{color:#333!important;}',
+    '.content{padding:12px 4px!important;}',
+    '.prop-header,.prop-header *{background:#000!important;color:#fff!important;border-radius:0!important;}',
+    '.prop-header{break-after:avoid;page-break-after:avoid;}.rtbl thead{display:table-header-group;}.rtbl tr{break-inside:avoid;}',
+    '.rtbl{border:1px solid #000!important;font-size:11px;}.rtbl th{background:#E3E3E3!important;color:#000!important;border-bottom:1.5px solid #000!important;font-size:9.5px;}.rtbl td{border-bottom:1px solid #999!important;padding:5px 5px!important;}',
+    '.t-total td{background:#E8E8E8!important;border-top:2px solid #000!important;}',
+    '.xh{border-bottom:1.5px solid #000!important;}.xr{border-bottom:1px solid #BBB!important;}',
+    '.net,.net *{background:#000!important;color:#fff!important;}.net *{background:transparent!important;}',
+    '.rpt-footer{border-top:1px solid #000!important;}',
+    'body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}'
   ].join('');
   const html='<!DOC'+'TYPE html>'
     +'<ht'+'ml><h'+'ead>'
