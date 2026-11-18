@@ -3950,7 +3950,7 @@ function buildMonthlyReportDocDef(month,filterPropId){
       {text:p.totalPend>0?fmI(p.totalPend):'All Paid',color:p.totalPend>0?'#EF4444':'#10B981',bold:true,fillColor:'#FFF7ED',fontSize:9,alignment:'right'}
     ]);
 
-    const W13=[36,'*',46,44,30,30,30,38,44,46,46,58,40];
+    const W13=[36,'*',46,44,30,30,30,38,44,46,46,keep.length>10?62:80,40];
     content.push({
       margin:[0,0,0,2],
       table:{
@@ -7565,7 +7565,7 @@ function buildMonthlyReportData(month, filterPropId=''){
       const tokenAmount=sameMonthDate(activeStart,month)?(storedToken||inferredToken):0;
       const paymentDetails=(r.payments||[])
         .filter(x=>x.month===month)
-        .map(x=>(x.mode||'Payment')+(x.date?' '+fd(x.date):'')+(x.notes?' - '+x.notes:''))
+        .map(x=>(x.mode||'Payment')+(x.date?' '+fd(x.date):'')+(x.ref?'<br/>Ref '+_escHtml(String(x.ref)):'')+(x.notes?' - '+x.notes:''))
         .join('<br/>');
 
       const elecOld=elec?elec.oldReading:null;
@@ -7603,7 +7603,7 @@ function buildMonthlyReportData(month, filterPropId=''){
         const secHeld=Number(t.securityHeld||0);
         const secLeft=Math.max(0,secHeld-secAdj);
         const paymentDetails=(t.paymentHistory||[]).filter(x=>x.month===month)
-          .map(x=>(x.mode||'Payment')+(x.date?' '+fd(x.date):'')+(x.notes?' - '+x.notes:'')).join('<br/>');
+          .map(x=>(x.mode||'Payment')+(x.date?' '+fd(x.date):'')+(x.ref?'<br/>Ref '+_escHtml(String(x.ref)):'')+(x.notes?' - '+x.notes:'')).join('<br/>');
         const netRefund=Number(t.settlement&&t.settlement.netRefund||0);
 
         propRooms.push({
